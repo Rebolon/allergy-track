@@ -1,0 +1,25 @@
+# Node modules
+node_modules/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Compiled output
+frontend/dist/
+frontend/.angular/
+
+# PocketBase data (CRITICAL: Never commit the DB itself)
+backend/pb_data/
+!backend/pb_data/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db
+
+# OS specific logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

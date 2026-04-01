@@ -1,0 +1,54 @@
+version: "3"
+
+tasks:
+  install:
+    desc: Installe les dépendances du projet (Frontend + Login AWS)
+    cmds:
+      - cd frontend && npm ci
+
+  build:
+    desc: Build de l'application Angular
+    cmds:
+      - cd frontend && npm run build
+
+  start:
+    desc: Démarre l'application via Docker Compose
+    cmds:
+      - docker compose up -d
+
+  stop:
+    desc: Arrête l'application
+    cmds:
+      - docker compose down
+
+  restart:
+    desc: Redémarre l'application (utile après un build)
+    cmds:
+      - task: stop
+      - task: start
+
+  status:
+    desc: Affiche l'état des services
+    cmds:
+      - docker compose ps
+
+  build-and-start:
+    desc: Construit l'application et la redémarre
+    cmds:
+      - task: build
+      - task: restart
+
+  upsert-admin:
+    desc: Crée ou met à jour un utilisateur administrateur
+    cmds:
+      - docker exec allergy-track-pocketbase-1 /usr/local/bin/pocketbase superuser upsert {{.EMAIL}} {{.PASS}} --dir=/pb_data
+    vars:
+      EMAIL: 'admin@allergy-track.local'
+      PASS: 'admin123456'
+
+  reset-db:
+    desc: Réinitialise la base de données Pocketbase en supprimant son dossier de données local
+    cmds:
+      - task: stop
+      - docker run --rm -v $(pwd)/backend/pb_data:/pb_data alpine sh -c "rm -rf /pb_data/* /pb_data/.[!.]* ; chmod 777 /pb_data"
+      - task: start

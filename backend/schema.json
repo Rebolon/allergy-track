@@ -1,0 +1,167 @@
+[
+  {
+    "name": "daily_logs",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "name": "date",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": true,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      },
+      {
+        "system": false,
+        "name": "intakes",
+        "type": "json",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "system": false,
+        "name": "symptoms",
+        "type": "json",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "system": false,
+        "name": "treatments",
+        "type": "json",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {}
+      },
+      {
+        "system": false,
+        "name": "note",
+        "type": "text",
+        "required": false,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "name": "updatedBy",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      }
+    ]
+  },
+  {
+    "name": "audit_logs",
+    "type": "base",
+    "system": false,
+    "schema": [
+      {
+        "system": false,
+        "name": "timestamp",
+        "type": "date",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": "",
+          "max": ""
+        }
+      },
+      {
+        "system": false,
+        "name": "userId",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "name": "userRole",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "name": "action",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "name": "entityId",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      },
+      {
+        "system": false,
+        "name": "details",
+        "type": "text",
+        "required": true,
+        "presentable": false,
+        "unique": false,
+        "options": {
+          "min": null,
+          "max": null,
+          "pattern": ""
+        }
+      }
+    ]
+  },
+  {
+    "name": "latest_daily_logs",
+    "type": "view",
+    "system": false,
+    "options": {
+      "query": "SELECT id, date, intakes, symptoms, treatments, note, updatedBy, MAX(created) as created, updated FROM daily_logs GROUP BY date"
+    }
+  }
+]

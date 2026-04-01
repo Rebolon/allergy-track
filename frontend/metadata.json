@@ -1,0 +1,5 @@
+{
+  "name": "AllergiTrack",
+  "description": "Application de suivi médical de désensibilisation alimentaire pour parent et enfant.",
+  "requestFramePermissions": []
+}

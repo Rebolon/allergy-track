@@ -1,0 +1,159 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AllergiTrack API",
+    "version": "1.0.0",
+    "description": "API pour le suivi médical de désensibilisation alimentaire."
+  },
+  "paths": {
+    "/daily-logs": {
+      "get": {
+        "summary": "Récupérer les journaux quotidiens (dernier de chaque jour)",
+        "description": "Cette route renvoie uniquement la dernière entrée journalisée pour chaque date (le datetime complet étant conservé). Tout l'historique est récupérable via l'endpoint /audit-logs.",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des journaux",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/DailyLog" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Créer un journal quotidien (ajout de log, pas d'update)",
+        "description": "Ajoute une nouvelle entrée de journal. Aucune mise à jour en place n'est effectuée, les modifications ajoutent juste un nouveau log qui deviendra le dernier de la journée.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DailyLogPayload" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Journal sauvegardé",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/DailyLog" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/audit-logs": {
+      "get": {
+        "summary": "Récupérer les logs d'audit",
+        "responses": {
+          "200": {
+            "description": "Liste des logs d'audit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AuditLog" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AllergenIntake": {
+        "type": "object",
+        "properties": {
+          "allergen": { "type": "string" },
+          "dose": { "type": "number" },
+          "taken": { "type": "boolean" }
+        },
+        "required": ["allergen", "dose", "taken"]
+      },
+      "Treatment": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "before": { "type": "boolean" },
+          "after": { "type": "boolean" }
+        },
+        "required": ["name", "before", "after"]
+      },
+      "DailyLog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string", "format": "date" },
+          "intakes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AllergenIntake" }
+          },
+          "symptoms": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "treatments": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Treatment" }
+          },
+          "note": { "type": "string" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "updatedBy": { "type": "string" }
+        },
+        "required": ["id", "date", "intakes", "symptoms", "treatments", "updatedAt", "updatedBy"]
+      },
+      "DailyLogPayload": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "intakes": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AllergenIntake" }
+          },
+          "symptoms": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "treatments": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Treatment" }
+          },
+          "note": { "type": "string" }
+        },
+        "required": ["date", "intakes", "symptoms", "treatments"]
+      },
+      "AuditLog": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" },
+          "userId": { "type": "string" },
+          "userRole": { "type": "string" },
+          "action": { "type": "string" },
+          "entityId": { "type": "string" },
+          "details": { "type": "string" }
+        },
+        "required": ["id", "timestamp", "userId", "userRole", "action", "entityId", "details"]
+      }
+    }
+  }
+}
