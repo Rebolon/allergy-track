@@ -1,0 +1,67 @@
+{
+  "configVersion": 1,
+  "timestamp": 1775158748337,
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/icons/favicon.ico",
+        "/index.html",
+        "/main-5XVHB5AA.js",
+        "/manifest.webmanifest",
+        "/styles-J6HIWJ2T.css"
+      ],
+      "patterns": []
+    },
+    {
+      "name": "assets",
+      "installMode": "lazy",
+      "updateMode": "prefetch",
+      "cacheQueryOptions": {
+        "ignoreVary": true
+      },
+      "urls": [
+        "/icons/apple-touch-icon.png",
+        "/icons/favicon-96x96.png",
+        "/icons/favicon.svg",
+        "/icons/icon-192x192.png",
+        "/icons/icon-512x512.png"
+      ],
+      "patterns": []
+    }
+  ],
+  "dataGroups": [],
+  "hashTable": {
+    "/icons/apple-touch-icon.png": "0761d48edecc629425fd309557b65091aaf23dc7",
+    "/icons/favicon-96x96.png": "8d64cb9500bc54f9464488ecf6a68cff301a1ea9",
+    "/icons/favicon.ico": "92213a8b661c8aae5ec7d2852cd6e8e615f6424c",
+    "/icons/favicon.svg": "42cf8156e8bbcccf227166139de0e317224a22c8",
+    "/icons/icon-192x192.png": "7d3b4b032896a15547188c151bfb3e7e8aaecf84",
+    "/icons/icon-512x512.png": "338b8cabf24f93fbb7fe85a7623cd6fe922e162c",
+    "/index.html": "a9e3b9938014d9d8d7a808df27bf9da820b3f52d",
+    "/main-5XVHB5AA.js": "d2ceb4381602fd7d223c45317bed54b90ec5ff48",
+    "/manifest.webmanifest": "015eef86ac40c48fecd75585a62a5eb9b4e3e93d",
+    "/styles-J6HIWJ2T.css": "3449b7abc230a01dcc7846f3f63897f56de17bfd"
+  },
+  "navigationUrls": [
+    {
+      "positive": true,
+      "regex": "^\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?[^/]*\\/_\\/.*$"
+    },
+    {
+      "positive": false,
+      "regex": "^\\/(?:.+\\/)?api\\/.*$"
+    }
+  ],
+  "navigationRequestStrategy": "performance"
+}
