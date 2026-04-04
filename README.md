@@ -18,102 +18,85 @@ L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'a
 - **Frontend** : [Angular v19](https://angular.dev/) (utilisation intensive des `Signals`, `RxJS`, `Standalone Components`).
 - **Styles** : [TailwindCSS v4](https://tailwindcss.com/) pour une interface totalement customisée et responsive.
 - **Backend / BDD** : [PocketBase](https://pocketbase.io/) servant à la fois d'API REST légère (SQLite) et de serveur statique pour héberger le bundle Angular en production.
-- **Outillage** : Docker Compose (pour orchestrer l'environnement de développement) et Taskfile (pour automatiser les scripts communs).
+- **Outillage** : Docker Compose (orchestration) et Taskfile (automatisation).
 
 ## 📋 Prérequis
 
 - [Node.js](https://nodejs.org/en/) & npm
 - [Docker](https://www.docker.com/) & Docker Compose
-- [Task](https://taskfile.dev/) (optionnel, mais fortement recommandé pour exécuter les commandes du projet)
+- [Task](https://taskfile.dev/) (fortement recommandé pour exécuter les commandes du projet)
 
 ## 🏗️ Installation & Lancement
 
 Le projet s'appuie sur le `Taskfile.yml` pour faciliter le démarrage.
 
 ### 1. Initialiser le projet
-
-Installez les dépendances du frontend :
-
 ```bash
 task install
 ```
 
-### 2. Construire l'application
-
-Compilez le frontend Angular (`dist/app/browser`) pour le préparer au déploiement via PocketBase :
-
+### 2. Construire et Lancer (Développement)
 ```bash
 task build
-```
-
-### 3. Démarrer le Serveur et la Base de Données
-
-Démarrez le container Docker PocketBase (qui hébergera automatiquement votre frontend localement) :
-
-```bash
 task start
 ```
+L'application sera accessible sur `http://localhost:8090`.
 
-L'application sera alors accessible localement sur le conteneur PocketBase. (Par défaut : `http://localhost:8090`). Vous pouvez la stopper plus tard avec `task stop`.
+### 3. Administration (Super-utilisateur)
+Pour configurer l'interface d'admin PocketBase (`/admin/`) :
+```bash
+task upsert-admin
+```
+*(Défaut : `admin@allergy-track.local` / `admin123456`)*
 
-### 4. Réinitialisation de la BDD (Développement)
-
-En cas de soucis pendant l'intégration en phase de développement, vous pouvez vider entièrement la base de données :
-
+### 4. Réinitialisation de la BDD
+Pour vider entièrement la base de données (Volume Docker) :
 ```bash
 task reset-db
 ```
 
-_(Attention : L'application effacera toutes ses données)._
+## 🏷️ Versioning & Suivi de Build
+Une étiquette de version est injectée dans le footer lors du build :
+- **v.YYYY-MM-DD_HH:MM (hash)**
+Cela permet de confirmer visuellement que le déploiement sur le Synology est bien à jour.
 
 ## 🛠️ Architecture du Projet
 
-Le projet suit une structure séparée pour le frontend et le backend, orchestrée par Docker :
-
 ```text
 allergy-track/
-├── backend/            # Configuration PocketBase (Hook, Migrations)
+├── backend/            # Config PocketBase (Hook, Migrations, Schema)
 ├── frontend/           # Application Angular 19+
-│   ├── src/            # Code source Angular (Components, Services, etc.)
-│   └── proxy.conf.json # Configuration proxy pour le développement local
-├── var/pb_data/        # Dossier de persistence de la BDD (Volume Docker)
-├── Dockerfile          # Construction de l'image de production multi-stage
-├── docker-compose.yml  # Orchestration pour le déploiement
-└── Taskfile.yml        # Automatisation des commandes fréquentes
+│   ├── src/app/        # Code source Angular
+│   └── src/environments/version.ts # Auto-généré au build
+├── Dockerfile          # Image multi-stage (Build + Prod)
+├── docker-compose.yml  # Orchestration des services
+└── Taskfile.yml        # Automatisation (SUDO, Update, Build)
 ```
 
-## 💻 Développement Local
+> [!IMPORTANT]
+> **Persistance des données** : Les données sont stockées dans un **Volume Nommé Docker** (`pb_data`). Elles sont persistantes mais invisibles sur votre système de fichiers hôte pour garder le projet propre.
 
-Pour travailler sur le frontend tout en bénéficiant de la base de données :
+## 💻 Développement Local (HMR)
 
-1.  **Démarrer PocketBase** : 
-    ```bash
-    task start
-    ```
-2.  **Lancer Angular (HMR)** :
-    ```bash
-    cd frontend
-    npm start
-    ```
-    *Le frontend sera disponible sur `http://localhost:4200` et communiquera avec le backend `localhost:8090` via un proxy.*
+Pour travailler sur le frontend avec rechargement à chaud :
+1. Démarrer PocketBase : `task start`
+2. Lancer Angular : `cd frontend && npm start` (disponible sur `http://localhost:4200`)
 
 ## 🐳 Déploiement sur Synology
 
-Allergy Track est optimisé pour un déploiement sur NAS Synology via Docker :
-
-1.  **Image Docker** : Clonez le dépôt et construisez l'image via `task build-and-start` ou transférez vos fichiers.
-2.  **Persistance** : Le dossier `./var/pb_data` sur votre NAS conservera toutes les données même après une mise à jour de l'image.
+1.  **Configuration** : Dans `Taskfile.yml`, réglez `SUDO: 'sudo'` si nécessaire.
+2.  **Mise à jour rapide** : Pour mettre à jour l'application en une commande :
+    ```bash
+    task update
+    ```
+    *(Effectue un git pull, reconstruit l'image et redémarre le conteneur).*
 3.  **Reverse Proxy** :
-    - Allez dans `Panneau de configuration > Portail de connexion > Avancé > Proxy inversé`.
-    - Créez une règle : `https://allergy-track.votre-domaine.com` vers `http://localhost:8090`.
-    - Activez les certificats SSL Let's Encrypt pour cet hôte.
-4.  **Mises à jour** : Pour mettre à jour, faites un `git pull`, `task build` et `task restart`.
+    - `Panneau de configuration > Portail de connexion > Avancé > Proxy inversé`.
+    - `https://votre-domaine.com` (443) -> `http://localhost:8090` (8090).
 
 ## 📜 Règles Métiers (Domain)
-
-Pour plus de détails sur le calcul des scores, de la gamification et de la supervision, consultez [DOMAIN.md](./DOMAIN.md).
+Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification.
 
 ## TODO
-
-- check notification on android & ios (maybe check service worker notification https://angular.dev/ecosystem/service-workers/push-notifications)
-- add login / account creation (basic) : parent creation, and invite system based with email and link (then child will have to create his account that will be linked to parent)
+- Check push notifications (Service Worker)
+- Système d'invitation parent/enfant par email
