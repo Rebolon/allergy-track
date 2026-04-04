@@ -1,5 +1,9 @@
 version: "3"
 
+vars:
+  SUDO: 'sudo' # Modifiez en '' si vous ne voulez pas utiliser sudo par défaut
+
+
 tasks:
   install:
     desc: Installe les dépendances du projet (Frontend + Login AWS)
@@ -14,12 +18,12 @@ tasks:
   start:
     desc: Démarre l'application via Docker Compose
     cmds:
-      - docker compose up -d
+      - "{{.SUDO}} docker compose up -d"
 
   stop:
     desc: Arrête l'application
     cmds:
-      - docker compose down
+      - "{{.SUDO}} docker compose down"
 
   restart:
     desc: Redémarre l'application (utile après un build)
@@ -30,25 +34,41 @@ tasks:
   status:
     desc: Affiche l'état des services
     cmds:
-      - docker compose ps
+      - "{{.SUDO}} docker compose ps"
 
   build-and-start:
-    desc: Construit l'application et la redémarre
+    desc: Construit l'image Docker et redémarre l'application
     cmds:
-      - task: build
-      - task: restart
+      - "{{.SUDO}} docker compose up -d --build"
 
   upsert-admin:
-    desc: Crée ou met à jour un utilisateur administrateur
+    desc: Crée ou met à jour un utilisateur administrateur (Docker)
     cmds:
-      - docker exec allergy-track-pocketbase-1 /usr/local/bin/pocketbase superuser upsert {{.EMAIL}} {{.PASS}} --dir=/pb_data
+      - "{{.SUDO}} docker compose exec allergy-track /usr/local/bin/pocketbase superuser upsert {{.EMAIL}} {{.PASS}} --dir=/srv/pb_data"
     vars:
       EMAIL: 'admin@allergy-track.local'
       PASS: 'admin123456'
 
   reset-db:
-    desc: Réinitialise la base de données Pocketbase en supprimant son dossier de données local
+    desc: Réinitialise la base de données Pocketbase en supprimant son dossier de données local (./var/pb_data)
     cmds:
       - task: stop
-      - docker run --rm -v $(pwd)/backend/pb_data:/pb_data alpine sh -c "rm -rf /pb_data/* /pb_data/.[!.]* ; chmod 777 /pb_data"
+      - "{{.SUDO}} docker run --rm -v $(pwd)/var/pb_data:/srv/pb_data alpine sh -c \"rm -rf /srv/pb_data/* /srv/pb_data/.[!.]* ; chmod 777 /srv/pb_data\""
       - task: start
+
+  test-docker:
+    desc: Construit et teste l'image Docker localement
+    cmds:
+      - "{{.SUDO}} docker compose build"
+      - "{{.SUDO}} docker compose up -d"
+      - "echo 'Waiting for PocketBase to start...'"
+      - sleep 5
+      - curl -f http://localhost:8090/ || ({{.SUDO}} docker compose logs && exit 1)
+      - "echo '✅ Test Docker réussi !'"
+      - "{{.SUDO}} docker compose down"
+
+  update:
+    desc: Met à jour l'application (git pull + rebuild Docker) sur le Synology
+    cmds:
+      - git pull
+      - "{{.SUDO}} docker compose up -d --build"

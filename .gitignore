@@ -11,7 +11,8 @@ node_modules/
 frontend/dist/
 frontend/.angular/
 
-# PocketBase data (CRITICAL: Never commit the DB itself)
+# Local data for development and runtime
+/var/
 backend/pb_data/
 !backend/pb_data/.gitkeep
 

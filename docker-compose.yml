@@ -6,6 +6,6 @@ services:
     ports:
       - "8090:8090"
     volumes:
-      - ./pb_data:/pb_data
+      - ./var/pb_data:/srv/pb_data
     # No need for absolute paths or complex commands here,
     # as the Dockerfile handles the structure and entrypoint.

@@ -66,21 +66,52 @@ task reset-db
 
 _(Attention : L'application effacera toutes ses données)._
 
-## 📖 Architecture du Projet
+## 🛠️ Architecture du Projet
+
+Le projet suit une structure séparée pour le frontend et le backend, orchestrée par Docker :
 
 ```text
 allergy-track/
-├── backend/            # Configuration PocketBase
-│   ├── pb_data/        # Base de données SQLite (Générée dynamiquement)
-│   ├── pb_hooks/       # Scripts JS de validation PocketBase (Hooks)
-│   └── pb_migrations/  # Initialisation des collections (ex: daily_logs)
-├── frontend/           # Application front Angular
-│   ├── src/
-│   │   ├── app/        # Composants, Modèles et Services
-│   │   └── styles.css  # Configuration de Tailwind
-├── docker-compose.yml  # Définition du conteneur elestio/pocketbase
-└── Taskfile.yml        # Raccourcis de commandes
+├── backend/            # Configuration PocketBase (Hook, Migrations)
+├── frontend/           # Application Angular 19+
+│   ├── src/            # Code source Angular (Components, Services, etc.)
+│   └── proxy.conf.json # Configuration proxy pour le développement local
+├── var/pb_data/        # Dossier de persistence de la BDD (Volume Docker)
+├── Dockerfile          # Construction de l'image de production multi-stage
+├── docker-compose.yml  # Orchestration pour le déploiement
+└── Taskfile.yml        # Automatisation des commandes fréquentes
 ```
+
+## 💻 Développement Local
+
+Pour travailler sur le frontend tout en bénéficiant de la base de données :
+
+1.  **Démarrer PocketBase** : 
+    ```bash
+    task start
+    ```
+2.  **Lancer Angular (HMR)** :
+    ```bash
+    cd frontend
+    npm start
+    ```
+    *Le frontend sera disponible sur `http://localhost:4200` et communiquera avec le backend `localhost:8090` via un proxy.*
+
+## 🐳 Déploiement sur Synology
+
+Allergy Track est optimisé pour un déploiement sur NAS Synology via Docker :
+
+1.  **Image Docker** : Clonez le dépôt et construisez l'image via `task build-and-start` ou transférez vos fichiers.
+2.  **Persistance** : Le dossier `./var/pb_data` sur votre NAS conservera toutes les données même après une mise à jour de l'image.
+3.  **Reverse Proxy** :
+    - Allez dans `Panneau de configuration > Portail de connexion > Avancé > Proxy inversé`.
+    - Créez une règle : `https://allergy-track.votre-domaine.com` vers `http://localhost:8090`.
+    - Activez les certificats SSL Let's Encrypt pour cet hôte.
+4.  **Mises à jour** : Pour mettre à jour, faites un `git pull`, `task build` et `task restart`.
+
+## 📜 Règles Métiers (Domain)
+
+Pour plus de détails sur le calcul des scores, de la gamification et de la supervision, consultez [DOMAIN.md](./DOMAIN.md).
 
 ## TODO
 

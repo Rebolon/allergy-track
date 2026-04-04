@@ -1,7 +1,11 @@
-import { Component, signal, computed, output, inject } from '@angular/core';
+import { Component, signal, computed, output, inject, OnInit, DestroyRef } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { ThemeService } from '../services/theme.service';
+import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
+import { GamificationService } from '../services/gamification.service';
+import { take } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-agenda',
@@ -41,7 +45,7 @@ import { ThemeService } from '../services/theme.service';
               (click)="selectDate(day.date)"
               (keydown.enter)="selectDate(day.date)"
               tabindex="0"
-              class="flex flex-col items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
+              class="flex flex-col items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1 relative"
               [class.bg-gradient-to-b]="day.date === selectedDate() && theme.persona() === 'child'"
               [class.from-violet-500]="day.date === selectedDate() && theme.persona() === 'child'"
               [class.to-fuchsia-500]="day.date === selectedDate() && theme.persona() === 'child'"
@@ -58,6 +62,13 @@ import { ThemeService } from '../services/theme.service';
               [class.bg-blue-50]="day.isToday && day.date !== selectedDate() && theme.persona() === 'teen'"
               [class.bg-slate-100]="day.isToday && day.date !== selectedDate() && theme.persona() === 'adult'"
           >
+            @if (day.isMissed) {
+              <mat-icon class="absolute top-1 right-1 text-rose-500" style="font-size: 14px; width: 14px; height: 14px;">error_outline</mat-icon>
+            }
+            @if (day.isWarningToday) {
+              <mat-icon class="absolute top-1 right-1 text-amber-500 animate-pulse-slow" style="font-size: 16px; width: 16px; height: 16px;">warning</mat-icon>
+            }
+
             <span class="text-xs font-bold mb-1 uppercase tracking-wider"
                   [class.text-violet-100]="day.date === selectedDate() && theme.persona() === 'child'"
                   [class.text-blue-100]="day.date === selectedDate() && theme.persona() === 'teen'"
@@ -78,33 +89,88 @@ import { ThemeService } from '../services/theme.service';
     </div>
   `
 })
-export class AgendaComponent {
+export class AgendaComponent implements OnInit {
   theme = inject(ThemeService);
+  persistence = inject(PocketbaseAdapterService);
+  gamification = inject(GamificationService);
+  private destroyRef = inject(DestroyRef);
+
   currentDate = signal(new Date());
   selectedDate = signal(new Date().toISOString().split('T')[0]);
+  firstEntryDate = signal<string | null>(null);
+  daysWithEntries = signal<Set<string>>(new Set());
 
   dateSelected = output<string>();
 
-  weekDays = computed(() => {
-    const curr = new Date(this.currentDate());
-    const dayOfWeek = curr.getDay() || 7; // Make Sunday 7 instead of 0
-    const first = curr.getDate() - dayOfWeek + 1; // Monday
+  ngOnInit() {
+    this.persistence.getFirstEntryDate().pipe(take(1)).subscribe(date => {
+      this.firstEntryDate.set(date);
+    });
 
+    // Refresh week logs whenever gamification tells us to refresh
+    this.gamification.getGamificationState().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.loadWeekLogs();
+    });
+  }
+
+  loadWeekLogs() {
+    const days = this.calcWeekDays(this.currentDate());
+    const start = days[0].date;
+    const end = days[6].date;
+    this.persistence.getDailyLogs(start, end).subscribe(logs => {
+      const dates = new Set(logs.map(l => l.date));
+      this.daysWithEntries.set(dates);
+    });
+  }
+
+  private calcWeekDays(baseDate: Date) {
+    const curr = new Date(baseDate);
+    const dayOfWeek = curr.getDay() || 7;
+    const first = curr.getDate() - dayOfWeek + 1;
     const days = [];
-    const todayStr = new Date().toISOString().split('T')[0];
-
     for (let i = 0; i < 7; i++) {
       const d = new Date(curr);
       d.setDate(first + i);
-      const dateStr = d.toISOString().split('T')[0];
       days.push({
-        date: dateStr,
+        date: d.toISOString().split('T')[0],
         dayName: d.toLocaleDateString('fr-FR', { weekday: 'short' }).substring(0, 3),
-        dayNumber: d.getDate(),
-        isToday: dateStr === todayStr
+        dayNumber: d.getDate()
       });
     }
     return days;
+  }
+
+  weekDays = computed(() => {
+    const days = this.calcWeekDays(this.currentDate());
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const isAfter20h = today.getHours() >= 20;
+
+    const firstDate = this.firstEntryDate();
+    const entries = this.daysWithEntries();
+
+    return days.map(d => {
+      const hasEntry = entries.has(d.date);
+      const isToday = d.date === todayStr;
+      
+      let isMissed = false;
+      let isWarningToday = false;
+
+      if (!hasEntry) {
+        if (d.date < todayStr && firstDate && d.date > firstDate) {
+          isMissed = true;
+        } else if (isToday && isAfter20h) {
+          isWarningToday = true;
+        }
+      }
+
+      return {
+        ...d,
+        isToday,
+        isMissed,
+        isWarningToday
+      };
+    });
   });
 
   currentMonthYear = computed(() => {
@@ -115,12 +181,14 @@ export class AgendaComponent {
     const d = new Date(this.currentDate());
     d.setDate(d.getDate() - 7);
     this.currentDate.set(d);
+    this.loadWeekLogs();
   }
 
   nextWeek() {
     const d = new Date(this.currentDate());
     d.setDate(d.getDate() + 7);
     this.currentDate.set(d);
+    this.loadWeekLogs();
   }
 
   selectDate(date: string) {

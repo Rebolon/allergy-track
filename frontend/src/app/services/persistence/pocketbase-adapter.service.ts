@@ -59,4 +59,13 @@ export class PocketbaseAdapterService implements PersistenceAdapter {
         totalItems: response.totalItems
       })));
   }
+
+  getFirstEntryDate(): Observable<string | null> {
+    const params = {
+      sort: 'date,created',
+      perPage: '1'
+    };
+    return this.http.get<{ items: DailyLog[] }>(`${this.apiUrl}/daily_logs/records`, { params })
+      .pipe(map(response => response.items.length > 0 ? response.items[0].date : null));
+  }
 }
