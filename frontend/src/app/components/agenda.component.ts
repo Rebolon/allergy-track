@@ -63,10 +63,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
               [class.bg-slate-100]="day.isToday && day.date !== selectedDate() && theme.persona() === 'adult'"
           >
             @if (day.isMissed) {
-              <mat-icon class="absolute top-1 right-1 text-rose-500" style="font-size: 14px; width: 14px; height: 14px;">error_outline</mat-icon>
+              <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></div>
             }
             @if (day.isWarningToday) {
-              <mat-icon class="absolute top-1 right-1 text-amber-500 animate-pulse-slow" style="font-size: 16px; width: 16px; height: 16px;">warning</mat-icon>
+              <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 shadow-sm shadow-amber-200 animate-pulse-slow"></div>
             }
 
             <span class="text-xs font-bold mb-1 uppercase tracking-wider"
@@ -74,13 +74,18 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                   [class.text-blue-100]="day.date === selectedDate() && theme.persona() === 'teen'"
                   [class.text-slate-300]="day.date === selectedDate() && theme.persona() === 'adult'"
                   [class.text-violet-400]="day.date !== selectedDate() && theme.persona() === 'child'"
-                  [class.text-slate-500]="day.date !== selectedDate() && theme.persona() !== 'child'">
+                  [class.text-slate-400]="day.date !== selectedDate() && theme.persona() !== 'child'">
               {{ day.dayName }}
             </span>
-            <span class="text-xl font-black"
-                  [class.text-violet-600]="day.isToday && day.date !== selectedDate() && theme.persona() === 'child'"
-                  [class.text-blue-600]="day.isToday && day.date !== selectedDate() && theme.persona() === 'teen'"
-                  [class.text-slate-800]="day.isToday && day.date !== selectedDate() && theme.persona() === 'adult'">
+            <span class="text-xl font-black transition-colors"
+                  [class.text-white]="day.date === selectedDate()"
+                  [class.text-rose-500]="day.isMissed && day.date !== selectedDate()"
+                  [class.text-amber-500]="day.isWarningToday && day.date !== selectedDate()"
+                  [class.animate-pulse-slow]="day.isWarningToday && day.date !== selectedDate()"
+                  [class.text-violet-600]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'child'"
+                  [class.text-blue-600]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'teen'"
+                  [class.text-slate-800]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'adult'"
+                  [class.text-slate-700]="!day.isToday && !day.isMissed && day.date !== selectedDate()">
               {{ day.dayNumber }}
             </span>
           </div>
@@ -103,13 +108,12 @@ export class AgendaComponent implements OnInit {
   dateSelected = output<string>();
 
   ngOnInit() {
-    this.persistence.getFirstEntryDate().pipe(take(1)).subscribe(date => {
-      this.firstEntryDate.set(date);
-    });
+    this.refreshFirstEntryDate();
 
     // Refresh week logs whenever gamification tells us to refresh
     this.gamification.getGamificationState().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.loadWeekLogs();
+      this.refreshFirstEntryDate();
     });
   }
 
@@ -123,6 +127,12 @@ export class AgendaComponent implements OnInit {
     });
   }
 
+  refreshFirstEntryDate() {
+    this.persistence.getFirstEntryDate().pipe(take(1)).subscribe(date => {
+      this.firstEntryDate.set(date);
+    });
+  }
+
   private calcWeekDays(baseDate: Date) {
     const curr = new Date(baseDate);
     const dayOfWeek = curr.getDay() || 7;
@@ -131,8 +141,15 @@ export class AgendaComponent implements OnInit {
     for (let i = 0; i < 7; i++) {
       const d = new Date(curr);
       d.setDate(first + i);
+      
+      // Formatage YYYY-MM-DD local
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+
       days.push({
-        date: d.toISOString().split('T')[0],
+        date: dateStr,
         dayName: d.toLocaleDateString('fr-FR', { weekday: 'short' }).substring(0, 3),
         dayNumber: d.getDate()
       });
@@ -143,7 +160,10 @@ export class AgendaComponent implements OnInit {
   weekDays = computed(() => {
     const days = this.calcWeekDays(this.currentDate());
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${y}-${m}-${d}`;
     const isAfter20h = today.getHours() >= 20;
 
     const firstDate = this.firstEntryDate();
