@@ -1,6 +1,10 @@
 services:
   allergy-track:
-    build: .
+    build:
+      context: .
+      args:
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+        GIT_HASH: ${GIT_HASH:-unknown}
     image: allergy-track:latest
     restart: unless-stopped
     ports:

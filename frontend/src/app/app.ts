@@ -12,6 +12,7 @@ import { CopywritingService } from './services/copywriting.service';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
+import { VERSION } from '../environments/version';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -129,6 +130,16 @@ import { startWith } from 'rxjs';
           
         </div>
         
+        <!-- Footer -->
+        <footer class="mt-12 pt-8 border-t border-slate-200/50 text-center pb-8 opacity-50 hover:opacity-100 transition-opacity">
+          <p class="text-xs font-medium tracking-wide flex flex-col gap-1">
+            <span>© 2024-{{currentYear}} AllergyTrack • Tous droits réservés</span>
+            <span class="font-mono text-[10px] bg-slate-100 px-2 py-0.5 rounded-full inline-block mx-auto">
+              v.{{version.buildDate}} ({{version.hash}})
+            </span>
+          </p>
+        </footer>
+        
       </main>
 
       <!-- Settings Modal -->
@@ -185,6 +196,9 @@ export class App implements OnInit {
   notification = inject(NotificationService);
   gamification = inject(GamificationService);
   copy = inject(CopywritingService);
+  
+  version = VERSION;
+  currentYear = new Date().getFullYear();
 
   selectedDate = signal(new Date().toISOString().split('T')[0]);
   showSettings = signal(false);

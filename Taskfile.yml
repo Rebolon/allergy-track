@@ -13,6 +13,7 @@ tasks:
   build:
     desc: Build de l'application Angular
     cmds:
+      - task: generate-version
       - cd frontend && npm run build
 
   start:
@@ -39,7 +40,10 @@ tasks:
   build-and-start:
     desc: Construit l'image Docker et redémarre l'application
     cmds:
-      - "{{.SUDO}} docker compose up -d --build"
+      - |
+        BUILD_DATE=$(date +%Y-%m-%d_%H:%M) \
+        GIT_HASH=$(git rev-parse --short HEAD || echo "no-git") \
+        {{.SUDO}} docker compose up -d --build
 
   upsert-admin:
     desc: Crée ou met à jour un utilisateur administrateur (Docker)
@@ -71,4 +75,13 @@ tasks:
     desc: Met à jour l'application (git pull + rebuild Docker) sur le Synology
     cmds:
       - git pull
-      - "{{.SUDO}} docker compose up -d --build"
+      - |
+        BUILD_DATE=$(date +%Y-%m-%d_%H:%M) \
+        GIT_HASH=$(git rev-parse --short HEAD || echo "no-git") \
+        {{.SUDO}} docker compose up -d --build
+
+  generate-version:
+    internal: true
+    cmds:
+      - |
+        echo "export const VERSION = { buildDate: '$(date +%Y-%m-%d_%H:%M)', hash: '$(git rev-parse --short HEAD || echo "no-git")' };" > frontend/src/environments/version.ts

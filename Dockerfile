@@ -9,6 +9,13 @@ RUN npm install
 
 # Copy frontend source and build
 COPY frontend/ .
+
+# Inject version
+ARG BUILD_DATE=unknown
+ARG GIT_HASH=unknown
+RUN mkdir -p src/environments && \
+    echo "export const VERSION = { buildDate: '${BUILD_DATE}', hash: '${GIT_HASH}' };" > src/environments/version.ts
+
 RUN npm run build -- --configuration production
 
 # --- Production Stage (PocketBase) ---
