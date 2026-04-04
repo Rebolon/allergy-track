@@ -1,7 +1,7 @@
 version: "3"
 
 vars:
-  SUDO: 'sudo' # Modifiez en '' si vous ne voulez pas utiliser sudo par défaut
+  SUDO: '' # Modifiez en 'sudo' si nécessaire sur Synology
 
 
 tasks:
@@ -54,10 +54,10 @@ tasks:
       PASS: 'admin123456'
 
   reset-db:
-    desc: Réinitialise la base de données Pocketbase en supprimant son dossier de données local (./var/pb_data)
+    desc: Réinitialise la base de données (Volume nommé Docker)
     cmds:
       - task: stop
-      - "{{.SUDO}} docker run --rm -v $(pwd)/var/pb_data:/srv/pb_data alpine sh -c \"rm -rf /srv/pb_data/* /srv/pb_data/.[!.]* ; chmod 777 /srv/pb_data\""
+      - "{{.SUDO}} docker volume rm allergy-track_pb_data"
       - task: start
 
   test-docker:

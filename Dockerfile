@@ -32,6 +32,10 @@ COPY backend/pb_hooks /srv/pb_hooks
 COPY backend/pb_migrations /srv/pb_migrations
 COPY backend/schema.json /srv/schema.json
 
+# Switch to root to create directory and set permissions
+USER root
+RUN mkdir -p /srv/pb_data && chmod 777 /srv/pb_data
+
 # Expose the default PocketBase port
 EXPOSE 8090
 

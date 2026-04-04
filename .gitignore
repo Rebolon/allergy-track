@@ -11,11 +11,6 @@ node_modules/
 frontend/dist/
 frontend/.angular/
 
-# Local data for development and runtime
-/var/
-backend/pb_data/
-!backend/pb_data/.gitkeep
-
 # System files
 .DS_Store
 Thumbs.db
