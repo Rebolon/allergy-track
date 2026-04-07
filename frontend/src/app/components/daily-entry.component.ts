@@ -56,22 +56,6 @@ import { startWith } from 'rxjs';
           </div>
         }
 
-        @if (gState()?.hasMissedYesterday && gState()?.hasPreviousRecords && gState()?.perfectStreak === 0 && !form.disabled) {
-          <div class="mb-8 p-4 rounded-2xl flex items-center gap-3 font-bold border-2"
-               [class.bg-rose-100]="theme.persona() === 'child'"
-               [class.text-rose-800]="theme.persona() === 'child'"
-               [class.border-rose-200]="theme.persona() === 'child'"
-               [class.bg-slate-800]="theme.persona() === 'teen'"
-               [class.text-rose-400]="theme.persona() === 'teen'"
-               [class.border-rose-900]="theme.persona() === 'teen'"
-               [class.bg-rose-50]="theme.persona() === 'adult'"
-               [class.text-rose-900]="theme.persona() === 'adult'"
-               [class.border-rose-200]="theme.persona() === 'adult'">
-            <span class="text-2xl">⚠️</span>
-            {{ copy.streakBrokenMessage() }}
-          </div>
-        }
-
         <!-- Intakes -->
         <div class="mb-8" [ngClass]="theme.protocolSection()">
           <h3 class="text-xl font-bold mb-4 flex items-center gap-2" [class.text-emerald-800]="theme.persona() === 'child'">
