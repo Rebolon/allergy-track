@@ -25,16 +25,27 @@ import { startWith } from 'rxjs';
           <div class="flex flex-col items-end gap-2">
             @if (theme.persona() === 'adult') {
               <div class="flex gap-4">
-                <!-- Regular Streak (Flame) -->
-                @if (g.regularStreak > 0) {
+                <!-- Tier 1: Flame 🔥 (Regularity) -->
+                @if (g.tier === 'flame' && g.regularStreak > 0) {
                   <div class="flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-xl border-2 shadow-sm bg-white text-slate-800 border-slate-200">
                     🔥 {{ copy.streakTitle() }} {{ g.regularStreak }}
                   </div>
                 }
-                <!-- Perfect Streak (Star) -->
-                @if (g.perfectStreak > 0) {
-                  <div class="flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-xl border-2 shadow-sm bg-white text-slate-800 border-slate-200">
-                    ⭐ Parfait {{ g.perfectStreak }}
+                <!-- Tier 2: Star ⭐ (Perfect Weeks) -->
+                @if (g.tier === 'star') {
+                  <div class="flex flex-col items-center gap-1">
+                    <div class="flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-xl border-2 shadow-sm bg-white text-slate-800 border-slate-200">
+                      ⭐ {{ g.starsCount }} {{ g.starsCount > 1 ? 'Semaines Parfaites' : 'Semaine Parfaite' }}
+                    </div>
+                    @if (g.daysToNextStar > 0) {
+                      <span class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">Prochaine étoile dans {{ g.daysToNextStar }} {{ g.daysToNextStar > 1 ? 'jours' : 'jour' }}</span>
+                    }
+                  </div>
+                }
+                <!-- Tier 3: Trophy 🏆 (Elite Perfection) -->
+                @if (g.tier === 'trophy') {
+                  <div class="flex items-center gap-2 px-6 py-2 rounded-2xl font-black text-2xl border-2 shadow-lg bg-gradient-to-r from-amber-50 to-white text-amber-600 border-amber-200 animate-pulse">
+                    🏆 Maître de l'Excellence
                   </div>
                 }
               </div>

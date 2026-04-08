@@ -21,20 +21,23 @@ Chaque jour, l'enfant doit enregistrer la prise de ses doses d'allergènes (ex: 
 
 ---
 
-## 🎮 Gamification & Streaks
+### 🎮 Système de Progression (Tiers)
+L'application utilise une progression par paliers pour récompenser la régularité et la perfection, en évitant la lassitude :
 
-L'application utilise deux types de compteurs pour encourager la régularité :
+1.  **🔥 Tier 1 : Flamme de Régularité**
+    *   **Condition** : Moins de 7 jours de perfection consécutifs.
+    *   **Affichage** : Nombre de jours avec au moins 1 dose prise. Encourager le début du traitement.
 
-### 🔥 Flamme de Régularité (Regular Streak)
-- **Objectif** : Encourager la saisie quotidienne du journal.
-- **Règle** : S'incrémente si **au moins 1 dose** est prise dans la journée.
-- **Rupture** : La flamme tombe à zéro si une journée complète est manquée (0 dose prise ou pas de saisie).
+2.  **⭐ Tier 2 : Étoile Parfaite (Mode Semaines)**
+    *   **Condition** : Dès 7 jours de perfection (100% des doses).
+    *   **Evolution** : La Flamme est remplacée par l'Étoile.
+    *   **Unité** : On compte en **Semaines Parfaites** (1 étoile = 7 jours). Le score n'évolue que tous les 7 jours.
+    *   **Engagement** : Un compte à rebours ("J-X avant la prochaine étoile") incite à maintenir la perfection.
 
-### ⭐ Étoile Parfaite (Perfect Streak)
-- **Objectif** : Récompenser le respect strict du protocole médical.
-- **Règle** : S'incrémente uniquement si **100% des doses** prévues sont prises.
-- **Condition d'affichage** : L'étoile ne devient visible qu'après **7 jours consécutifs** de flamme régulière.
-- **Récompense** : Des confettis explosent tous les 7 jours de perfection (7, 14, 21...).
+3.  **🏆 Tier 3 : Trophée d'Excellence**
+    *   **Condition** : 4 semaines de perfection accumulées (28 jours).
+    *   **Evolution** : L'Étoile est remplacée par le Trophée.
+    *   **Récompense** : Marque le passage à un niveau d'expertise médicale et de maîtrise du protocole.
 
 ---
 

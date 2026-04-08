@@ -7,6 +7,12 @@ import confetti from 'canvas-confetti';
 export interface GamificationState {
   regularStreak: number;
   perfectStreak: number;
+  // Système de Tiers
+  tier: 'flame' | 'star' | 'trophy';
+  starsCount: number;
+  daysToNextStar: number;
+  trophyCount: number;
+  
   hasMissedToday: boolean;
   hasMissedYesterday: boolean;
   hasPreviousRecords: boolean;
@@ -44,6 +50,10 @@ export class GamificationService {
         const state: GamificationState = {
           regularStreak: 0,
           perfectStreak: 0,
+          tier: 'flame',
+          starsCount: 0,
+          daysToNextStar: 7,
+          trophyCount: 0,
           hasMissedToday: false,
           hasMissedYesterday: false,
           hasPreviousRecords: logs.length > 0,
@@ -103,8 +113,20 @@ export class GamificationService {
         }
 
         state.regularStreak = currentRegular;
-        // Le "Parfait" (Étoile) ne se débloque/s'affiche que si la flamme a tenu au moins 7 jours consécutifs.
-        state.perfectStreak = currentRegular >= 7 ? currentPerfect : 0;
+        state.perfectStreak = currentPerfect;
+
+        // Logique des Tiers
+        if (currentPerfect >= 28) {
+          state.tier = 'trophy';
+          state.trophyCount = Math.floor(currentPerfect / 28);
+        } else if (currentPerfect >= 7) {
+          state.tier = 'star';
+          state.starsCount = Math.floor(currentPerfect / 7);
+          state.daysToNextStar = 7 - (currentPerfect % 7);
+        } else {
+          state.tier = 'flame';
+        }
+
         state.showCongratulation = currentRegular >= 14;
 
         return state;
