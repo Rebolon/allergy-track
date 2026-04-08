@@ -68,3 +68,23 @@ Les symptômes sont classés par gravité pour le calcul du statut :
 - **Sévères** : Respiratoire, Abdominal, Autres.
 
 La prise de traitements (Antihistaminique, Aerius, Adrénaline) déclenche automatiquement un statut **ROUGE** dans la supervision car elle indique une réaction allergique traitée.
+
+---
+
+## 🔧 Résilience & Erreurs Distantes
+
+L'application Allergy Track est conçue pour être résiliente face aux éventuelles coupures réseau ou indisponibilités du serveur PocketBase.
+
+### Détection des Erreurs
+Un **HTTP Interceptor** surveille toutes les communications avec l'API. Deux types d’erreurs critiques sont capturés :
+1.  **Erreurs Réseau (Status 0)** : Le serveur est injoignable (problème de connexion internet ou serveur éteint).
+2.  **Erreurs Critiques (Status >= 500)** : Le serveur rencontre une erreur interne majeure.
+
+### Gestion du Blocage
+Dès qu'une telle erreur survient lors du chargement initial ou d'une action utilisateur :
+- Un **Service d'Erreur Global** (`ErrorService`) est notifié via un Signal.
+- Une **Modale de Blocage** ("Oups il y a un problème !") s'affiche au-dessus de toute l'interface.
+- L'utilisateur est empêché d'interagir avec des données potentiellement obsolètes ou de faire des saisies qui ne pourraient pas être sauvegardées.
+
+### Récupération
+La modale propose un bouton **"Réessayer"** qui force le rechargement complet de la page (`window.location.reload()`). Cela permet de réinitialiser l'application proprement dès que le lien avec le serveur est rétabli.

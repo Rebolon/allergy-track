@@ -12,6 +12,7 @@ L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'a
   - 🔥 **Flamme de Régularité** : Récompense simplement le fait de maintenir le rythme et de remplir le journal, même partiellement.
   - ⭐ **L'Étoile Parfaite** : Récompense les parcours sans-fautes (100% des doses prévues cochées). Des **Confettis** explosent à des intervalles précis (7, 14, 21 jours parfaits consécutifs) !
 - **Tableau de Bord Sprint** : Visualisation en mode feu tricolore (VERT, ORANGE, ROUGE) de l'état de santé sur le mois en cours.
+- **Résilience & Gestion d'Erreurs** : Système de détection automatique des pertes de connexion avec le serveur distant. En cas de coupure (réseau ou serveur), une modale de blocage sécurise l'application et propose une reconnexion par rafraîchissement.
 
 ## 🛠️ Stack Technique
 

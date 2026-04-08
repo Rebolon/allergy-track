@@ -10,6 +10,7 @@ import { NotificationService } from './services/notification.service';
 import { GamificationService } from './services/gamification.service';
 import { CopywritingService } from './services/copywriting.service';
 import { MatIconModule } from '@angular/material/icon';
+import { ErrorService } from './services/error.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
 import { VERSION } from '../environments/version';
@@ -25,7 +26,7 @@ import { VERSION } from '../environments/version';
     AuditLogComponent,
     MatIconModule,
     NgClass
-],
+  ],
   template: `
     <div class="min-h-screen pb-12 transition-colors duration-500" [ngClass]="[theme.bgClass(), theme.textClass(), theme.fontClass()]">
       
@@ -187,6 +188,21 @@ import { VERSION } from '../environments/version';
           </div>
         </div>
       }
+
+      <!-- Global Error Modal -->
+      @if (errorService.serverError(); as serverErrorMsg) {
+        <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div class="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl space-y-6 shadow-rose-500/20 transform animate-in zoom-in duration-300">
+            <div class="text-6xl mb-4 animate-bounce">🔌</div>
+            <h2 class="text-2xl font-black text-rose-600">Oups il y a un problème!</h2>
+            <p class="text-slate-600 font-bold text-lg leading-relaxed">{{ serverErrorMsg }}</p>
+            <button (click)="reloadPage()" class="mt-8 px-6 py-4 w-full rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-black text-lg transition-all transform hover:scale-105 shadow-xl flex items-center justify-center gap-3">
+              <mat-icon>refresh</mat-icon>
+              Réessayer
+            </button>
+          </div>
+        </div>
+      }
     </div>
   `
 })
@@ -196,14 +212,15 @@ export class App implements OnInit {
   notification = inject(NotificationService);
   gamification = inject(GamificationService);
   copy = inject(CopywritingService);
-  
+  errorService = inject(ErrorService);
+
   version = VERSION;
   currentYear = new Date().getFullYear();
 
   selectedDate = signal(this.getTodayStr());
   showSettings = signal(false);
   currentTheme = signal<'flashy' | 'classic'>('flashy');
-  
+
   gState = toSignal(this.gamification.getGamificationState().pipe(startWith(null)));
 
   ngOnInit() {
@@ -241,5 +258,9 @@ export class App implements OnInit {
 
   onDateSelected(date: string) {
     this.selectedDate.set(date);
+  }
+
+  reloadPage() {
+    window.location.reload();
   }
 }
