@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "AllergiTrack API",
+    "title": "AllergyTrack API",
     "version": "1.0.0",
     "description": "API pour le suivi médical de désensibilisation alimentaire."
   },

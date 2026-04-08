@@ -19,6 +19,15 @@ Chaque jour, l'enfant doit enregistrer la prise de ses doses d'allergènes (ex: 
 - **Prise Partielle** : Au moins une dose cochée mais pas toutes.
 - **Oubli** : Aucune dose cochée ou journée non saisie.
 
+### 📅 Indicateurs Visuels (Calendrier)
+Le calendrier ("Agenda") offre un aperçu visuel immédiat du suivi du protocole à l'aide de plusieurs **pastilles** par jour :
+
+- 🔴 **Pastille Rouge** : La journée est validée comme un **oubli complet** (aucune saisie enregistrée après le 1er jour).
+- 🟡 **Pastille Jaune (clignotante)** : Avertissement de fin de journée. Aucune donnée saisie pour le jour actuel **et il est plus de 20h00**.
+- 🟠 **Pastille Orange** : La journée comporte un **déficit** ou un **recul** par rapport au protocole normal. Elle apparait si :
+  - **Dose(s) non prise(s)** : Le journal existe mais au moins l'un des allergènes n'a pas été administré (Prise Partielle).
+  - **Baisse de quantité** : La quantité totale ingérée aujourd'hui est *strictement inférieure* à la quantité de la journée documentée précédente.
+
 ---
 
 ### 🎮 Système de Progression (Tiers)
