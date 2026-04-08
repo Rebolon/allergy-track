@@ -20,42 +20,6 @@ import { startWith } from 'rxjs';
         <h2 class="text-2xl font-black flex items-center gap-3" [class.text-violet-800]="theme.persona() === 'child'">
           <span class="text-3xl">📅</span> Mon Journal du {{ date() | date:'dd/MM/yyyy' }}
         </h2>
-
-        @if (gState(); as g) {
-          <div class="flex flex-col items-end gap-2">
-            @if (theme.persona() === 'adult') {
-              <div class="flex gap-4">
-                <!-- Tier 1: Flame 🔥 (Regularity) -->
-                @if (g.tier === 'flame' && g.regularStreak > 0) {
-                  <div class="flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-xl border-2 shadow-sm bg-white text-slate-800 border-slate-200">
-                    🔥 {{ copy.streakTitle() }} {{ g.regularStreak }}
-                  </div>
-                }
-                <!-- Tier 2: Star ⭐ (Perfect Weeks) -->
-                @if (g.tier === 'star') {
-                  <div class="flex flex-col items-center gap-1">
-                    <div class="flex items-center gap-2 px-4 py-2 rounded-2xl font-black text-xl border-2 shadow-sm bg-white text-slate-800 border-slate-200">
-                      ⭐ {{ g.starsCount }} {{ g.starsCount > 1 ? 'Semaines Parfaites' : 'Semaine Parfaite' }}
-                    </div>
-                    @if (g.daysToNextStar > 0) {
-                      <span class="text-[10px] uppercase tracking-wider font-extrabold text-slate-400">Prochaine étoile dans {{ g.daysToNextStar }} {{ g.daysToNextStar > 1 ? 'jours' : 'jour' }}</span>
-                    }
-                  </div>
-                }
-                <!-- Tier 3: Trophy 🏆 (Elite Perfection) -->
-                @if (g.tier === 'trophy') {
-                  <div class="flex items-center gap-2 px-6 py-2 rounded-2xl font-black text-2xl border-2 shadow-lg bg-gradient-to-r from-amber-50 to-white text-amber-600 border-amber-200 animate-pulse">
-                    🏆 Maître de l'Excellence
-                  </div>
-                }
-              </div>
-            }
-            
-            @if (g.showCongratulation) {
-              <span class="text-xs font-bold text-orange-500">✨ Suivi régulier, c'est super pour le traitement ! ✨</span>
-            }
-          </div>
-        }
       </div>
 
       <form [formGroup]="form" (ngSubmit)="save()">
@@ -220,8 +184,6 @@ export class DailyEntryComponent {
   saveError = signal<string | null>(null);
   submitAttempted = signal(false);
 
-  gState = toSignal(this.gamification.getGamificationState().pipe(startWith(null)));
-
   availableSymptoms: Symptom[] = ['Rien', 'Démangeaisons bouche', 'Respiratoire', 'Abdominal', 'Autres'];
 
   constructor() {
@@ -313,14 +275,8 @@ export class DailyEntryComponent {
       next: () => {
         this.saveSuccess.set(true);
         this.saveError.set(null);
-        // We trigger refresh which recalculates
+        // We trigger refresh which recalculates and handles UI feedback
         this.gamification.refresh();
-        // And we check for celebration manually via subscription if needed,
-        // Since getGamificationState exposes an observable, we'll let check happen.
-        const currentState = this.gState();
-        if (currentState) {
-           this.gamification.checkAndCelebrate(currentState);
-        }
         setTimeout(() => this.saveSuccess.set(false), 3000);
       },
       error: (err) => {
