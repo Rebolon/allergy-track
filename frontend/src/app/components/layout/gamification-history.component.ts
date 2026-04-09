@@ -42,14 +42,16 @@ import { ThemeService } from '../../services/theme.service';
 
                 <!-- Détails -->
                 <div class="flex-1 pt-1">
-                  <div class="flex justify-between items-center mb-1">
-                    <span class="text-sm font-black text-slate-400 uppercase tracking-wider">{{ event.date | date:'dd MMMM' }}</span>
+                    <span class="text-sm font-black text-slate-400 uppercase tracking-wider">{{ event.date | date:'dd MMMM':'':'fr' }}</span>
                     @if (event.change > 0) {
-                      <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black">+1 {{ event.type === 'star' ? 'Étoile' : 'Jour' }}</span>
+                      @switch (event.type) {
+                        @case ('trophy') { <span class="px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-700 text-xs font-black">+1 Trophée</span> }
+                        @case ('star') { <span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-black">+1 Étoile</span> }
+                        @case ('flame') { <span class="px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 text-xs font-black">+1 Jour</span> }
+                      }
                     } @else {
                       <span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 text-xs font-black">Série arrêtée</span>
                     }
-                  </div>
                   <p class="text-slate-700 font-bold leading-tight">{{ event.reason }}</p>
                 </div>
               </div>
