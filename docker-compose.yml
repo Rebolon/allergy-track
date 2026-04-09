@@ -1,7 +1,10 @@
+version: '3.8'
+
 services:
   allergy-track:
     build:
       context: .
+      dockerfile: Dockerfile
       args:
         BUILD_DATE: ${BUILD_DATE:-unknown}
         GIT_HASH: ${GIT_HASH:-unknown}
@@ -11,8 +14,30 @@ services:
       - "8090:8090"
     volumes:
       - pb_data:/srv/pb_data
-    # No need for absolute paths or complex commands here,
-    # as the Dockerfile handles the structure and entrypoint.
+    networks:
+      - allergy-network
+
+  push-service:
+    build:
+      context: ./backend/push-service
+      dockerfile: Dockerfile
+    image: allergy-track-push:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=mailto:${PUSH_EMAIL:-admin@allergy-track.local}
+      - POCKETBASE_URL=http://allergy-track:8090
+      - POCKETBASE_TOKEN=${POCKETBASE_TOKEN:-}
+      - REMINDER_HOUR=${REMINDER_HOUR:-20}
+    networks:
+      - allergy-network
+
+networks:
+  allergy-network:
+    driver: bridge
 
 volumes:
   pb_data:

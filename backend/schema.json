@@ -163,5 +163,28 @@
     "options": {
       "query": "SELECT id, date, intakes, symptoms, treatments, note, updatedBy, MAX(created) as created, updated FROM daily_logs GROUP BY date"
     }
+  },
+  {
+    "name": "push_subscriptions",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "name": "userId", "type": "text", "required": true },
+      { "name": "endpoint", "type": "url", "required": true },
+      { "name": "keys", "type": "json", "required": true },
+      { "name": "expirationTime", "type": "number", "required": false }
+    ]
+  },
+  {
+    "name": "sent_notifications",
+    "type": "base",
+    "system": false,
+    "schema": [
+      { "name": "userId", "type": "text", "required": true },
+      { "name": "notificationDate", "type": "text", "required": true },
+      { "name": "notificationType", "type": "select", "required": true, "options": { "values": ["daily_reminder", "streak_warning", "perfect_achievement", "custom"] } },
+      { "name": "sentAt", "type": "date", "required": true },
+      { "name": "payload", "type": "json", "required": false }
+    ]
   }
 ]

@@ -1,53 +1,83 @@
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { LocalStorageAdapterService } from './persistence/local-storage-adapter.service';
+import { PushService } from './push.service';
+import { DailyLog } from '../models/allergi-track.model';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-    private persistence = inject(LocalStorageAdapterService);
-    private platformId = inject(PLATFORM_ID);
-    private hasNotifiedToday = false;
-    private intervalId: any | null = null;
+  private persistence = inject(LocalStorageAdapterService);
+  private pushService = inject(PushService);
+  private platformId = inject(PLATFORM_ID);
 
-    init() {
-        if (isPlatformBrowser(this.platformId) && 'Notification' in window) {
-            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-                Notification.requestPermission();
-            }
+  private checkIntervalId: ReturnType<typeof setInterval> | null = null;
 
-            // Check every minute
-            this.intervalId = setInterval(() => this.checkTime(), 60000);
-            this.checkTime(); // Check immediately on load
-        }
+  async init(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    await this.pushService.init();
+
+    const supported = await this.pushService.isSupported();
+    if (!supported) {
+      console.warn('[Notification] Push notifications not supported');
+      return;
     }
 
-    private checkTime() {
-        const now = new Date();
-        const hours = now.getHours();
-
-        // Reset flag at midnight
-        if (hours < 20) {
-            this.hasNotifiedToday = false;
-        }
-
-        if (hours >= 20 && !this.hasNotifiedToday) {
-            const today = now.toISOString().split('T')[0];
-            this.persistence.getDailyLog(today).subscribe(log => {
-                // If no log today, or if log exists but some intakes are not taken
-                if (!log || log.intakes.some(i => !i.taken)) {
-                    this.sendNotification("N'oublie pas tes allergènes aujourd'hui ! 🥜");
-                    this.hasNotifiedToday = true;
-                }
-            });
-        }
+    const permission = await this.pushService.getPermissionStatus();
+    if (permission === 'unsupported') {
+      console.warn('[Notification] Notifications not supported');
+      return;
     }
 
-    private sendNotification(message: string) {
-        if (Notification.permission === 'granted') {
-            new Notification('AllergiTrack', {
-                body: message,
-                icon: '/favicon.ico'
-            });
-        }
+    if (permission !== 'granted' && permission !== 'denied') {
+      Notification.requestPermission();
     }
+
+    this.startDailyCheck();
+  }
+
+  async subscribe(userId: string): Promise<boolean> {
+    return this.pushService.subscribe(userId);
+  }
+
+  async unsubscribe(userId: string): Promise<void> {
+    return this.pushService.unsubscribe(userId);
+  }
+
+  async sendReminder(userId: string, message: string): Promise<number> {
+    return this.pushService.sendToUser(userId, {
+      title: 'AllergyTrack - Rappel',
+      body: message,
+      icon: '/icons/icon-192x192.png'
+    });
+  }
+
+  private startDailyCheck(): void {
+    if (this.checkIntervalId) {
+      clearInterval(this.checkIntervalId);
+    }
+
+    this.checkIntervalId = setInterval(() => this.checkAndNotify(), 60 * 60 * 1000);
+    this.checkAndNotify();
+  }
+
+  private async checkAndNotify(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+
+    if (hours === 20 && minutes < 5) {
+      const today = now.toISOString().split('T')[0];
+      
+      const log = await new Promise<DailyLog | null>((resolve) => {
+        this.persistence.getDailyLog(today).subscribe(resolve);
+      });
+
+      if (!log || log.intakes.some((i) => !i.taken)) {
+        console.log('[Notification] Sending daily reminder push');
+      }
+    }
+  }
 }
