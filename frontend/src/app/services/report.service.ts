@@ -27,6 +27,10 @@ export class ReportService {
         const end = new Date(eYear, eMonth - 1, eDay);
         let current = new Date(start);
 
+        let status: 'VERT' | 'ORANGE' | 'ROUGE' = 'VERT';
+        let hasAntihistamineDouble = false;
+        let hasOtherMeds = false;
+
         while (current <= end) {
           const y = current.getFullYear();
           const m = String(current.getMonth() + 1).padStart(2, '0');
@@ -46,24 +50,37 @@ export class ReportService {
             totalSevereSymptoms += severeSymptoms;
             totalMildSymptoms += mildSymptoms;
 
-            const treatmentsTaken = log.treatments.filter(t => t.before || t.after).length;
-            totalTreatments += treatmentsTaken;
+            // Logique spécifique des traitements
+            log.treatments.forEach(t => {
+                if (t.before || t.after) {
+                    if (t.name.toLowerCase().includes('antihistaminique')) {
+                        // S'il y a à la fois AVANT et APRÈS, c'est une double dose
+                        if (t.before && t.after) {
+                            hasAntihistamineDouble = true;
+                        }
+                    } else {
+                        // Tout autre médicament (Aerius, Adrénaline, etc.)
+                        hasOtherMeds = true;
+                    }
+                }
+            });
           } else {
-            // Un jour sans saisie est considéré comme un oubli (1 oubli pour la journée)
+            // Un jour sans saisie est considéré comme un oubli
             totalMisses += 1;
           }
           current.setDate(current.getDate() + 1);
         }
 
-        const hasSevereSymptomsOrMeds = totalSevereSymptoms > 0 || totalTreatments > 0;
-
-        let status: 'VERT' | 'ORANGE' | 'ROUGE' = 'VERT';
-
-        if (totalMisses > 2 || hasSevereSymptomsOrMeds) {
+        // Priorité ROUGE
+        if (totalMisses > 2 || totalSevereSymptoms > 0 || hasOtherMeds) {
           status = 'ROUGE';
-        } else if ((totalMisses > 0 && totalMisses <= 2) || totalMildSymptoms > 0) {
+        } 
+        // Priorité ORANGE
+        else if (totalMisses > 0 || totalMildSymptoms > 0 || hasAntihistamineDouble) {
           status = 'ORANGE';
-        } else {
+        } 
+        // Reste VERT
+        else {
           status = 'VERT';
         }
 
