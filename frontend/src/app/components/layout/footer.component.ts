@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { VERSION } from '../../../environments/version';
 
 @Component({

@@ -1,5 +1,5 @@
 import { Component, PLATFORM_ID, inject, signal } from '@angular/core';
-import { NgClass, isPlatformBrowser } from '@angular/common';
+import { NgClass, isPlatformBrowser, AsyncPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../services/report.service';
 import { GamificationService } from '../services/gamification.service';
@@ -7,12 +7,15 @@ import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { HealthStatus } from '../models/allergi-track.model';
 import { MatIconModule } from '@angular/material/icon';
+import { GamificationHistoryComponent } from './layout/gamification-history.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, MatIconModule, NgClass],
+  imports: [FormsModule, MatIconModule, NgClass, AsyncPipe, GamificationHistoryComponent],
   template: `
+    <app-gamification-history [state]="gamification.getGamificationState() | async" />
+
     <div [ngClass]="theme.cardClass()" class="p-6 mb-6">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-black flex items-center gap-3" [class.text-violet-800]="theme.persona() === 'child'">

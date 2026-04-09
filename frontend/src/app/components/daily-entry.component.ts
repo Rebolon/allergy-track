@@ -7,8 +7,6 @@ import { CopywritingService } from '../services/copywriting.service';
 import { GamificationService } from '../services/gamification.service';
 import { MatIconModule } from '@angular/material/icon';
 import { Symptom } from '../models/allergi-track.model';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
 
 @Component({
   selector: 'app-daily-entry',
@@ -241,7 +239,7 @@ export class DailyEntryComponent {
     } else {
       this.symptoms.push(new FormControl(symptom));
     }
-    
+
     this.form.markAsDirty();
   }
 
@@ -267,7 +265,7 @@ export class DailyEntryComponent {
 
   save() {
     this.submitAttempted.set(true);
-    
+
     // Empêcher la sauvegarde si le formulaire est invalide
     if (this.form.invalid) return;
 

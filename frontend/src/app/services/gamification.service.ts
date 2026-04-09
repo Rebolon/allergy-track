@@ -4,6 +4,14 @@ import { PocketbaseAdapterService } from './persistence/pocketbase-adapter.servi
 import { DailyLog } from '../models/allergi-track.model';
 import confetti from 'canvas-confetti';
 
+export interface ScoringEvent {
+  date: string;
+  type: 'flame' | 'star' | 'trophy';
+  change: number;
+  reason?: string;
+  isBroken?: boolean;
+}
+
 export interface GamificationState {
   regularStreak: number;
   perfectStreak: number;
@@ -17,6 +25,9 @@ export interface GamificationState {
   hasMissedYesterday: boolean;
   hasPreviousRecords: boolean;
   showCongratulation: boolean;
+
+  // Explications pour la supervision
+  history: ScoringEvent[];
 }
 
 @Injectable({
@@ -57,7 +68,8 @@ export class GamificationService {
           hasMissedToday: false,
           hasMissedYesterday: false,
           hasPreviousRecords: logs.length > 0,
-          showCongratulation: false
+          showCongratulation: false,
+          history: []
         };
 
         if (logs.length === 0) return state;
@@ -81,6 +93,68 @@ export class GamificationService {
         // Alertes Gamification de Prise Manquée
         state.hasMissedYesterday = !yesterdayLog || yesterdayLog.intakes.some(i => !i.taken);
         state.hasMissedToday = !!todayLog && todayLog.intakes.some(i => !i.taken);
+
+        // Calcul des historiques pour explication (Supervision)
+        const history: ScoringEvent[] = [];
+        let tempPerfect = 0;
+        let tempRegular = 0;
+        let hPtr = new Date(today);
+        if (!todayLog) hPtr.setDate(hPtr.getDate() - 1);
+
+        // On remonte jusqu'à 21 jours pour l'historique d'explication
+        for (let i = 0; i < 21; i++) {
+            const dateStr = this.formatDate(hPtr);
+            const log = latestLogsMap.get(dateStr);
+            
+            if (!log) {
+                history.push({ 
+                    date: dateStr, 
+                    type: 'flame', 
+                    change: 0, 
+                    isBroken: true,
+                    reason: "Oubli total (aucune saisie)" 
+                });
+                break; // On s'arrête au premier blocage pour l'explication de la série actuelle
+            }
+
+            const isPerfect = !log.intakes.some(it => !it.taken);
+            const isRegular = log.intakes.some(it => it.taken);
+
+            if (isPerfect) {
+                tempPerfect++;
+                history.push({ 
+                    date: dateStr, 
+                    type: 'star', 
+                    change: 1,
+                    reason: "Journée parfaite ! 100% des doses"
+                });
+            } else if (isRegular) {
+                tempRegular++;
+                history.push({ 
+                    date: dateStr, 
+                    type: 'flame', 
+                    change: 1,
+                    reason: "Doses partielles, la flamme continue"
+                });
+                // Si on était dans une série parfaite, elle se brise ici pour l'étoile
+                if (tempPerfect > 0) {
+                     history[history.length-1].isBroken = true;
+                     history[history.length-1].reason = "Dose manquée : l'étoile s'arrête mais la flamme reste !";
+                     // On ne break pas car la flamme continue
+                }
+            } else {
+                history.push({ 
+                    date: dateStr, 
+                    type: 'flame', 
+                    change: 0, 
+                    isBroken: true,
+                    reason: "Aucune dose prise ce jour-là" 
+                });
+                break;
+            }
+            hPtr.setDate(hPtr.getDate() - 1);
+        }
+        state.history = history;
 
         // Calcul du Regular Streak (Flamme) : au moins 1 dose prise
         let currentRegular = 0;
