@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, BehaviorSubject, map, switchMap } from 'rxjs';
+import { Observable, BehaviorSubject, map, switchMap, shareReplay } from 'rxjs';
 import { PocketbaseAdapterService } from './persistence/pocketbase-adapter.service';
 import { DailyLog } from '../models/allergi-track.model';
 import confetti from 'canvas-confetti';
@@ -37,14 +37,17 @@ export class GamificationService {
   private persistence = inject(PocketbaseAdapterService);
   private refresh$ = new BehaviorSubject<void>(undefined);
 
+  private state$ = this.refresh$.pipe(
+    switchMap(() => this.calculateGamification()),
+    shareReplay(1)
+  );
+
   refresh() {
     this.refresh$.next();
   }
 
   getGamificationState(): Observable<GamificationState> {
-    return this.refresh$.pipe(
-      switchMap(() => this.calculateGamification())
-    );
+    return this.state$;
   }
 
   private calculateGamification(): Observable<GamificationState> {
