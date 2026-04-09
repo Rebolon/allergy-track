@@ -26,12 +26,17 @@ import { ThemeService } from '../../services/theme.service';
                      [ngClass]="{
                        'bg-orange-50 border-orange-200 text-orange-500': event.type === 'flame',
                        'bg-amber-50 border-amber-200 text-amber-500': event.type === 'star' && !event.isBroken,
+                       'bg-yellow-100 border-yellow-400 text-yellow-700': event.type === 'trophy' && !event.isBroken,
                        'bg-rose-50 border-rose-200 text-rose-500': event.isBroken
                      }">
                   @if (event.isBroken) {
                     <span class="text-2xl">💔</span>
                   } @else {
-                    <span class="text-2xl">{{ event.type === 'star' ? '⭐' : '🔥' }}</span>
+                    <span class="text-2xl">
+                      @if (event.type === 'trophy') { 🏆 }
+                      @else if (event.type === 'star') { ⭐ }
+                      @else { 🔥 }
+                    </span>
                   }
                 </div>
 

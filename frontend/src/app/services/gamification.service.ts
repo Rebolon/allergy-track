@@ -125,11 +125,13 @@ export class GamificationService {
 
             if (isPerfect) {
                 tempPerfect++;
+                // On détermine le type en fonction du cumul actuel (28 jours = Trophée)
+                const eventType = tempPerfect >= 28 ? 'trophy' : 'star';
                 history.push({ 
                     date: dateStr, 
-                    type: 'star', 
+                    type: eventType, 
                     change: 1,
-                    reason: "Journée parfaite ! 100% des doses"
+                    reason: tempPerfect >= 28 ? "Excellence : 28 jours parfaits ! 🏆" : "Journée parfaite ! 100% des doses"
                 });
             } else if (isRegular) {
                 tempRegular++;
@@ -139,12 +141,12 @@ export class GamificationService {
                     change: 1,
                     reason: "Doses partielles, la flamme continue"
                 });
-                // Si on était dans une série parfaite, elle se brise ici pour l'étoile
+                // Si on était dans une série parfaite, elle se brise ici
                 if (tempPerfect > 0) {
                      history[history.length-1].isBroken = true;
-                     history[history.length-1].reason = "Dose manquée : l'étoile s'arrête mais la flamme reste !";
-                     // On ne break pas car la flamme continue
+                     history[history.length-1].reason = "Dose manquée : la progression vers l'étoile/trophée s'arrête mais la flamme reste !";
                 }
+                tempPerfect = 0; // Reset progression parfaite
             } else {
                 history.push({ 
                     date: dateStr, 
