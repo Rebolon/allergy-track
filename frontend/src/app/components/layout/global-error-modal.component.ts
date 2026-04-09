@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
@@ -21,7 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
 })
 export class GlobalErrorModalComponent {
   message = input.required<string>();
-  
+
   reload() {
     window.location.reload();
   }
