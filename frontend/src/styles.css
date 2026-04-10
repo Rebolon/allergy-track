@@ -1,5 +1,4 @@
 /* You can add global styles to this file, and also import other style files */
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Montserrat:wght@400;500;600;700;900&family=Quicksand:wght@400;500;600;700;900&display=swap');
 @import "tailwindcss";
 
@@ -7,6 +6,68 @@
   --font-inter: "Inter", sans-serif;
   --font-montserrat: "Montserrat", sans-serif;
   --font-quicksand: "Quicksand", sans-serif;
+}
+
+@layer base {
+  :root {
+    /* Default is Classic Health (Light) */
+    --color-primary: #0ea5e9; /* Light Blue 500 */
+    --color-primary-focus: #0284c7;
+    --color-background: #f8fafc; /* Slate 50 */
+    --color-surface: #ffffff;
+    --color-text: #0f172a; /* Slate 900 */
+    --color-text-muted: #64748b; /* Slate 500 */
+    --color-border: #e2e8f0;
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --border-radius-base: 1rem; /* rounded-2xl roughly */
+    
+    --color-secondary: #0284c7; /* darker blue, sky-600 */
+    --color-section-protocol: #e0f2fe; /* sky-100 */
+    --color-section-symptom: #f8fafc; /* slate-50 */
+    --color-section-treatment: #dcfce7; /* green-100 */
+    --color-section-note: #fef3c7; /* amber-100 */
+    --color-border-protocol: #bae6fd; /* sky-200 */
+    --color-border-symptom: #e2e8f0; /* slate-200 */
+    --color-border-treatment: #bbf7d0; /* green-200 */
+    --color-border-note: #fde68a; /* amber-200 */
+  }
+
+  .theme-colorful {
+    --color-primary: #8b5cf6; /* Violet 500 */
+    --color-primary-focus: #7c3aed;
+    --color-background: #fdf4ff; /* Fuchsia 50 */
+    --color-surface: rgba(255, 255, 255, 0.7);
+    --color-text: #4c1d95; /* Violet 900 */
+    --color-text-muted: #8b5cf6;
+    --color-border: #e879f9;
+    --shadow-soft: 0 10px 15px -3px rgba(139, 92, 246, 0.1), 0 4px 6px -2px rgba(139, 92, 246, 0.05);
+    --border-radius-base: 1.5rem; /* rounded-3xl roughly */
+
+    --color-secondary: #d946ef; /* fuchsia-500 */
+    --color-section-protocol: #ede9fe; /* violet-100 */
+    --color-section-symptom: #ffedd5; /* orange-100 */
+    --color-section-treatment: #ccfbf1; /* teal-100 */
+    --color-section-note: #fae8ff; /* fuchsia-100 */
+    --color-border-protocol: #ddd6fe; /* violet-200 */
+    --color-border-symptom: #fed7aa; /* orange-200 */
+    --color-border-treatment: #99f6e4; /* teal-200 */
+    --color-border-note: #f5d0fe; /* fuchsia-200 */
+  }
+
+  /* Safe Area env variables for iOS/Android */
+  .safe-padding-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  .safe-padding-top {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+  
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-inter);
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
 }
 
 @keyframes shake {
@@ -17,4 +78,16 @@
 .animate-shake {
   animation: shake 0.2s ease-in-out infinite;
   animation-iteration-count: 2;
+}
+
+/* Glassmorphism helpers */
+.glass {
+  background: var(--color-surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.card-rounded {
+  border-radius: var(--border-radius-base);
 }

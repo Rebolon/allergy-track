@@ -1,102 +1,67 @@
-import { Injectable, computed, inject } from '@angular/core';
-import { AuthService } from './auth.service';
+import { Injectable, signal, Inject, PLATFORM_ID, effect } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
-export type Persona = 'child' | 'teen' | 'adult';
+export type AppTheme = 'classic' | 'colorful';
+export type Persona = 'child' | 'teen' | 'adult'; // For backward compatibility safely
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+  providedIn: 'root'
+})
 export class ThemeService {
-    private auth = inject(AuthService);
+  private readonly THEME_KEY = 'allergy_track_theme';
+  
+  // Signal holds the current theme state
+  public readonly currentTheme = signal<AppTheme>('colorful'); 
 
-    persona = computed<Persona>(() => {
-        const user = this.auth.currentUser();
-        if (user.role === 'Adulte') return 'adult';
-        if (user.themePreference === 'flashy') return 'child';
-        return 'teen';
-    });
+  // Legacy Persona for backwards compatibility. Will be set to 'child' on colorful, 'teen' on classic
+  public readonly persona = signal<Persona>('child');
 
-    // Global background
-    bgClass = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-amber-50';
-            case 'teen': return 'bg-slate-50';
-            case 'adult': return 'bg-slate-50';
+  // Unified css classes using var(--color-xxx) from our styles.css
+  public cardClass = signal('glass card-rounded p-5 shadow-[var(--shadow-soft)] transition-colors duration-300');
+  public protocolSection = signal('bg-[var(--color-section-protocol)] card-rounded p-5 border-2 border-[var(--color-border-protocol)] mb-4 transition-colors duration-300');
+  public symptomSection = signal('bg-[var(--color-section-symptom)] card-rounded p-5 border-2 border-[var(--color-border-symptom)] mb-4 transition-colors duration-300');
+  public treatmentSection = signal('bg-[var(--color-section-treatment)] card-rounded p-5 border-2 border-[var(--color-border-treatment)] mb-4 transition-colors duration-300');
+  public noteSection = signal('bg-[var(--color-section-note)] card-rounded p-5 border-2 border-[var(--color-border-note)] mb-4 transition-colors duration-300');
+  public primaryButton = signal('bg-[var(--color-primary)] hover:bg-[var(--color-primary-focus)] text-white p-3 rounded-[var(--border-radius-base)] transition-colors shadow-md');
+
+  // Legacy layout classes mapping to empty or simple since CSS vars handle background now
+  public bgClass = signal('');
+  public textClass = signal('');
+  public fontClass = signal('');
+  public headerGradient = signal('');
+
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+    if (isPlatformBrowser(this.platformId)) {
+      const savedTheme = localStorage.getItem(this.THEME_KEY) as AppTheme;
+      if (savedTheme === 'classic' || savedTheme === 'colorful') {
+        this.currentTheme.set(savedTheme);
+        this.persona.set(savedTheme === 'colorful' ? 'child' : 'teen');
+      }
+    }
+
+    effect(() => {
+      const theme = this.currentTheme();
+      if (isPlatformBrowser(this.platformId)) {
+        localStorage.setItem(this.THEME_KEY, theme);
+        
+        if (theme === 'colorful') {
+          document.body.classList.add('theme-colorful');
+          this.persona.set('child');
+        } else {
+          document.body.classList.remove('theme-colorful');
+          this.persona.set('teen');
         }
-    });
+      }
+    }, { allowSignalWrites: true });
+  }
 
-    // Global text color
-    textClass = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'text-slate-800';
-            case 'teen': return 'text-slate-800';
-            case 'adult': return 'text-slate-800';
-        }
-    });
+  public toggleTheme(): void {
+    this.currentTheme.update(theme => theme === 'classic' ? 'colorful' : 'classic');
+  }
 
-    // Font family
-    fontClass = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'font-quicksand';
-            case 'teen': return 'font-montserrat';
-            case 'adult': return 'font-inter';
-        }
-    });
-
-    // Header gradient
-    headerGradient = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-gradient-to-r from-violet-500 to-fuchsia-500';
-            case 'teen': return 'bg-gradient-to-r from-blue-600 to-indigo-600';
-            case 'adult': return 'bg-slate-800';
-        }
-    });
-
-    // Card styles
-    cardClass = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-white rounded-3xl shadow-xl shadow-violet-100/50 border-4 border-white';
-            case 'teen': return 'bg-white rounded-2xl shadow-sm border border-slate-200';
-            case 'adult': return 'bg-white rounded-lg shadow-sm border border-slate-200';
-        }
-    });
-
-    // Section styles for the form
-    protocolSection = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-emerald-50 rounded-3xl p-5 border-2 border-emerald-100';
-            case 'teen': return 'bg-white rounded-xl p-5 border border-slate-200 shadow-sm';
-            case 'adult': return 'bg-white rounded-lg p-5 border border-slate-200';
-        }
-    });
-
-    symptomSection = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-amber-50 rounded-3xl p-5 border-2 border-amber-100';
-            case 'teen': return 'bg-white rounded-xl p-5 border border-slate-200 shadow-sm';
-            case 'adult': return 'bg-white rounded-lg p-5 border border-slate-200';
-        }
-    });
-
-    treatmentSection = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-rose-50 rounded-3xl p-5 border-2 border-rose-100';
-            case 'teen': return 'bg-white rounded-xl p-5 border border-slate-200 shadow-sm';
-            case 'adult': return 'bg-white rounded-lg p-5 border border-slate-200';
-        }
-    });
-
-    noteSection = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-sky-50 rounded-3xl p-5 border-2 border-sky-100';
-            case 'teen': return 'bg-white rounded-xl p-5 border border-slate-200 shadow-sm';
-            case 'adult': return 'bg-white rounded-lg p-5 border border-slate-200';
-        }
-    });
-
-    primaryButton = computed(() => {
-        switch (this.persona()) {
-            case 'child': return 'bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white rounded-2xl shadow-xl shadow-violet-200';
-            case 'teen': return 'bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md';
-            case 'adult': return 'bg-slate-800 hover:bg-slate-900 text-white rounded-lg shadow-sm';
-        }
-    });
+  public setTheme(theme: AppTheme): void {
+    this.currentTheme.set(theme);
+  }
 }
+
+

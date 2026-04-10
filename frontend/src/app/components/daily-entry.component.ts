@@ -6,17 +6,18 @@ import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { GamificationService } from '../services/gamification.service';
 import { MatIconModule } from '@angular/material/icon';
+import { LucideAngularModule, Activity, Check, Pill } from 'lucide-angular';
 import { Symptom } from '../models/allergy-track.model';
 import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
 @Component({
   selector: 'app-daily-entry',
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, DatePipe, NgClass],
+  imports: [ReactiveFormsModule, MatIconModule, DatePipe, NgClass, LucideAngularModule],
   template: `
     <div [ngClass]="theme.cardClass()" class="p-6 sm:p-8">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <h2 class="text-2xl font-black flex items-center gap-3" [class.text-violet-800]="theme.persona() === 'child'">
+        <h2 class="text-2xl font-black flex items-center gap-3 text-[var(--color-primary)]">
           <span class="text-3xl">📅</span> Mon Journal du {{ date() | date:'dd/MM/yyyy' }}
         </h2>
       </div>
@@ -32,22 +33,35 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
         <!-- Intakes -->
         <div class="mb-8" [ngClass]="theme.protocolSection()">
-          <h3 class="text-xl font-bold mb-4 flex items-center gap-2" [class.text-emerald-800]="theme.persona() === 'child'">
+          <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-[var(--color-primary-focus)]">
             {{ copy.protocolsTitle() }}
           </h3>
           <div formArrayName="intakes" class="space-y-3">
             @for (intake of intakes.controls; track $index) {
-              <div [formGroupName]="$index" class="flex items-center justify-between p-4 rounded-2xl border-2 bg-white hover:shadow-md transition-all" [class.border-emerald-200]="theme.persona() === 'child'" [class.border-slate-200]="theme.persona() !== 'child'">
-                <div class="flex flex-col">
-                  <span class="font-bold text-lg" [class.text-emerald-900]="theme.persona() === 'child'" [class.text-slate-800]="theme.persona() !== 'child'">{{ intake.get('allergen')?.value }}</span>
-                  <div class="flex items-center gap-2 mt-1">
-                    <span class="text-sm font-medium" [class.text-emerald-600]="theme.persona() === 'child'" [class.text-slate-500]="theme.persona() !== 'child'">Dose:</span>
-                    <input type="number" formControlName="dose" class="w-20 p-1.5 text-center font-bold border-2 rounded-xl focus:ring-2 focus:outline-none disabled:opacity-50 disabled:bg-slate-100" [class.text-emerald-900]="theme.persona() === 'child'" [class.border-emerald-100]="theme.persona() === 'child'" [class.bg-emerald-50]="theme.persona() === 'child'" [class.focus:ring-emerald-400]="theme.persona() === 'child'" [class.text-slate-800]="theme.persona() !== 'child'" [class.border-slate-200]="theme.persona() !== 'child'" [class.bg-slate-50]="theme.persona() !== 'child'" [class.focus:ring-slate-400]="theme.persona() !== 'child'" step="0.5" min="0">
+              <div [formGroupName]="$index" class="relative overflow-hidden flex items-center justify-between p-4 rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all hover:shadow-md border border-slate-100/50">
+                <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-md bg-[var(--color-primary)]"></div>
+                <div class="flex items-center gap-4 pl-3 flex-1">
+                  <div class="w-10 h-10 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] flex items-center justify-center font-bold">
+                    <lucide-icon [img]="Activity" [size]="20" [strokeWidth]="2.5"></lucide-icon>
+                  </div>
+                  <div class="flex flex-col flex-1">
+                    <span class="font-bold text-[var(--color-text)] transition-all">{{ intake.get('allergen')?.value }}</span>
+                    <div class="flex items-center gap-2 mt-1">
+                      <input type="number" formControlName="dose" class="w-14 p-1 text-center font-bold border-none bg-slate-100 rounded-md text-xs text-[var(--color-text)] focus:ring-2 focus:ring-[var(--color-primary-focus)] focus:outline-none transition-opacity" step="0.5" min="0">
+                      <span class="text-xs text-[var(--color-text-muted)] font-medium">Mesure</span>
+                    </div>
                   </div>
                 </div>
-                <label class="relative inline-flex items-center" [class.cursor-pointer]="!form.disabled" [class.cursor-not-allowed]="form.disabled">
-                  <input type="checkbox" formControlName="taken" class="sr-only peer">
-                  <div class="w-14 h-8 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-disabled:opacity-50 peer-disabled:cursor-not-allowed shadow-inner" [class.bg-emerald-100]="theme.persona() === 'child'" [class.peer-checked:bg-emerald-500]="theme.persona() === 'child'" [class.after:border-emerald-200]="theme.persona() === 'child'" [class.bg-slate-200]="theme.persona() !== 'child'" [class.peer-checked:bg-blue-600]="theme.persona() !== 'child'" [class.after:border-slate-300]="theme.persona() !== 'child'"></div>
+                <label class="cursor-pointer ml-3 shrink-0 flex items-center justify-center w-10 h-10 rounded-full border-[3px] transition-all hover:bg-[var(--color-primary)]/10"
+                       [class.bg-[var(--color-primary)]]="intake.get('taken')?.value" 
+                       [class.border-[var(--color-primary)]]="intake.get('taken')?.value"
+                       [class.text-white]="intake.get('taken')?.value"
+                       [class.bg-slate-50]="!intake.get('taken')?.value"
+                       [class.border-slate-300]="!intake.get('taken')?.value"
+                       [class.text-transparent]="!intake.get('taken')?.value"
+                       [class.opacity-50]="form.disabled">
+                  <input type="checkbox" formControlName="taken" class="sr-only">
+                  <lucide-icon [img]="Check" [size]="20" [strokeWidth]="3.5"></lucide-icon>
                 </label>
               </div>
             }
@@ -56,32 +70,29 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
         <!-- Symptoms -->
         <div class="mb-8" [ngClass]="theme.symptomSection()">
-          <h3 class="text-xl font-bold mb-4 flex items-center gap-2" [class.text-amber-800]="theme.persona() === 'child'">
+          <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-[var(--color-primary-focus)]">
             {{ copy.symptomsTitle() }}
           </h3>
           <div class="flex flex-wrap gap-3">
             @for (symptom of availableSymptoms; track symptom) {
+              <!-- Chips approach for symptoms -->
               <button 
                 type="button"
                 (click)="toggleSymptom(symptom)"
                 [disabled]="form.disabled"
-                class="px-5 py-3 rounded-2xl text-sm font-bold transition-all transform hover:-translate-y-1 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:-translate-y-0 disabled:hover:shadow-none border-2"
-                [class.bg-amber-400]="hasSymptom(symptom) && theme.persona() === 'child'"
-                [class.text-amber-900]="hasSymptom(symptom) && theme.persona() === 'child'"
-                [class.border-amber-500]="hasSymptom(symptom) && theme.persona() === 'child'"
-                [class.border-b-4]="hasSymptom(symptom) && theme.persona() === 'child'"
-                [class.bg-white]="!hasSymptom(symptom) && theme.persona() === 'child'"
-                [class.text-amber-700]="!hasSymptom(symptom) && theme.persona() === 'child'"
-                [class.border-amber-200]="!hasSymptom(symptom) && theme.persona() === 'child'"
-                
-                [class.bg-blue-600]="hasSymptom(symptom) && theme.persona() !== 'child'"
-                [class.text-white]="hasSymptom(symptom) && theme.persona() !== 'child'"
-                [class.border-blue-700]="hasSymptom(symptom) && theme.persona() !== 'child'"
-                [class.bg-white]="!hasSymptom(symptom) && theme.persona() !== 'child'"
-                [class.text-slate-700]="!hasSymptom(symptom) && theme.persona() !== 'child'"
-                [class.border-slate-200]="!hasSymptom(symptom) && theme.persona() !== 'child'"
+                class="relative overflow-hidden pl-6 pr-5 py-3 rounded-2xl text-sm font-bold transition-all transform hover:-translate-y-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:-translate-y-0 disabled:hover:shadow-none"
+                [class.bg-[var(--color-primary)]]="hasSymptom(symptom)"
+                [class.text-white]="hasSymptom(symptom)"
+                [class.shadow-md]="hasSymptom(symptom)"
+                [class.-translate-y-1]="hasSymptom(symptom)"
+                [class.bg-white]="!hasSymptom(symptom)"
+                [class.text-[var(--color-text)]]="!hasSymptom(symptom)"
               >
-                {{ getSymptomEmoji(symptom) }} {{ symptom }}
+                <!-- Left colored edge -->
+                <div class="absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md transition-colors"
+                     [ngClass]="hasSymptom(symptom) ? 'bg-white/40' : 'bg-orange-400'"></div>
+                <span class="mr-1 relative z-10">{{ getSymptomEmoji(symptom) }}</span>
+                <span class="relative z-10">{{ symptom }}</span>
               </button>
             }
           </div>
@@ -89,26 +100,45 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
         <!-- Treatments -->
         <div class="mb-8" [ngClass]="theme.treatmentSection()">
-          <h3 class="text-xl font-bold mb-4 flex items-center gap-2" [class.text-rose-800]="theme.persona() === 'child'">
+          <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-[var(--color-primary-focus)]">
             {{ copy.treatmentsTitle() }}
           </h3>
           <div formArrayName="treatments" class="space-y-3">
             @for (treatment of treatments.controls; track $index) {
-              <div [formGroupName]="$index" class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl border-2 bg-white hover:shadow-md transition-all gap-4" [class.border-rose-200]="theme.persona() === 'child'" [class.border-slate-200]="theme.persona() !== 'child'">
-                <div class="flex items-center gap-3">
-                  <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl" [class.bg-rose-100]="theme.persona() === 'child'" [class.bg-slate-100]="theme.persona() !== 'child'">
+              <div [formGroupName]="$index" class="relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all hover:shadow-md border border-slate-100/50 gap-4">
+                <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-md bg-emerald-400"></div>
+                <div class="flex items-center gap-4 pl-3 flex-1">
+                  <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl">
                     {{ getTreatmentIcon(treatment.get('name')?.value) }}
                   </div>
-                  <span class="font-bold text-lg" [class.text-rose-900]="theme.persona() === 'child'" [class.text-slate-800]="theme.persona() !== 'child'">{{ treatment.get('name')?.value }}</span>
+                  <span class="font-bold text-[var(--color-text)]">{{ treatment.get('name')?.value }}</span>
                 </div>
-                <div class="flex gap-4 p-3 rounded-xl border" [class.bg-rose-50]="theme.persona() === 'child'" [class.border-rose-100]="theme.persona() === 'child'" [class.bg-slate-50]="theme.persona() !== 'child'" [class.border-slate-200]="theme.persona() !== 'child'">
-                  <label class="flex items-center gap-2" [class.cursor-pointer]="!form.disabled" [class.cursor-not-allowed]="form.disabled">
-                    <input type="checkbox" formControlName="before" class="w-5 h-5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" [class.text-rose-500]="theme.persona() === 'child'" [class.border-rose-300]="theme.persona() === 'child'" [class.focus:ring-rose-500]="theme.persona() === 'child'" [class.text-blue-600]="theme.persona() !== 'child'" [class.border-slate-300]="theme.persona() !== 'child'" [class.focus:ring-blue-500]="theme.persona() !== 'child'">
-                    <span class="text-sm font-bold" [class.text-rose-700]="theme.persona() === 'child'" [class.text-slate-700]="theme.persona() !== 'child'">Avant</span>
+                <div class="flex gap-4">
+                  <label class="cursor-pointer flex items-center gap-2" [class.opacity-50]="form.disabled" [class.cursor-not-allowed]="form.disabled">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full border-[3px] transition-all hover:bg-emerald-50"
+                         [class.bg-emerald-500]="treatment.get('before')?.value" 
+                         [class.border-emerald-500]="treatment.get('before')?.value"
+                         [class.text-white]="treatment.get('before')?.value"
+                         [class.bg-slate-50]="!treatment.get('before')?.value"
+                         [class.border-slate-300]="!treatment.get('before')?.value"
+                         [class.text-transparent]="!treatment.get('before')?.value">
+                      <input type="checkbox" formControlName="before" class="sr-only">
+                      <lucide-icon [img]="Check" [size]="16" [strokeWidth]="3.5"></lucide-icon>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500">Avant</span>
                   </label>
-                  <label class="flex items-center gap-2" [class.cursor-pointer]="!form.disabled" [class.cursor-not-allowed]="form.disabled">
-                    <input type="checkbox" formControlName="after" class="w-5 h-5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" [class.text-rose-500]="theme.persona() === 'child'" [class.border-rose-300]="theme.persona() === 'child'" [class.focus:ring-rose-500]="theme.persona() === 'child'" [class.text-blue-600]="theme.persona() !== 'child'" [class.border-slate-300]="theme.persona() !== 'child'" [class.focus:ring-blue-500]="theme.persona() !== 'child'">
-                    <span class="text-sm font-bold" [class.text-rose-700]="theme.persona() === 'child'" [class.text-slate-700]="theme.persona() !== 'child'">Après</span>
+                  <label class="cursor-pointer flex items-center gap-2" [class.opacity-50]="form.disabled" [class.cursor-not-allowed]="form.disabled">
+                    <div class="flex items-center justify-center w-8 h-8 rounded-full border-[3px] transition-all hover:bg-emerald-50"
+                         [class.bg-emerald-500]="treatment.get('after')?.value" 
+                         [class.border-emerald-500]="treatment.get('after')?.value"
+                         [class.text-white]="treatment.get('after')?.value"
+                         [class.bg-slate-50]="!treatment.get('after')?.value"
+                         [class.border-slate-300]="!treatment.get('after')?.value"
+                         [class.text-transparent]="!treatment.get('after')?.value">
+                      <input type="checkbox" formControlName="after" class="sr-only">
+                      <lucide-icon [img]="Check" [size]="16" [strokeWidth]="3.5"></lucide-icon>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500">Après</span>
                   </label>
                 </div>
               </div>
@@ -118,27 +148,20 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
         <!-- Notes -->
         <div class="mb-8" [ngClass]="theme.noteSection()">
-          <h3 class="text-xl font-bold mb-4 flex items-center gap-2" [class.text-sky-800]="theme.persona() === 'child'">
+          <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-[var(--color-primary-focus)]">
             {{ copy.noteTitle() }}
           </h3>
-          <textarea 
-            formControlName="note" 
-            rows="3" 
-            class="w-full p-4 rounded-2xl border-2 bg-white focus:bg-white focus:ring-4 transition-all resize-none disabled:opacity-50 disabled:bg-slate-50 font-medium"
-            [class.border-sky-200]="theme.persona() === 'child'"
-            [class.focus:ring-sky-100]="theme.persona() === 'child'"
-            [class.focus:border-sky-400]="theme.persona() === 'child'"
-            [class.text-sky-900]="theme.persona() === 'child'"
-            [class.placeholder:text-sky-300]="theme.persona() === 'child'"
-            [class.border-slate-200]="theme.persona() !== 'child'"
-            [class.focus:ring-slate-100]="theme.persona() !== 'child'"
-            [class.focus:border-slate-400]="theme.persona() !== 'child'"
-            [class.text-slate-800]="theme.persona() !== 'child'"
-            [class.placeholder:text-slate-400]="theme.persona() !== 'child'"
-            placeholder="Raconte ta journée, une victoire, une remarque..."></textarea>
+          <div class="relative overflow-hidden rounded-2xl shadow-sm bg-white max-w-full hover:shadow-md transition-shadow">
+            <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-md bg-amber-400"></div>
+            <textarea 
+              formControlName="note" 
+              rows="3" 
+              class="w-full p-4 pl-6 border-none bg-transparent focus:ring-0 transition-all resize-none disabled:opacity-50 font-medium text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none"
+              placeholder="Raconte ta journée, une victoire, une remarque..."></textarea>
+          </div>
         </div>
 
-        <div class="sticky bottom-4 z-50 mt-8">
+        <div class="sticky bottom-[80px] md:bottom-4 z-50 mt-8">
           @if (form.invalid && !form.disabled && submitAttempted()) {
             <div class="mb-2 text-center text-sm font-bold text-rose-600 bg-white/90 backdrop-blur-sm py-2 px-4 rounded-xl shadow-sm border border-rose-100 mx-auto w-full">
               ⚠️ Veuillez cocher au moins un protocole et un symptôme pour valider.
@@ -268,4 +291,7 @@ export class DailyEntryComponent {
       }
     });
   }
+  readonly Activity = Activity;
+  readonly Check = Check;
+  readonly Pill = Pill;
 }

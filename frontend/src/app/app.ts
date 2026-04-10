@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
-import { NgClass } from '@angular/common';
 import { AgendaComponent } from './components/agenda.component';
 import { DailyEntryComponent } from './components/daily-entry.component';
 import { DashboardComponent } from './components/dashboard.component';
@@ -13,8 +12,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { LayoutHeaderComponent } from './components/layout/header.component';
 import { LayoutFooterComponent } from './components/layout/footer.component';
 import { GamificationSummaryComponent } from './components/layout/gamification-summary.component';
-import { SettingsModalComponent } from './components/layout/settings-modal.component';
+import { GamificationHistoryComponent } from './components/layout/gamification-history.component';
+import { SettingsComponent } from './components/settings.component';
 import { GlobalErrorModalComponent } from './components/layout/global-error-modal.component';
+import { TopNavComponent } from './components/layout/top-nav.component';
+import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.component';
 import { ErrorService } from './services/error.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
@@ -30,58 +32,67 @@ import { startWith } from 'rxjs';
     AuditLogComponent,
     LayoutHeaderComponent,
     LayoutFooterComponent,
+    BottomNavComponent,
     GamificationSummaryComponent,
-    SettingsModalComponent,
+    GamificationHistoryComponent,
+    SettingsComponent,
+    TopNavComponent,
     GlobalErrorModalComponent,
-    MatIconModule,
-    NgClass
+    MatIconModule
   ],
   template: `
-    <div class="min-h-screen pb-12 transition-colors duration-500" [ngClass]="[theme.bgClass(), theme.textClass(), theme.fontClass()]">
+    <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
       
       <!-- Header / Auth Switcher -->
-      <app-layout-header (onOpenSettings)="openSettings()" />
+      <app-layout-header />
+
+      <!-- Desktop Nav -->
+      <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
 
       <!-- Main Content -->
-      <main class="max-w-4xl mx-auto px-4 py-8">
+      <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
 
-        <app-gamification-summary [state]="gState()" />
+        <!-- Gamification Summary (Home + Gaming) -->
+        <div class="mb-6" [class.hidden]="activeTab() !== 'gaming' && activeTab() !== 'home'">
+           <app-gamification-summary [state]="gState()" />
+        </div>
         
-        <!-- Enfant View (Agenda + Daily Entry) -->
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-          
-          <div class="md:col-span-4">
-            <app-agenda (dateSelected)="onDateSelected($event)" />
-            
-            @if (auth.currentUser().role === 'Adulte') {
-              <div class="mt-6">
-                <app-dashboard />
-              </div>
-            }
-          </div>
-          
-          <div class="md:col-span-8">
-            <app-daily-entry [date]="selectedDate()" />
+        <!-- Gamification History (Gaming only) -->
+        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'gaming'">
+           <app-gamification-history [state]="gState()" />
+        </div>
 
-            @if (auth.currentUser().role === 'Adulte') {
-              <div class="mt-6">
-                <app-audit-log />
-              </div>
-            }
-          </div>
+        <!-- Preferences Tab -->
+        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'preferences'">
+           <app-settings />
+        </div>
+        
+        <!-- Supervision Tab (Full Width) -->
+        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'supervision'">
+           <app-dashboard />
+           <app-audit-log />
+        </div>
+        
+        <!-- Home View (Agenda + Daily Entry) -->
+        <div class="flex flex-col gap-6" [class.hidden]="activeTab() !== 'home'">
+          
+          <!-- Agenda -->
+          <app-agenda (dateSelected)="onDateSelected($event)" />
+          
+          <!-- Daily Entry Form -->
+          <app-daily-entry [date]="selectedDate()" />
           
         </div>
         
         <!-- Footer -->
-        <app-layout-footer />
+        <app-layout-footer class="hidden md:block mt-8" />
         
       </main>
 
-      <!-- Modals -->
-      @if (showSettings()) {
-        <app-settings-modal [initialTheme]="currentTheme()" (onClose)="showSettings.set(false)" (onSave)="saveSettings($event)" />
-      }
+      <!-- Bottom Nav (Mobile Only) -->
+      <app-bottom-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-bottom-nav>
 
+      <!-- Modals -->
       @if (errorService.serverError(); as serverErrorMsg) {
         <app-global-error-modal [message]="serverErrorMsg" />
       }
@@ -99,30 +110,18 @@ export class App implements OnInit {
   currentYear = new Date().getFullYear();
 
   selectedDate = signal(this.getTodayStr());
-  showSettings = signal(false);
-  currentTheme = signal<'flashy' | 'classic'>('flashy');
+
+  // Mobile Navigation State
+  activeTab = signal<MobileTab>('home');
 
   gState = toSignal(this.gamification.getGamificationState().pipe(startWith(null)), { initialValue: null });
 
   ngOnInit() {
     this.notification.init();
-    const suiviUser = this.auth.getUsers().find(u => u.id === 'u2');
-    if (suiviUser) {
-      this.currentTheme.set(suiviUser.themePreference);
-    }
   }
 
-  openSettings() {
-    const suiviUser = this.auth.getUsers().find(u => u.id === 'u2');
-    if (suiviUser) {
-      this.currentTheme.set(suiviUser.themePreference);
-    }
-    this.showSettings.set(true);
-  }
-
-  saveSettings(newTheme: 'flashy' | 'classic') {
-    this.auth.updateSuiviTheme(newTheme);
-    this.showSettings.set(false);
+  setTab(tab: MobileTab) {
+    this.activeTab.set(tab);
   }
 
   getTodayStr(): string {
@@ -135,5 +134,8 @@ export class App implements OnInit {
 
   onDateSelected(date: string) {
     this.selectedDate.set(date);
+    // Switch to entry form automatically on mobile when a date is selected from Agenda
+    this.activeTab.set('home');
   }
 }
+

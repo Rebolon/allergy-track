@@ -1,6 +1,6 @@
 import { Component, signal, computed, output, inject, OnInit, DestroyRef } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { MatIconModule } from '@angular/material/icon';
+import { LucideAngularModule, ChevronLeft, ChevronRight } from 'lucide-angular';
 import { ThemeService } from '../services/theme.service';
 import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
 import { GamificationService } from '../services/gamification.service';
@@ -11,7 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'app-agenda',
   standalone: true,
-  imports: [MatIconModule, NgClass],
+  imports: [LucideAngularModule, NgClass],
   template: `
     <div class="flex flex-col items-center p-5 mb-6" [ngClass]="theme.cardClass()">
       <div class="flex justify-between w-full items-center mb-6 px-2">
@@ -22,7 +22,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 [class.bg-slate-100]="theme.persona() !== 'child'"
                 [class.text-slate-600]="theme.persona() !== 'child'"
                 [class.hover:bg-slate-200]="theme.persona() !== 'child'">
-          <mat-icon>chevron_left</mat-icon>
+          <lucide-icon [img]="ChevronLeft" [size]="24" [strokeWidth]="2.5"></lucide-icon>
         </button>
         <h2 class="text-xl font-black capitalize"
             [class.text-violet-900]="theme.persona() === 'child'"
@@ -36,7 +36,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 [class.bg-slate-100]="theme.persona() !== 'child'"
                 [class.text-slate-600]="theme.persona() !== 'child'"
                 [class.hover:bg-slate-200]="theme.persona() !== 'child'">
-          <mat-icon>chevron_right</mat-icon>
+          <lucide-icon [img]="ChevronRight" [size]="24" [strokeWidth]="2.5"></lucide-icon>
         </button>
       </div>
 
@@ -104,6 +104,9 @@ export class AgendaComponent implements OnInit {
   persistence = inject(PocketbaseAdapterService);
   gamification = inject(GamificationService);
   private destroyRef = inject(DestroyRef);
+
+  readonly ChevronLeft = ChevronLeft;
+  readonly ChevronRight = ChevronRight;
 
   currentDate = signal(new Date());
   selectedDate = signal(new Date().toISOString().split('T')[0]);
