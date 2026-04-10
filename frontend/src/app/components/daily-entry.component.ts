@@ -6,7 +6,8 @@ import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { GamificationService } from '../services/gamification.service';
 import { MatIconModule } from '@angular/material/icon';
-import { Symptom } from '../models/allergi-track.model';
+import { Symptom } from '../models/allergy-track.model';
+import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
 @Component({
   selector: 'app-daily-entry',
@@ -243,25 +244,8 @@ export class DailyEntryComponent {
     this.form.markAsDirty();
   }
 
-  getSymptomEmoji(symptom: string): string {
-    switch (symptom) {
-      case 'Rien': return '😎';
-      case 'Démangeaisons bouche': return '👄';
-      case 'Respiratoire': return '🫁';
-      case 'Abdominal': return '🤢';
-      case 'Autres': return '🤔';
-      default: return '🤒';
-    }
-  }
-
-  getTreatmentIcon(name: string): string {
-    switch (name) {
-      case 'Antihistaminique': return '💊';
-      case 'Aerius/Aeromire': return '💨';
-      case 'Adrénaline': return '💉';
-      default: return '💊';
-    }
-  }
+  getSymptomEmoji = getSymptomEmoji;
+  getTreatmentIcon = getTreatmentIcon;
 
   save() {
     this.submitAttempted.set(true);

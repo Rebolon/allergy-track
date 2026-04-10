@@ -64,8 +64,8 @@ Le statut global de la période est calculé selon les priorités suivantes :
 
 | Statut | Condition | Signification |
 | :--- | :--- | :--- |
-| 🚨 **ROUGE** | > 2 jours d'oublis **OU** symptômes sévères **OU** prise de traitements (hors Antihistaminique dose simple) | Situation critique. |
-| 🤔 **ORANGE** | 1 à 2 jours d'oublis **OU** symptômes légers **OU** Antihistaminique (double dose, ex: avant + après) | Vigilance requise. |
+| 🚨 **ROUGE** | > 2 jours d'oublis **OU** symptômes sévères **OU** prise de traitements (hors Antihistaminique dose simple) | Situation critique nécessitant une attention immédiate. |
+| 🤔 **ORANGE** | 1 à 2 jours d'oublis **OU** symptômes légers **OU** Antihistaminique (double dose, ex: avant + après) | Vigilance requise, protocole légèrement perturbé. |
 | 😎 **VERT** | 0 oubli **ET** 0 symptôme **ET** 0 ou 1 dose d'Antihistaminique | Protocole parfaitement suivi. |
 
 #### Précision sur les Traitements

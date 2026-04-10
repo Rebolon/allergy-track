@@ -1,13 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { PocketbaseAdapterService } from './persistence/pocketbase-adapter.service';
-import { HealthStatus, DailyLog } from '../models/allergi-track.model';
+import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { HealthStatus, DailyLog } from '../models/allergy-track.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ReportService {
-  private persistence = inject(PocketbaseAdapterService);
+  private persistence = inject(PERSISTENCE_ADAPTER);
 
   getHealthStatus(startDate: string, endDate: string): Observable<HealthStatus> {
     return this.persistence.getDailyLogs(startDate, endDate).pipe(
@@ -43,26 +43,26 @@ export class ReportService {
             if (hasMissedIntake) {
               totalMisses += 1;
             }
-            
+
             const severeSymptoms = log.symptoms.filter(s => ['Respiratoire', 'Abdominal', 'Autres'].includes(s)).length;
             const mildSymptoms = log.symptoms.filter(s => s === 'Démangeaisons bouche').length;
-            
+
             totalSevereSymptoms += severeSymptoms;
             totalMildSymptoms += mildSymptoms;
 
             // Logique spécifique des traitements
             log.treatments.forEach(t => {
-                if (t.before || t.after) {
-                    if (t.name.toLowerCase().includes('antihistaminique')) {
-                        // S'il y a à la fois AVANT et APRÈS, c'est une double dose
-                        if (t.before && t.after) {
-                            hasAntihistamineDouble = true;
-                        }
-                    } else {
-                        // Tout autre médicament (Aerius, Adrénaline, etc.)
-                        hasOtherMeds = true;
-                    }
+              if (t.before || t.after) {
+                if (t.name.toLowerCase().includes('antihistaminique')) {
+                  // S'il y a à la fois AVANT et APRÈS, c'est une double dose
+                  if (t.before && t.after) {
+                    hasAntihistamineDouble = true;
+                  }
+                } else {
+                  // Tout autre médicament (Aerius, Adrénaline, etc.)
+                  hasOtherMeds = true;
                 }
+              }
             });
           } else {
             // Un jour sans saisie est considéré comme un oubli
@@ -74,11 +74,11 @@ export class ReportService {
         // Priorité ROUGE
         if (totalMisses > 2 || totalSevereSymptoms > 0 || hasOtherMeds) {
           status = 'ROUGE';
-        } 
+        }
         // Priorité ORANGE
         else if (totalMisses > 0 || totalMildSymptoms > 0 || hasAntihistamineDouble) {
           status = 'ORANGE';
-        } 
+        }
         // Reste VERT
         else {
           status = 'VERT';
@@ -100,7 +100,7 @@ export class ReportService {
         allLogs.forEach(log => latestLogsMap.set(log.date, log));
 
         let csv = 'Date,Allergenes (Doses),Tout Pris,Symptomes,Traitements,Note,Auteur\n';
-        
+
         const [sYear, sMonth, sDay] = startDate.split('-').map(Number);
         const [eYear, eMonth, eDay] = endDate.split('-').map(Number);
         const start = new Date(sYear, sMonth - 1, sDay);
@@ -117,15 +117,15 @@ export class ReportService {
           if (log) {
             const allergensStr = log.intakes.map(i => `${i.allergen} (${i.dose})`).join('; ');
             const allTaken = log.intakes.every(i => i.taken) ? 'Oui' : (log.intakes.some(i => i.taken) ? 'Partiel' : 'Non');
-            
+
             const symptomsStr = log.symptoms.join('; ');
             const treatmentsStr = log.treatments
               .filter(t => t.before || t.after)
               .map(t => `${t.name} (${t.before ? 'Avant' : ''}${t.before && t.after ? '+' : ''}${t.after ? 'Après' : ''})`)
               .join('; ');
-            
+
             const note = log.note ? log.note.replace(/"/g, '""') : '';
-            
+
             csv += `${log.date},"${allergensStr}",${allTaken},"${symptomsStr}","${treatmentsStr}","${note}",${log.updatedBy}\n`;
           } else {
             // Journée manquante
@@ -136,5 +136,20 @@ export class ReportService {
         return csv;
       })
     );
+  }
+
+  downloadCsvReport(startDate: string, endDate: string) {
+    this.generateCsvReport(startDate, endDate).subscribe(csv => {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `AllergiTrack_Report_${startDate}_${endDate}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
-import { DailyLog } from '../models/allergi-track.model';
+import { DailyLog } from '../models/allergy-track.model';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({

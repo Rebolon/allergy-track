@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { DailyLog } from '../../models/allergi-track.model';
+import { DailyLog } from '../../models/allergy-track.model';
 import { PersistenceAdapter } from './persistence.interface';
 
 @Injectable({
@@ -23,11 +23,11 @@ export class PocketbaseAdapterService implements PersistenceAdapter {
       filter = `date <= '${endDate}'`;
     }
 
-    const params: Record<string, string | number | boolean | readonly (string | number | boolean)[]> = { 
+    const params: Record<string, string | number | boolean | readonly (string | number | boolean)[]> = {
       sort: '-date,-created',
       filter: filter
     };
-    
+
     return this.http.get<{ items: DailyLog[] }>(`${this.apiUrl}/daily_logs/records`, { params })
       .pipe(map(response => response.items.map(item => ({ ...item, id: item.externalId || item.id }))));
   }

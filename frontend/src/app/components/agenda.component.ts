@@ -4,7 +4,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { ThemeService } from '../services/theme.service';
 import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
 import { GamificationService } from '../services/gamification.service';
-import { DailyLog } from '../models/allergi-track.model';
+import { DailyLog } from '../models/allergy-track.model';
 import { take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -124,7 +124,7 @@ export class AgendaComponent implements OnInit {
 
   loadWeekLogs() {
     const days = this.calcWeekDays(this.currentDate());
-    
+
     // Start 1 day earlier to compare the first day of the week with its previous day
     const startDateObj = new Date(days[0].date);
     startDateObj.setDate(startDateObj.getDate() - 1);
@@ -132,9 +132,9 @@ export class AgendaComponent implements OnInit {
     const startM = String(startDateObj.getMonth() + 1).padStart(2, '0');
     const startD = String(startDateObj.getDate()).padStart(2, '0');
     const startStr = `${startY}-${startM}-${startD}`;
-    
+
     const end = days[6].date;
-    
+
     this.persistence.getDailyLogs(startStr, end).subscribe(logs => {
       const logsMap = new Map<string, DailyLog>();
       logs.forEach(l => {
@@ -160,7 +160,7 @@ export class AgendaComponent implements OnInit {
     for (let i = 0; i < 7; i++) {
       const d = new Date(curr);
       d.setDate(first + i);
-      
+
       // Formatage YYYY-MM-DD local
       const yyyy = d.getFullYear();
       const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -192,7 +192,7 @@ export class AgendaComponent implements OnInit {
       const log = entriesMap.get(d.date);
       const hasEntry = !!log;
       const isToday = d.date === todayStr;
-      
+
       let isMissed = false;
       let isWarningToday = false;
       let isPartial = false;
@@ -206,7 +206,7 @@ export class AgendaComponent implements OnInit {
       } else {
         const allTaken = log.intakes.length > 0 && log.intakes.every(i => i.taken);
         let doseDecreased = false;
-        
+
         // Check prev day dose
         const prevDateObj = new Date(d.date);
         prevDateObj.setDate(prevDateObj.getDate() - 1);
@@ -214,18 +214,18 @@ export class AgendaComponent implements OnInit {
         const prevM = String(prevDateObj.getMonth() + 1).padStart(2, '0');
         const prevD = String(prevDateObj.getDate()).padStart(2, '0');
         const prevDateStr = `${prevY}-${prevM}-${prevD}`;
-        
+
         const prevLog = entriesMap.get(prevDateStr);
         if (prevLog) {
-           const currentDose = log.intakes.reduce((sum, i) => sum + i.dose, 0);
-           const prevDose = prevLog.intakes.reduce((sum, i) => sum + i.dose, 0);
-           if (currentDose < prevDose) {
-               doseDecreased = true;
-           }
+          const currentDose = log.intakes.reduce((sum, i) => sum + i.dose, 0);
+          const prevDose = prevLog.intakes.reduce((sum, i) => sum + i.dose, 0);
+          if (currentDose < prevDose) {
+            doseDecreased = true;
+          }
         }
-        
+
         if (!allTaken || doseDecreased) {
-           isPartial = true;
+          isPartial = true;
         }
       }
 

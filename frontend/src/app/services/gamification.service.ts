@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, BehaviorSubject, map, switchMap, shareReplay } from 'rxjs';
-import { PocketbaseAdapterService } from './persistence/pocketbase-adapter.service';
-import { DailyLog } from '../models/allergi-track.model';
+import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLog } from '../models/allergy-track.model';
+import { formatDate, getTodayStr, offsetDate } from '../utils/date.utils';
 import confetti from 'canvas-confetti';
 
 export interface ScoringEvent {
@@ -20,7 +21,7 @@ export interface GamificationState {
   starsCount: number;
   daysToNextStar: number;
   trophyCount: number;
-  
+
   hasMissedToday: boolean;
   hasMissedYesterday: boolean;
   hasPreviousRecords: boolean;
@@ -34,7 +35,7 @@ export interface GamificationState {
   providedIn: 'root'
 })
 export class GamificationService {
-  private persistence = inject(PocketbaseAdapterService);
+  private persistence = inject(PERSISTENCE_ADAPTER);
   private refresh$ = new BehaviorSubject<void>(undefined);
 
   private state$ = this.refresh$.pipe(
@@ -52,165 +53,135 @@ export class GamificationService {
 
   private calculateGamification(): Observable<GamificationState> {
     const today = new Date();
-    const pastDate = new Date(today);
-    // On requête jusqu'à 90 jours en arrière pour le streak courant
-    pastDate.setDate(pastDate.getDate() - 90); 
-    
-    const startDate = this.formatDate(pastDate);
-    const endDate = this.formatDate(today);
+    const pastDate = offsetDate(-90, today);
+
+    const startDate = formatDate(pastDate);
+    const endDate = formatDate(today);
 
     return this.persistence.getDailyLogs(startDate, endDate).pipe(
       map(logs => {
-        const state: GamificationState = {
-          regularStreak: 0,
-          perfectStreak: 0,
-          tier: 'flame',
-          starsCount: 0,
-          daysToNextStar: 7,
-          trophyCount: 0,
-          hasMissedToday: false,
-          hasMissedYesterday: false,
-          hasPreviousRecords: logs.length > 0,
-          showCongratulation: false,
-          history: []
-        };
-
+        const state = this.createInitialState(logs.length > 0);
         if (logs.length === 0) return state;
 
-        const todayStr = this.formatDate(today);
-        const yesterdayDate = new Date(today);
-        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-        const yesterdayStr = this.formatDate(yesterdayDate);
-
-        // Récupérer uniquement le dernier log par date (triés par -created par notre API)
-        const latestLogsMap = new Map<string, DailyLog>();
-        logs.forEach(log => {
-          if (!latestLogsMap.has(log.date)) {
-            latestLogsMap.set(log.date, log);
-          }
-        });
+        const latestLogsMap = this.buildLatestLogsMap(logs);
+        const todayStr = formatDate(today);
+        const yesterdayStr = formatDate(offsetDate(-1, today));
 
         const yesterdayLog = latestLogsMap.get(yesterdayStr);
         const todayLog = latestLogsMap.get(todayStr);
 
-        // Alertes Gamification de Prise Manquée
         state.hasMissedYesterday = !yesterdayLog || yesterdayLog.intakes.some(i => !i.taken);
         state.hasMissedToday = !!todayLog && todayLog.intakes.some(i => !i.taken);
 
-        // Calcul des historiques pour explication (Supervision)
-        const history: ScoringEvent[] = [];
-        let tempPerfect = 0;
-        let tempRegular = 0;
-        let hPtr = new Date(today);
-        if (!todayLog) hPtr.setDate(hPtr.getDate() - 1);
+        state.history = this.generateHistory(latestLogsMap, today);
 
-        // On remonte jusqu'à 21 jours pour l'historique d'explication
-        for (let i = 0; i < 21; i++) {
-            const dateStr = this.formatDate(hPtr);
-            const log = latestLogsMap.get(dateStr);
-            
-            if (!log) {
-                history.push({ 
-                    date: dateStr, 
-                    type: 'flame', 
-                    change: 0, 
-                    isBroken: true,
-                    reason: "Oubli total (aucune saisie)" 
-                });
-                break; // On s'arrête au premier blocage pour l'explication de la série actuelle
-            }
+        state.regularStreak = this.calculateStreak(latestLogsMap, today, todayLog, (log) => log.intakes.some(i => i.taken));
+        state.perfectStreak = this.calculateStreak(latestLogsMap, today, todayLog, (log) => !log.intakes.some(i => !i.taken));
 
-            const isPerfect = !log.intakes.some(it => !it.taken);
-            const isRegular = log.intakes.some(it => it.taken);
-
-            if (isPerfect) {
-                tempPerfect++;
-                // On détermine le type en fonction du cumul actuel (28 jours = Trophée)
-                const eventType = tempPerfect >= 28 ? 'trophy' : 'star';
-                history.push({ 
-                    date: dateStr, 
-                    type: eventType, 
-                    change: 1,
-                    reason: tempPerfect >= 28 ? "Excellence : 28 jours parfaits ! 🏆" : "Journée parfaite ! 100% des doses"
-                });
-            } else if (isRegular) {
-                tempRegular++;
-                history.push({ 
-                    date: dateStr, 
-                    type: 'flame', 
-                    change: 1,
-                    reason: "Doses partielles, la flamme continue"
-                });
-                // Si on était dans une série parfaite, elle se brise ici
-                if (tempPerfect > 0) {
-                     history[history.length-1].isBroken = true;
-                     history[history.length-1].reason = "Dose manquée : la progression vers l'étoile/trophée s'arrête mais la flamme reste !";
-                }
-                tempPerfect = 0; // Reset progression parfaite
-            } else {
-                history.push({ 
-                    date: dateStr, 
-                    type: 'flame', 
-                    change: 0, 
-                    isBroken: true,
-                    reason: "Aucune dose prise ce jour-là" 
-                });
-                break;
-            }
-            hPtr.setDate(hPtr.getDate() - 1);
-        }
-        state.history = history;
-
-        // Calcul du Regular Streak (Flamme) : au moins 1 dose prise
-        let currentRegular = 0;
-        let datePtr = new Date(today);
-        if (!todayLog) {
-           datePtr.setDate(datePtr.getDate() - 1); // today is ignored if empty
-        }
-        while (currentRegular < 90) {
-            const dateStr = this.formatDate(datePtr);
-            const log = latestLogsMap.get(dateStr);
-            // La condition régulière : log existe ET au moins 1 prise = true
-            if (!log || !log.intakes.some(i => i.taken)) break;
-            currentRegular++;
-            datePtr.setDate(datePtr.getDate() - 1);
-        }
-
-        // Calcul du Perfect Streak (Étoile) : toutes les doses prises
-        let currentPerfect = 0;
-        datePtr = new Date(today);
-        if (!todayLog) {
-            datePtr.setDate(datePtr.getDate() - 1);
-        }
-        while (currentPerfect < 90) {
-            const dateStr = this.formatDate(datePtr);
-            const log = latestLogsMap.get(dateStr);
-            // Condition parfaite : log existe ET aucune prise = false
-            if (!log || log.intakes.some(i => !i.taken)) break;
-            currentPerfect++;
-            datePtr.setDate(datePtr.getDate() - 1);
-        }
-
-        state.regularStreak = currentRegular;
-        state.perfectStreak = currentPerfect;
-
-        // Logique des Tiers
-        if (currentPerfect >= 28) {
-          state.tier = 'trophy';
-          state.trophyCount = Math.floor(currentPerfect / 28);
-        } else if (currentPerfect >= 7) {
-          state.tier = 'star';
-          state.starsCount = Math.floor(currentPerfect / 7);
-          state.daysToNextStar = 7 - (currentPerfect % 7);
-        } else {
-          state.tier = 'flame';
-        }
-
-        state.showCongratulation = currentRegular >= 14;
+        this.applyTierLogic(state, state.perfectStreak);
+        state.showCongratulation = state.regularStreak >= 14;
 
         return state;
       })
     );
+  }
+
+  private createInitialState(hasRecords: boolean): GamificationState {
+    return {
+      regularStreak: 0,
+      perfectStreak: 0,
+      tier: 'flame',
+      starsCount: 0,
+      daysToNextStar: 7,
+      trophyCount: 0,
+      hasMissedToday: false,
+      hasMissedYesterday: false,
+      hasPreviousRecords: hasRecords,
+      showCongratulation: false,
+      history: []
+    };
+  }
+
+  private buildLatestLogsMap(logs: DailyLog[]): Map<string, DailyLog> {
+    const map = new Map<string, DailyLog>();
+    logs.forEach(log => {
+      if (!map.has(log.date)) map.set(log.date, log);
+    });
+    return map;
+  }
+
+  private calculateStreak(logsMap: Map<string, DailyLog>, today: Date, todayLog: DailyLog | undefined, condition: (log: DailyLog) => boolean): number {
+    let streak = 0;
+    let datePtr = new Date(today);
+    if (!todayLog) datePtr = offsetDate(-1, datePtr);
+
+    while (streak < 90) {
+      const dateStr = formatDate(datePtr);
+      const log = logsMap.get(dateStr);
+      if (!log || !condition(log)) break;
+      streak++;
+      datePtr = offsetDate(-1, datePtr);
+    }
+    return streak;
+  }
+
+  private generateHistory(logsMap: Map<string, DailyLog>, today: Date): ScoringEvent[] {
+    const history: ScoringEvent[] = [];
+    let tempPerfect = 0;
+    let tempRegular = 0;
+
+    let hPtr = new Date(today);
+    if (!logsMap.has(formatDate(hPtr))) hPtr = offsetDate(-1, hPtr);
+
+    for (let i = 0; i < 21; i++) {
+      const dateStr = formatDate(hPtr);
+      const log = logsMap.get(dateStr);
+
+      if (!log) {
+        history.push({ date: dateStr, type: 'flame', change: 0, isBroken: true, reason: "Oubli total (aucune saisie)" });
+        break;
+      }
+
+      const isPerfect = !log.intakes.some(it => !it.taken);
+      const isRegular = log.intakes.some(it => it.taken);
+
+      if (isPerfect) {
+        tempPerfect++;
+        const eventType = tempPerfect >= 28 ? 'trophy' : 'star';
+        history.push({
+          date: dateStr,
+          type: eventType,
+          change: 1,
+          reason: tempPerfect >= 28 ? "Excellence : 28 jours parfaits ! 🏆" : "Journée parfaite ! 100% des doses"
+        });
+      } else if (isRegular) {
+        tempRegular++;
+        history.push({ date: dateStr, type: 'flame', change: 1, reason: "Doses partielles, la flamme continue" });
+        if (tempPerfect > 0) {
+          history[history.length - 1].isBroken = true;
+          history[history.length - 1].reason = "Dose manquée : la progression vers l'étoile/trophée s'arrête mais la flamme reste !";
+        }
+        tempPerfect = 0;
+      } else {
+        history.push({ date: dateStr, type: 'flame', change: 0, isBroken: true, reason: "Aucune dose prise ce jour-là" });
+        break;
+      }
+      hPtr = offsetDate(-1, hPtr);
+    }
+    return history;
+  }
+
+  private applyTierLogic(state: GamificationState, perfect: number) {
+    if (perfect >= 28) {
+      state.tier = 'trophy';
+      state.trophyCount = Math.floor(perfect / 28);
+    } else if (perfect >= 7) {
+      state.tier = 'star';
+      state.starsCount = Math.floor(perfect / 7);
+      state.daysToNextStar = 7 - (perfect % 7);
+    } else {
+      state.tier = 'flame';
+    }
   }
 
   checkAndCelebrate(state: GamificationState) {
@@ -226,12 +197,5 @@ export class GamificationService {
       origin: { y: 0.6 },
       colors: ['#8b5cf6', '#d946ef', '#10b981', '#f59e0b', '#f43f5e']
     });
-  }
-
-  private formatDate(date: Date): string {
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
   }
 }

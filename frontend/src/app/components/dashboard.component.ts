@@ -1,20 +1,21 @@
 import { Component, PLATFORM_ID, inject, signal } from '@angular/core';
-import { NgClass, isPlatformBrowser, AsyncPipe } from '@angular/common';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NgClass, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../services/report.service';
 import { GamificationService } from '../services/gamification.service';
 import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
-import { HealthStatus } from '../models/allergi-track.model';
+import { HealthStatus } from '../models/allergy-track.model';
 import { MatIconModule } from '@angular/material/icon';
 import { GamificationHistoryComponent } from './layout/gamification-history.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, MatIconModule, NgClass, AsyncPipe, GamificationHistoryComponent],
+  imports: [FormsModule, MatIconModule, NgClass, GamificationHistoryComponent],
   template: `
-    <app-gamification-history [state]="gamification.getGamificationState() | async" />
+    <app-gamification-history [state]="gState()" />
 
     <div [ngClass]="theme.cardClass()" class="p-6 mb-6">
       <div class="flex justify-between items-center mb-6">
@@ -83,6 +84,8 @@ export class DashboardComponent {
   copy = inject(CopywritingService);
   private platformId = inject(PLATFORM_ID);
 
+  gState = toSignal(this.gamification.getGamificationState(), { initialValue: null });
+
   startDate = new Date(new Date().setDate(1)).toISOString().split('T')[0]; // First day of current month
   endDate = new Date().toISOString().split('T')[0]; // Today
 
@@ -113,17 +116,7 @@ export class DashboardComponent {
 
   exportReport() {
     if (this.startDate && this.endDate) {
-      this.reportService.generateCsvReport(this.startDate, this.endDate).subscribe(csv => {
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `AllergiTrack_Report_${this.startDate}_${this.endDate}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
+      this.reportService.downloadCsvReport(this.startDate, this.endDate);
     }
   }
 }

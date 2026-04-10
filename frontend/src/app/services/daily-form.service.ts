@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormArray, FormControl, ValidatorFn, AbstractControl, ValidationErrors  } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, FormArray, FormControl, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Observable, throwError } from 'rxjs';
-import { DailyLog } from '../models/allergi-track.model';
-import { PocketbaseAdapterService } from './persistence/pocketbase-adapter.service';
+import { DailyLog } from '../models/allergy-track.model';
+import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
 import { AuthService } from './auth.service';
 
 export function atLeastOneTakenValidator(): ValidatorFn {
@@ -29,7 +29,7 @@ export function atLeastOneSymptomValidator(): ValidatorFn {
 })
 export class DailyFormService {
   private fb = inject(FormBuilder);
-  private persistence = inject(PocketbaseAdapterService);
+  private persistence = inject(PERSISTENCE_ADAPTER);
   private auth = inject(AuthService);
 
   createForm(): FormGroup {
@@ -139,7 +139,7 @@ export class DailyFormService {
         updatedAt: new Date().toISOString(),
         updatedBy: this.auth.currentUser().id
       };
-      
+
       return this.persistence.saveDailyLog(log);
     }
     return throwError(() => new Error('Form is invalid'));
