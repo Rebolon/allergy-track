@@ -1,17 +1,17 @@
 # Allergy Track 📝🍎
 
-Allergy Track est une application web PWA moderne conçue pour accompagner les patients (enfants et adultes) dans leur protocole de désensibilisation aux allergies alimentaires.
+Allergy Track est une application web PWA moderne conçue pour accompagner les patients dans leur protocole de désensibilisation aux allergies alimentaires.
 
-L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'apparition de potentiels symptômes, ainsi que l'administration des traitements prescrits. Son architecture s'adapte à l'âge et au profil de l'utilisateur avec un système de **thèmes dynamiques** et une riche dimension de **gamification**.
+L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'apparition de potentiels symptômes, ainsi que l'administration des traitements prescrits. Son architecture s'adapte aux préférences de l'utilisateur avec un système de **Personas** dynamiques et une riche dimension de **gamification**.
 
 ## 🚀 Fonctionnalités Clés
 
 - **Suivi Quotidien** : Saisie rapide des doses (Cacahuètes, Noix de Cajou, etc.), des traitements (Antihistaminique, Adrénaline) et des symptômes observés.
-- **Thèmes Personnalisés** : Un design adaptatif proposant un look « Flashy 🌈 » très coloré pour stimuler les enfants, ou un look « Classique 🕶️ » plus sobre pour le profil médical ou adolescent.
+- **Themes & Personas** : Un design adaptatif proposant un look « Flashy 🌈 » coloré pour une expérience ludique, ou un look « Classique 🕶️ » plus sobre pour un suivi épuré.
 - **Gamification & Récompenses** :
   - 🔥 **Flamme de Régularité** : Récompense simplement le fait de maintenir le rythme et de remplir le journal, même partiellement.
   - ⭐ **L'Étoile Parfaite** : Récompense les parcours sans-fautes (100% des doses prévues cochées). Des **Confettis** explosent à des intervalles précis (7, 14, 21 jours parfaits consécutifs) !
-- **Tableau de Bord Sprint** : Visualisation en mode feu tricolore (VERT, ORANGE, ROUGE) de l'état de santé sur le mois en cours.
+- **Bilan Santé** : Dashboard de visualisation en mode feu tricolore (VERT, ORANGE, ROUGE) de l'état de santé sur la période de votre choix.
 - **Résilience & Gestion d'Erreurs** : Système de détection automatique des pertes de connexion avec le serveur distant. En cas de coupure (réseau ou serveur), une modale de blocage sécurise l'application et propose une reconnexion par rafraîchissement.
 
 ## 🛠️ Stack Technique
@@ -100,4 +100,4 @@ Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification.
 
 ## TODO
 - Check push notifications (Service Worker)
-- Système d'invitation parent/enfant par email
+- Système d'invitation et partage de compte par email

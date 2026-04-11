@@ -1,5 +1,5 @@
 {
   "name": "AllergyTrack",
-  "description": "Application de suivi médical de désensibilisation alimentaire pour parent et enfant.",
+  "description": "Application d'accompagnement médical pour des protocoles de désensibilisation aux allergies alimentaire ou autres.",
   "requestFramePermissions": []
 }

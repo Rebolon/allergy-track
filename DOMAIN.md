@@ -2,18 +2,20 @@
 
 Ce document détaille les règles de gestion et de calcul au cœur de l'application Allergy Track.
 
-## 👥 Profils Utilisateurs
-
-L'application gère deux types d'utilisateurs via le système de **Personas** :
-
-1.  **Enfant** : Interface ludique (« Flashy »), mise en avant de la gamification (flammes, confettis).
-2.  **Adulte / Médical** : Interface sobre (« Classique »), accès aux outils de supervision et aux suivis détaillés.
+## 👥 Personas
+ 
+L'application propose deux styles visuels via le système de **Personas** :
+ 
+1.  **Flashy** : Interface ludique et colorée, mise en avant de la gamification (flammes, confettis).
+2.  **Classique** : Interface sobre et épurée, idéale pour un suivi plus discret ou médical.
+ 
+L'utilisateur peut basculer entre ces deux modes à tout moment selon ses préférences.
 
 ---
 
-## 💉 Suivi des Protocoles
-
-Chaque jour, l'enfant doit enregistrer la prise de ses doses d'allergènes (ex: Cracotte, Noix de Cajou, Cacahuète).
+## 💉 Journal des Protocoles
+ 
+Chaque jour, l'utilisateur enregistre la prise de ses doses d'allergènes (ex: Cracotte, Noix de Cajou, Cacahuète).
 
 - **Prise Complète** : Toutes les doses cochées.
 - **Prise Partielle** : Au moins une dose cochée mais pas toutes.
@@ -50,9 +52,9 @@ L'application utilise une progression par paliers pour récompenser la régulari
 
 ---
 
-## 📊 Supervision (Tableau de Bord)
-
-Le tableau de bord permet à l'adulte de visualiser l'état de santé du patient sur une période donnée (mois en cours par défaut).
+## 📊 Bilan Santé (Tableau de Bord)
+ 
+Le tableau de bord permet de visualiser l'état de santé sur une période donnée (mois en cours par défaut).
 
 ### Règle de Détection des Oublis (Doses)
 Le compteur d'oublis suit une logique de **"1 oubli par jour"** :
@@ -81,7 +83,7 @@ Les symptômes sont classés par gravité pour le calcul du statut :
 - **Légers** : Démangeaisons bouche.
 - **Sévères** : Respiratoire, Abdominal, Autres.
 
-La prise de traitements (Antihistaminique, Aerius, Adrénaline) déclenche automatiquement un statut **ROUGE** dans la supervision car elle indique une réaction allergique traitée.
+La prise de traitements (Antihistaminique, Aerius, Adrénaline) déclenche automatiquement un statut **ROUGE** dans le Bilan Santé car elle indique une réaction allergique traitée.
 
 ---
 
