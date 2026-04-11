@@ -1,18 +1,18 @@
 # Allergy Track 📝🍎
 
-Allergy Track est une application web PWA moderne conçue pour accompagner les patients dans leur protocole de désensibilisation aux allergies alimentaires.
+Allergy Track est une application web PWA moderne conçue pour accompagner les patients dans leur protocole de désensibilisation aux allergies alimentaires ou autres.
 
 L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'apparition de potentiels symptômes, ainsi que l'administration des traitements prescrits. Son architecture s'adapte aux préférences de l'utilisateur avec un système de **Personas** dynamiques et une riche dimension de **gamification**.
 
 ## 🚀 Fonctionnalités Clés
 
-- **Suivi Quotidien** : Saisie rapide des doses (Cacahuètes, Noix de Cajou, etc.), des traitements (Antihistaminique, Adrénaline) et des symptômes observés.
-- **Themes & Personas** : Un design adaptatif proposant un look « Flashy 🌈 » coloré pour une expérience ludique, ou un look « Classique 🕶️ » plus sobre pour un suivi épuré.
-- **Gamification & Récompenses** :
-  - 🔥 **Flamme de Régularité** : Récompense simplement le fait de maintenir le rythme et de remplir le journal, même partiellement.
-  - ⭐ **L'Étoile Parfaite** : Récompense les parcours sans-fautes (100% des doses prévues cochées). Des **Confettis** explosent à des intervalles précis (7, 14, 21 jours parfaits consécutifs) !
-- **Bilan Santé** : Dashboard de visualisation en mode feu tricolore (VERT, ORANGE, ROUGE) de l'état de santé sur la période de votre choix.
-- **Résilience & Gestion d'Erreurs** : Système de détection automatique des pertes de connexion avec le serveur distant. En cas de coupure (réseau ou serveur), une modale de blocage sécurise l'application et propose une reconnexion par rafraîchissement.
+- **Multi-Profils & Famille** : Gérez plusieurs dossiers (enfants, proches) depuis un compte unique. Basculez instantanément entre les profils via un système d'onglets intelligents.
+- **Dossiers Locaux & Invités** : Créez des dossiers locaux pour les enfants sans compte, ou invitez d'autres utilisateurs à superviser vos données via un système de codes sécurisés.
+- **Suivi Quotidien Isolé** : Chaque profil possède son propre protocole, son historique de doses (Cacahuètes, Noix de Cajou, etc.), ses traitements et ses symptômes.
+- **Authentification Hybride** : Connexion sécurisée via le SSO Synology ou par Email/Mot de passe pour une installation flexible.
+- **Themes & Personas** : Un design adaptatif proposant un look « Flashy 🌈 » ludique, ou un look « Classique 🕶️ » plus médical, configurable par profil.
+- **Gamification Individualisée** : Calcul des flammes, étoiles et trophées spécifique à chaque profil pour une motivation maximale.
+- **Bilan Santé (Supervision)** : Dashboard complet en mode feu tricolore (VERT, ORANGE, ROUGE) pour surveiller en un coup d'œil l'état de santé de tous vos proches.
 
 ## 🛠️ Stack Technique
 
@@ -95,9 +95,11 @@ Pour travailler sur le frontend avec rechargement à chaud :
     - `Panneau de configuration > Portail de connexion > Avancé > Proxy inversé`.
     - `https://votre-domaine.com` (443) -> `http://localhost:8090` (8090).
 
-## 📜 Règles Métiers (Domain)
-Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification.
+## 📜 Règles Métiers & Sécurité
+- Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification et les rôles.
+- Consultez [AUTH.md](./AUTH.md) pour configurer le SSO Synology ou l'accès Email.
 
 ## TODO
 - Check push notifications (Service Worker)
-- Système d'invitation et partage de compte par email
+- Optimization for multi-device real-time sync
+- Advanced charts for long-term health trends

@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { User, Role } from '../models/allergy-track.model';
+import { User, Role, Profile } from '../models/allergy-track.model';
 import { AUTH_ADAPTER } from './adapters/auth.adapter';
 
 @Injectable({
@@ -10,11 +10,11 @@ export class AuthService {
 
   // Signaux d'état
   currentUser = signal<User | null>(null);
+  activeProfile = signal<Profile | null>(null);
   isAuthenticated = signal<boolean>(false);
-  isReady = signal<boolean>(false); // Indique si la session initiale a été vérifiée
+  isReady = signal<boolean>(false);
 
   constructor() {
-    // Initialisation
     this.checkSession();
   }
 
@@ -22,16 +22,19 @@ export class AuthService {
     if (this.adapter.getAuthUser && this.adapter.isAuthenticated) {
       const isAuth = this.adapter.isAuthenticated();
       this.isAuthenticated.set(isAuth);
-      this.currentUser.set(this.adapter.getAuthUser());
+      const user = this.adapter.getAuthUser();
+      this.currentUser.set(user);
+      if (user && user.profiles.length > 0) {
+        this.activeProfile.set(user.profiles[0]);
+      }
     } else {
-      // Fallback pour le mock adapter s'il n'implémente pas encore tout
       const defaultUser = this.adapter.getUsers().find(u => u.id === 'u2') || null;
       this.currentUser.set(defaultUser);
       this.isAuthenticated.set(!!defaultUser);
+      if (defaultUser && defaultUser.profiles.length > 0) {
+        this.activeProfile.set(defaultUser.profiles[0]);
+      }
     }
-    
-    // On marque l'auth comme prête après un léger délai pour le splashscreen (ou immédiatement en dev)
-    // Mais ici on se contente de mettre à true, le splash screen gérera son propre délai.
     this.isReady.set(true);
   }
 
@@ -42,34 +45,43 @@ export class AuthService {
     }
   }
 
+  async loginWithPassword(email: string, pass: string) {
+    if (this.adapter.loginWithPassword) {
+      await this.adapter.loginWithPassword(email, pass);
+      this.checkSession();
+    }
+  }
+
   async logout() {
     if (this.adapter.logout) {
       await this.adapter.logout();
     }
     this.currentUser.set(null);
+    this.activeProfile.set(null);
     this.isAuthenticated.set(false);
   }
 
-  updateSuiviTheme(newTheme: 'flashy' | 'classic') {
+  updateProfileTheme(newTheme: 'flashy' | 'classic') {
+    const profile = this.activeProfile();
     const user = this.currentUser();
-    if (user) {
-      user.themePreference = newTheme;
+    if (profile && user) {
+      profile.themePreference = newTheme;
+      const pIdx = user.profiles.findIndex(p => p.id === profile.id);
+      if (pIdx !== -1) user.profiles[pIdx] = { ...profile };
+      
       this.adapter.updateUser(user);
+      this.activeProfile.set({ ...profile });
       this.currentUser.set({ ...user });
     }
   }
 
-  switchUser(role: Role) {
-    const user = this.adapter.getUsers().find(u => u.role === role);
+  switchProfile(profileId: string) {
+    const user = this.currentUser();
     if (user) {
-      this.currentUser.set(user);
-    }
-  }
-
-  switchSpecificUser(id: string) {
-    const user = this.adapter.getUsers().find(u => u.id === id);
-    if (user) {
-      this.currentUser.set(user);
+      const profile = user.profiles.find(p => p.id === profileId);
+      if (profile) {
+        this.activeProfile.set(profile);
+      }
     }
   }
 

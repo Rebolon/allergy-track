@@ -1,4 +1,4 @@
-import { Injectable, signal, Inject, PLATFORM_ID, effect } from '@angular/core';
+import { Injectable, signal, Inject, PLATFORM_ID, effect, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 export interface ProtocolItem {
@@ -29,54 +29,51 @@ export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
   ]
 };
 
+import { AuthService } from './auth.service';
+
 @Injectable({
   providedIn: 'root'
 })
 export class ProtocolService {
-  private readonly PROTOCOL_KEY = 'allergy_track_protocols';
-  private readonly PROTOCOL_START_KEY = 'allergy_track_start_date';
-  private readonly SYMPTOMS_KEY = 'allergy_track_symptoms';
+  private auth = inject(AuthService);
+  
+  private get PROTOCOL_KEY() {
+    const profile = this.auth.activeProfile();
+    return `allergy_track_protocols_${profile?.id || 'default'}`;
+  }
+  private get PROTOCOL_START_KEY() {
+    const profile = this.auth.activeProfile();
+    return `allergy_track_start_date_${profile?.id || 'default'}`;
+  }
+  private get SYMPTOMS_KEY() {
+    const profile = this.auth.activeProfile();
+    return `allergy_track_symptoms_${profile?.id || 'default'}`;
+  }
   
   public readonly protocols = signal<ProtocolItem[]>(this.getDefaultProtocols());
   public readonly protocolStartDate = signal<string | null>(null);
   public readonly symptoms = signal<SymptomItem[]>(SYMPTOM_PRESETS['reintroduction']);
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
-    if (isPlatformBrowser(this.platformId)) {
-      const saved = localStorage.getItem(this.PROTOCOL_KEY);
-      if (saved) {
-        try {
-          this.protocols.set(JSON.parse(saved));
-        } catch(e) {
-          console.error("Invalid protocol in local storage", e);
-        }
+    // Watch for profile changes to reload data
+    effect(() => {
+      const profile = this.auth.activeProfile();
+      if (profile && isPlatformBrowser(this.platformId)) {
+        this.loadProfileData();
       }
-      
-      const savedStart = localStorage.getItem(this.PROTOCOL_START_KEY);
-      if (savedStart) {
-        this.protocolStartDate.set(savedStart);
-      }
+    }, { allowSignalWrites: true });
 
-      const savedSymptoms = localStorage.getItem(this.SYMPTOMS_KEY);
-      if (savedSymptoms) {
-        try {
-          this.symptoms.set(JSON.parse(savedSymptoms));
-        } catch(e) {
-          console.error('Invalid symptoms in local storage', e);
-        }
-      }
-    }
-
+    // Auto-save effects
     effect(() => {
       const current = this.protocols();
-      if (isPlatformBrowser(this.platformId)) {
+      if (isPlatformBrowser(this.platformId) && this.auth.isAuthenticated()) {
         localStorage.setItem(this.PROTOCOL_KEY, JSON.stringify(current));
       }
     });
 
     effect(() => {
       const start = this.protocolStartDate();
-      if (isPlatformBrowser(this.platformId)) {
+      if (isPlatformBrowser(this.platformId) && this.auth.isAuthenticated()) {
         if (start) {
           localStorage.setItem(this.PROTOCOL_START_KEY, start);
         } else {
@@ -87,12 +84,38 @@ export class ProtocolService {
 
     effect(() => {
       const syms = this.symptoms();
-      if (isPlatformBrowser(this.platformId)) {
+      if (isPlatformBrowser(this.platformId) && this.auth.isAuthenticated()) {
         localStorage.setItem(this.SYMPTOMS_KEY, JSON.stringify(syms));
       }
     });
+  }
 
-    // In case there are old protocols without createdAt or frequencyDays, migrate them
+  private loadProfileData() {
+    const saved = localStorage.getItem(this.PROTOCOL_KEY);
+    if (saved) {
+      try {
+        this.protocols.set(JSON.parse(saved));
+      } catch(e) {
+        this.protocols.set(this.getDefaultProtocols());
+      }
+    } else {
+      this.protocols.set(this.getDefaultProtocols());
+    }
+    
+    const savedStart = localStorage.getItem(this.PROTOCOL_START_KEY);
+    this.protocolStartDate.set(savedStart || null);
+
+    const savedSymptoms = localStorage.getItem(this.SYMPTOMS_KEY);
+    if (savedSymptoms) {
+      try {
+        this.symptoms.set(JSON.parse(savedSymptoms));
+      } catch(e) {
+        this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
+      }
+    } else {
+      this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
+    }
+
     this.migrateProtocols();
   }
 

@@ -21,6 +21,7 @@ import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.co
 import { ErrorService } from './services/error.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
+import { ProfileSwitcherComponent } from './components/layout/profile-switcher.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,6 +38,7 @@ import { startWith } from 'rxjs';
     GamificationSummaryComponent,
     GamificationHistoryComponent,
     TopNavComponent,
+    ProfileSwitcherComponent,
     GlobalErrorModalComponent,
     SplashScreenComponent,
     MatIconModule
@@ -53,6 +55,9 @@ import { startWith } from 'rxjs';
 
       <!-- Desktop Nav -->
       <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
+
+      <!-- Multi-Profile Tabs (appear only if > 1 profile) -->
+      <app-profile-switcher />
 
       <!-- Main Content -->
       <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">

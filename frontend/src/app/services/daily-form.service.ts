@@ -72,7 +72,10 @@ export class DailyFormService {
     const protocolStart = this.protocolService.protocolStartDate();
     const isBeforeProtocol = protocolStart ? date < protocolStart : false;
 
-    this.persistence.getDailyLog(date).subscribe(log => {
+    const profile = this.auth.activeProfile();
+    if (!profile) return;
+
+    this.persistence.getDailyLog(profile.id, date).subscribe(log => {
       const intakesArray = form.get('intakes') as FormArray;
       const treatmentsArray = form.get('treatments') as FormArray;
       const symptomsArray = form.get('symptoms') as FormArray;
@@ -138,10 +141,16 @@ export class DailyFormService {
 
   saveLog(form: FormGroup): Observable<DailyLog> {
     if (form.valid) {
+      const profile = this.auth.activeProfile();
+      const user = this.auth.currentUser();
+      
+      if (!profile || !user) return throwError(() => new Error('No active profile'));
+
       const log: DailyLog = {
         ...form.value,
         updatedAt: new Date().toISOString(),
-        updatedBy: this.auth.currentUser().id
+        updatedBy: user.id,
+        profileId: profile.id
       };
 
       return this.persistence.saveDailyLog(log);
