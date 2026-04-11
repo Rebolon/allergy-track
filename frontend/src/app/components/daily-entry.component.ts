@@ -69,17 +69,21 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
                     </div>
                   </div>
                 </div>
-                <label class="cursor-pointer ml-3 shrink-0 flex items-center justify-center w-10 h-10 rounded-full border-[3px] transition-all hover:bg-[var(--color-primary)]/10"
-                       [class.bg-[var(--color-primary)]]="intake.get('taken')?.value" 
-                       [class.border-[var(--color-primary)]]="intake.get('taken')?.value"
-                       [class.text-white]="intake.get('taken')?.value"
-                       [class.bg-slate-50]="!intake.get('taken')?.value"
-                       [class.border-slate-300]="!intake.get('taken')?.value"
-                       [class.text-transparent]="!intake.get('taken')?.value"
-                       [class.opacity-50]="form.disabled">
-                  <input type="checkbox" formControlName="taken" class="sr-only">
-                  <lucide-icon [img]="Check" [size]="20" [strokeWidth]="3.5"></lucide-icon>
-                </label>
+                <!-- Animated Checkbox (intake) -->
+                <button type="button" class="check-btn ml-3 shrink-0 w-10 h-10"
+                        [disabled]="form.disabled"
+                        [class.opacity-50]="form.disabled"
+                        (click)="toggleIntake($index)">
+                  <div class="check-sparkle" [class.burst]="intakeBurst[$index]"></div>
+                  <div class="check-ring w-10 h-10"
+                       [class.is-checked]="intake.get('taken')?.value"
+                       [class.is-unchecked]="intakeUnchecked[$index]"
+                       [style.background-color]="intake.get('taken')?.value ? 'var(--color-primary)' : '#f8fafc'"
+                       [style.border-color]="intake.get('taken')?.value ? 'var(--color-primary)' : '#cbd5e1'"
+                       [style.color]="intake.get('taken')?.value ? 'white' : 'transparent'">
+                    <lucide-icon [img]="Check" [size]="20" [strokeWidth]="3.5"></lucide-icon>
+                  </div>
+                </button>
               </div>
             }
           </div>
@@ -131,32 +135,32 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
                   <span class="font-bold text-[var(--color-text)]">{{ treatment.get('name')?.value }}</span>
                 </div>
                 <div class="flex gap-4">
-                  <label class="cursor-pointer flex items-center gap-2" [class.opacity-50]="form.disabled" [class.cursor-not-allowed]="form.disabled">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full border-[3px] transition-all hover:bg-emerald-50"
-                         [class.bg-emerald-500]="treatment.get('before')?.value" 
-                         [class.border-emerald-500]="treatment.get('before')?.value"
-                         [class.text-white]="treatment.get('before')?.value"
-                         [class.bg-slate-50]="!treatment.get('before')?.value"
-                         [class.border-slate-300]="!treatment.get('before')?.value"
-                         [class.text-transparent]="!treatment.get('before')?.value">
-                      <input type="checkbox" formControlName="before" class="sr-only">
+                  <!-- Before -->
+                  <button type="button" class="check-btn flex-col gap-1" [disabled]="form.disabled" [class.opacity-50]="form.disabled" (click)="toggleTreatment($index, 'before')">
+                    <div class="check-sparkle" [class.burst]="treatmentBurst[$index + '_before']"></div>
+                    <div class="check-ring w-8 h-8"
+                         [class.is-checked]="treatment.get('before')?.value"
+                         [class.is-unchecked]="treatmentUnchecked[$index + '_before']"
+                         [style.background-color]="treatment.get('before')?.value ? '#10b981' : '#f8fafc'"
+                         [style.border-color]="treatment.get('before')?.value ? '#10b981' : '#cbd5e1'"
+                         [style.color]="treatment.get('before')?.value ? 'white' : 'transparent'">
                       <lucide-icon [img]="Check" [size]="16" [strokeWidth]="3.5"></lucide-icon>
                     </div>
                     <span class="text-xs font-bold text-slate-500">Avant</span>
-                  </label>
-                  <label class="cursor-pointer flex items-center gap-2" [class.opacity-50]="form.disabled" [class.cursor-not-allowed]="form.disabled">
-                    <div class="flex items-center justify-center w-8 h-8 rounded-full border-[3px] transition-all hover:bg-emerald-50"
-                         [class.bg-emerald-500]="treatment.get('after')?.value" 
-                         [class.border-emerald-500]="treatment.get('after')?.value"
-                         [class.text-white]="treatment.get('after')?.value"
-                         [class.bg-slate-50]="!treatment.get('after')?.value"
-                         [class.border-slate-300]="!treatment.get('after')?.value"
-                         [class.text-transparent]="!treatment.get('after')?.value">
-                      <input type="checkbox" formControlName="after" class="sr-only">
+                  </button>
+                  <!-- After -->
+                  <button type="button" class="check-btn flex-col gap-1" [disabled]="form.disabled" [class.opacity-50]="form.disabled" (click)="toggleTreatment($index, 'after')">
+                    <div class="check-sparkle" [class.burst]="treatmentBurst[$index + '_after']"></div>
+                    <div class="check-ring w-8 h-8"
+                         [class.is-checked]="treatment.get('after')?.value"
+                         [class.is-unchecked]="treatmentUnchecked[$index + '_after']"
+                         [style.background-color]="treatment.get('after')?.value ? '#10b981' : '#f8fafc'"
+                         [style.border-color]="treatment.get('after')?.value ? '#10b981' : '#cbd5e1'"
+                         [style.color]="treatment.get('after')?.value ? 'white' : 'transparent'">
                       <lucide-icon [img]="Check" [size]="16" [strokeWidth]="3.5"></lucide-icon>
                     </div>
                     <span class="text-xs font-bold text-slate-500">Après</span>
-                  </label>
+                  </button>
                 </div>
               </div>
             }
@@ -223,6 +227,28 @@ export class DailyEntryComponent {
   saveSuccess = signal(false);
   saveError = signal<string | null>(null);
   submitAttempted = signal(false);
+
+  // Animation state for intake checkboxes
+  intakeBurst: Record<number, boolean> = {};
+  intakeUnchecked: Record<number, boolean> = {};
+  // Animation state for treatment checkboxes (key = "${index}_before" or "${index}_after")
+  treatmentBurst: Record<string, boolean> = {};
+  treatmentUnchecked: Record<string, boolean> = {};
+
+  private triggerAnimation(burstMap: Record<string|number, boolean>, uncheckedMap: Record<string|number, boolean>, key: string|number, isNowChecked: boolean) {
+    if (isNowChecked) {
+      burstMap[key] = false;
+      uncheckedMap[key] = false;
+      // Micro tick to restart animation
+      setTimeout(() => { burstMap[key] = true; }, 10);
+    } else {
+      burstMap[key] = false;
+      uncheckedMap[key] = false;
+      setTimeout(() => { uncheckedMap[key] = true; }, 10);
+    }
+    // Remove animation class once done so it can re-trigger
+    setTimeout(() => { burstMap[key] = false; uncheckedMap[key] = false; }, 600);
+  }
 
   availableSymptoms = computed<SymptomItem[]>(() => {
     // 'Rien' is always first and not configurable
@@ -296,6 +322,27 @@ export class DailyEntryComponent {
 
   getSymptomEmoji = getSymptomEmoji;
   getTreatmentIcon = getTreatmentIcon;
+
+  toggleIntake(index: number) {
+    if (this.form.disabled) return;
+    const control = this.intakes.at(index).get('taken');
+    if (!control) return;
+    const newValue = !control.value;
+    control.setValue(newValue);
+    this.intakes.at(index).markAsDirty();
+    this.triggerAnimation(this.intakeBurst, this.intakeUnchecked, index, newValue);
+  }
+
+  toggleTreatment(index: number, field: 'before' | 'after') {
+    if (this.form.disabled) return;
+    const control = this.treatments.at(index).get(field);
+    if (!control) return;
+    const newValue = !control.value;
+    control.setValue(newValue);
+    this.treatments.at(index).markAsDirty();
+    const key = `${index}_${field}`;
+    this.triggerAnimation(this.treatmentBurst, this.treatmentUnchecked, key, newValue);
+  }
 
   save() {
     this.submitAttempted.set(true);
