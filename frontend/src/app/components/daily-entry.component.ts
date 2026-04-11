@@ -1,13 +1,15 @@
-import { Component, inject, input, effect, signal } from '@angular/core';
+import { Component, inject, input, effect, signal, computed } from '@angular/core';
 import { NgClass, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormArray, FormControl } from '@angular/forms';
 import { DailyFormService } from '../services/daily-form.service';
+import { ProtocolService } from '../services/protocol.service';
 import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { GamificationService } from '../services/gamification.service';
 import { MatIconModule } from '@angular/material/icon';
 import { LucideAngularModule, Activity, Check, Pill } from 'lucide-angular';
 import { Symptom } from '../models/allergy-track.model';
+import { SymptomItem } from '../services/protocol.service';
 import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
 @Component({
@@ -25,9 +27,19 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
       <form [formGroup]="form" (ngSubmit)="save()">
         
         @if (form.disabled) {
-          <div class="mb-8 p-4 bg-slate-100 text-slate-500 rounded-2xl flex items-center gap-3 font-medium border-2 border-slate-200">
-            <span class="text-2xl">⏳</span>
-            On ne peut pas encore remplir le futur ! Reviens plus tard.
+          <div class="mb-8 p-4 bg-slate-100 text-slate-500 rounded-2xl flex flex-col gap-2 font-medium border-2 border-slate-200">
+            @if (isBeforeProtocol()) {
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">🛑</span>
+                <span>Ce jour est avant le début de ton protocole ({{ protocolService.protocolStartDate() | date:'dd/MM/yyyy' }}).</span>
+              </div>
+              <div class="text-xs text-slate-400 pl-11">Tu peux modifier la date de début dans les Préférences.</div>
+            } @else {
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">⏳</span>
+                <span>On ne peut pas encore remplir le futur ! Reviens plus tard.</span>
+              </div>
+            }
           </div>
         }
 
@@ -37,6 +49,11 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
             {{ copy.protocolsTitle() }}
           </h3>
           <div formArrayName="intakes" class="space-y-3">
+            @if (intakes.length === 0) {
+              <div class="p-4 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center gap-3 text-slate-500 font-bold">
+                <span class="text-2xl">🏖️</span> Aucun allergène au programme aujourd'hui. Profite bien !
+              </div>
+            }
             @for (intake of intakes.controls; track $index) {
               <div [formGroupName]="$index" class="relative overflow-hidden flex items-center justify-between p-4 rounded-2xl bg-white shadow-[0_2px_10px_rgba(0,0,0,0.03)] transition-all hover:shadow-md border border-slate-100/50">
                 <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-md bg-[var(--color-primary)]"></div>
@@ -74,25 +91,25 @@ import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
             {{ copy.symptomsTitle() }}
           </h3>
           <div class="flex flex-wrap gap-3">
-            @for (symptom of availableSymptoms; track symptom) {
+            @for (symptom of availableSymptoms(); track symptom.id) {
               <!-- Chips approach for symptoms -->
               <button 
                 type="button"
-                (click)="toggleSymptom(symptom)"
+                (click)="toggleSymptom(symptom.label)"
                 [disabled]="form.disabled"
                 class="relative overflow-hidden pl-6 pr-5 py-3 rounded-2xl text-sm font-bold transition-all transform hover:-translate-y-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:-translate-y-0 disabled:hover:shadow-none"
-                [class.bg-[var(--color-primary)]]="hasSymptom(symptom)"
-                [class.text-white]="hasSymptom(symptom)"
-                [class.shadow-md]="hasSymptom(symptom)"
-                [class.-translate-y-1]="hasSymptom(symptom)"
-                [class.bg-white]="!hasSymptom(symptom)"
-                [class.text-[var(--color-text)]]="!hasSymptom(symptom)"
+                [class.bg-[var(--color-primary)]]="hasSymptom(symptom.label)"
+                [class.text-white]="hasSymptom(symptom.label)"
+                [class.shadow-md]="hasSymptom(symptom.label)"
+                [class.-translate-y-1]="hasSymptom(symptom.label)"
+                [class.bg-white]="!hasSymptom(symptom.label)"
+                [class.text-[var(--color-text)]]="!hasSymptom(symptom.label)"
               >
                 <!-- Left colored edge -->
                 <div class="absolute left-0 top-3 bottom-3 w-1.5 rounded-r-md transition-colors"
-                     [ngClass]="hasSymptom(symptom) ? 'bg-white/40' : 'bg-orange-400'"></div>
-                <span class="mr-1 relative z-10">{{ getSymptomEmoji(symptom) }}</span>
-                <span class="relative z-10">{{ symptom }}</span>
+                     [ngClass]="hasSymptom(symptom.label) ? 'bg-white/40' : 'bg-orange-400'"></div>
+                <span class="mr-1 relative z-10">{{ symptom.emoji || getSymptomEmoji(symptom.label) }}</span>
+                <span class="relative z-10">{{ symptom.label }}</span>
               </button>
             }
           </div>
@@ -197,6 +214,7 @@ export class DailyEntryComponent {
   date = input.required<string>();
 
   private formService = inject(DailyFormService);
+  protocolService = inject(ProtocolService);
   theme = inject(ThemeService);
   copy = inject(CopywritingService);
   gamification = inject(GamificationService);
@@ -206,7 +224,16 @@ export class DailyEntryComponent {
   saveError = signal<string | null>(null);
   submitAttempted = signal(false);
 
-  availableSymptoms: Symptom[] = ['Rien', 'Démangeaisons bouche', 'Respiratoire', 'Abdominal', 'Autres'];
+  availableSymptoms = computed<SymptomItem[]>(() => {
+    // 'Rien' is always first and not configurable
+    const rienItem: SymptomItem = { id: 'rien', label: 'Rien', emoji: '😎' };
+    return [rienItem, ...this.protocolService.symptoms()];
+  });
+
+  isBeforeProtocol = computed(() => {
+    const start = this.protocolService.protocolStartDate();
+    return start ? this.date() < start : false;
+  });
 
   constructor() {
     effect(() => {

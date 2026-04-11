@@ -4,6 +4,7 @@ import { NgClass, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../services/report.service';
 import { GamificationService } from '../services/gamification.service';
+import { ProtocolService } from '../services/protocol.service';
 import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { HealthStatus } from '../models/allergy-track.model';
@@ -83,6 +84,7 @@ import { PocketbaseAdapterService } from '../services/persistence/pocketbase-ada
 export class DashboardComponent {
   private reportService = inject(ReportService);
   private persistence = inject(PocketbaseAdapterService);
+  private protocolService = inject(ProtocolService);
   gamification = inject(GamificationService);
   theme = inject(ThemeService);
   copy = inject(CopywritingService);
@@ -95,15 +97,21 @@ export class DashboardComponent {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.persistence.getFirstEntryDate().subscribe({
-        next: (date) => {
-          if (date) {
-            this.startDate = date;
-          }
-          this.loadStatus();
-        },
-        error: () => this.loadStatus()
-      });
+      const configuredStart = this.protocolService.protocolStartDate();
+      if (configuredStart) {
+        this.startDate = configuredStart;
+        this.loadStatus();
+      } else {
+        this.persistence.getFirstEntryDate().subscribe({
+          next: (date) => {
+            if (date) {
+              this.startDate = date;
+            }
+            this.loadStatus();
+          },
+          error: () => this.loadStatus()
+        });
+      }
     }
   }
 

@@ -4,6 +4,7 @@ import { LucideAngularModule, ChevronLeft, ChevronRight } from 'lucide-angular';
 import { ThemeService } from '../services/theme.service';
 import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
 import { GamificationService } from '../services/gamification.service';
+import { ProtocolService } from '../services/protocol.service';
 import { DailyLog } from '../models/allergy-track.model';
 import { take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -103,6 +104,7 @@ export class AgendaComponent implements OnInit {
   theme = inject(ThemeService);
   persistence = inject(PocketbaseAdapterService);
   gamification = inject(GamificationService);
+  protocolService = inject(ProtocolService);
   private destroyRef = inject(DestroyRef);
 
   readonly ChevronLeft = ChevronLeft;
@@ -151,7 +153,8 @@ export class AgendaComponent implements OnInit {
 
   refreshFirstEntryDate() {
     this.persistence.getFirstEntryDate().pipe(take(1)).subscribe(date => {
-      this.firstEntryDate.set(date);
+      const configuredStart = this.protocolService.protocolStartDate();
+      this.firstEntryDate.set(configuredStart || date);
     });
   }
 
@@ -201,7 +204,7 @@ export class AgendaComponent implements OnInit {
       let isPartial = false;
 
       if (!hasEntry) {
-        if (d.date < todayStr && firstDate && d.date > firstDate) {
+        if (d.date < todayStr && firstDate && d.date >= firstDate) {
           isMissed = true;
         } else if (isToday && isAfter20h) {
           isWarningToday = true;

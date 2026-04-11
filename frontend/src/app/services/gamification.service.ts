@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, BehaviorSubject, map, switchMap, shareReplay } from 'rxjs';
 import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
 import { DailyLog } from '../models/allergy-track.model';
+import { ProtocolService } from './protocol.service';
 import { formatDate, getTodayStr, offsetDate } from '../utils/date.utils';
 import confetti from 'canvas-confetti';
 
@@ -36,6 +37,7 @@ export interface GamificationState {
 })
 export class GamificationService {
   private persistence = inject(PERSISTENCE_ADAPTER);
+  private protocolService = inject(ProtocolService);
   private refresh$ = new BehaviorSubject<void>(undefined);
 
   private state$ = this.refresh$.pipe(
@@ -73,10 +75,12 @@ export class GamificationService {
         state.hasMissedYesterday = !yesterdayLog || yesterdayLog.intakes.some(i => !i.taken);
         state.hasMissedToday = !!todayLog && todayLog.intakes.some(i => !i.taken);
 
-        state.history = this.generateHistory(latestLogsMap, today);
+        const configuredStart = this.protocolService.protocolStartDate();
+        
+        state.history = this.generateHistory(latestLogsMap, today, configuredStart);
 
-        state.regularStreak = this.calculateStreak(latestLogsMap, today, todayLog, (log) => log.intakes.some(i => i.taken));
-        state.perfectStreak = this.calculateStreak(latestLogsMap, today, todayLog, (log) => !log.intakes.some(i => !i.taken));
+        state.regularStreak = this.calculateStreak(latestLogsMap, today, todayLog, configuredStart, (log) => log.intakes.some(i => i.taken));
+        state.perfectStreak = this.calculateStreak(latestLogsMap, today, todayLog, configuredStart, (log) => !log.intakes.some(i => !i.taken));
 
         this.applyTierLogic(state, state.perfectStreak);
         state.showCongratulation = state.regularStreak >= 14;
@@ -110,13 +114,15 @@ export class GamificationService {
     return map;
   }
 
-  private calculateStreak(logsMap: Map<string, DailyLog>, today: Date, todayLog: DailyLog | undefined, condition: (log: DailyLog) => boolean): number {
+  private calculateStreak(logsMap: Map<string, DailyLog>, today: Date, todayLog: DailyLog | undefined, stopDate: string | null, condition: (log: DailyLog) => boolean): number {
     let streak = 0;
     let datePtr = new Date(today);
     if (!todayLog) datePtr = offsetDate(-1, datePtr);
 
     while (streak < 90) {
       const dateStr = formatDate(datePtr);
+      if (stopDate && dateStr < stopDate) break; // Reached start of protocol!
+      
       const log = logsMap.get(dateStr);
       if (!log || !condition(log)) break;
       streak++;
@@ -125,7 +131,7 @@ export class GamificationService {
     return streak;
   }
 
-  private generateHistory(logsMap: Map<string, DailyLog>, today: Date): ScoringEvent[] {
+  private generateHistory(logsMap: Map<string, DailyLog>, today: Date, stopDate: string | null): ScoringEvent[] {
     const history: ScoringEvent[] = [];
     let tempPerfect = 0;
     let tempRegular = 0;
@@ -135,6 +141,8 @@ export class GamificationService {
 
     for (let i = 0; i < 21; i++) {
       const dateStr = formatDate(hPtr);
+      if (stopDate && dateStr < stopDate) break; // Stop history rendering if we exceed the start date
+      
       const log = logsMap.get(dateStr);
 
       if (!log) {

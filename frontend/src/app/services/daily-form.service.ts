@@ -4,10 +4,12 @@ import { Observable, throwError } from 'rxjs';
 import { DailyLog } from '../models/allergy-track.model';
 import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
 import { AuthService } from './auth.service';
+import { ProtocolService, ProtocolItem } from './protocol.service';
 
 export function atLeastOneTakenValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     if (control instanceof FormArray) {
+      if (control.length === 0) return null; // No intakes required
       const hasTaken = control.controls.some(c => c.get('taken')?.value === true);
       return hasTaken ? null : { requireAtLeastOneTaken: true };
     }
@@ -31,16 +33,13 @@ export class DailyFormService {
   private fb = inject(FormBuilder);
   private persistence = inject(PERSISTENCE_ADAPTER);
   private auth = inject(AuthService);
+  private protocolService = inject(ProtocolService);
 
   createForm(): FormGroup {
     return this.fb.group({
       id: [crypto.randomUUID()],
       date: [new Date().toISOString().split('T')[0], Validators.required],
-      intakes: this.fb.array([
-        this.createIntakeGroup('Cracotte à la Noix', 1.5),
-        this.createIntakeGroup('Noix de Cajou', 1.5),
-        this.createIntakeGroup('Cacahuètes', 1.5)
-      ], { validators: atLeastOneTakenValidator() }),
+      intakes: this.fb.array([], { validators: atLeastOneTakenValidator() }),
       symptoms: this.fb.array([], { validators: atLeastOneSymptomValidator() }),
       treatments: this.fb.array([
         this.createTreatmentGroup('Antihistaminique'),
@@ -70,6 +69,8 @@ export class DailyFormService {
   loadLogForDate(form: FormGroup, date: string) {
     const today = new Date().toISOString().split('T')[0];
     const isFuture = date > today;
+    const protocolStart = this.protocolService.protocolStartDate();
+    const isBeforeProtocol = protocolStart ? date < protocolStart : false;
 
     this.persistence.getDailyLog(date).subscribe(log => {
       const intakesArray = form.get('intakes') as FormArray;
@@ -83,11 +84,12 @@ export class DailyFormService {
           note: log.note || ''
         });
 
-        // Explicitly patch intakes
-        log.intakes.forEach((intake, i) => {
-          if (intakesArray.at(i)) {
-            intakesArray.at(i).patchValue(intake);
-          }
+        // Re-create the form controls based on saved log
+        intakesArray.clear();
+        log.intakes.forEach(intake => {
+          const group = this.createIntakeGroup(intake.allergen, intake.dose);
+          group.patchValue(intake);
+          intakesArray.push(group);
         });
 
         // Explicitly patch treatments
@@ -110,9 +112,11 @@ export class DailyFormService {
           note: '',
         });
 
-        // Reset intakes
-        intakesArray.controls.forEach(ctrl => {
-          ctrl.patchValue({ dose: 1.5, taken: false });
+        // Reset intakes according to ProtocolService rules for this date
+        intakesArray.clear();
+        const activeProtocols = this.protocolService.protocols().filter(p => this.protocolService.isProtocolDue(p, date));
+        activeProtocols.forEach(p => {
+          intakesArray.push(this.createIntakeGroup(p.allergen, p.dose));
         });
 
         // Reset treatments
@@ -124,7 +128,7 @@ export class DailyFormService {
         symptomsArray.clear();
       }
 
-      if (isFuture) {
+      if (isFuture || isBeforeProtocol) {
         form.disable();
       } else {
         form.enable();
