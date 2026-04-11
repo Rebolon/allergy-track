@@ -8,18 +8,54 @@ import { AUTH_ADAPTER } from './adapters/auth.adapter';
 export class AuthService {
   private adapter = inject(AUTH_ADAPTER);
 
-  // Default to Enfant (assuming 'u2' is the Enfant)
-  currentUser = signal<User>(this.adapter.getUsers().find(u => u.id === 'u2')!);
+  // Signaux d'état
+  currentUser = signal<User | null>(null);
+  isAuthenticated = signal<boolean>(false);
+  isReady = signal<boolean>(false); // Indique si la session initiale a été vérifiée
+
+  constructor() {
+    // Initialisation
+    this.checkSession();
+  }
+
+  checkSession() {
+    if (this.adapter.getAuthUser && this.adapter.isAuthenticated) {
+      const isAuth = this.adapter.isAuthenticated();
+      this.isAuthenticated.set(isAuth);
+      this.currentUser.set(this.adapter.getAuthUser());
+    } else {
+      // Fallback pour le mock adapter s'il n'implémente pas encore tout
+      const defaultUser = this.adapter.getUsers().find(u => u.id === 'u2') || null;
+      this.currentUser.set(defaultUser);
+      this.isAuthenticated.set(!!defaultUser);
+    }
+    
+    // On marque l'auth comme prête après un léger délai pour le splashscreen (ou immédiatement en dev)
+    // Mais ici on se contente de mettre à true, le splash screen gérera son propre délai.
+    this.isReady.set(true);
+  }
+
+  async login() {
+    if (this.adapter.login) {
+      await this.adapter.login();
+      this.checkSession();
+    }
+  }
+
+  async logout() {
+    if (this.adapter.logout) {
+      await this.adapter.logout();
+    }
+    this.currentUser.set(null);
+    this.isAuthenticated.set(false);
+  }
 
   updateSuiviTheme(newTheme: 'flashy' | 'classic') {
-    const suiviUser = this.adapter.getUsers().find(u => u.id === 'u2');
-    if (suiviUser) {
-      suiviUser.themePreference = newTheme;
-      this.adapter.updateUser(suiviUser);
-
-      if (this.currentUser().id === 'u2') {
-        this.currentUser.set({ ...suiviUser });
-      }
+    const user = this.currentUser();
+    if (user) {
+      user.themePreference = newTheme;
+      this.adapter.updateUser(user);
+      this.currentUser.set({ ...user });
     }
   }
 

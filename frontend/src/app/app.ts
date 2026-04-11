@@ -15,6 +15,7 @@ import { GamificationSummaryComponent } from './components/layout/gamification-s
 import { GamificationHistoryComponent } from './components/layout/gamification-history.component';
 import { SettingsComponent } from './components/settings.component';
 import { GlobalErrorModalComponent } from './components/layout/global-error-modal.component';
+import { SplashScreenComponent } from './components/splash-screen.component';
 import { TopNavComponent } from './components/layout/top-nav.component';
 import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.component';
 import { ErrorService } from './services/error.service';
@@ -35,13 +36,17 @@ import { startWith } from 'rxjs';
     BottomNavComponent,
     GamificationSummaryComponent,
     GamificationHistoryComponent,
-    SettingsComponent,
     TopNavComponent,
     GlobalErrorModalComponent,
+    SplashScreenComponent,
     MatIconModule
   ],
   template: `
-    <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
+    <!-- Splash Screen Gate -->
+    <app-splash-screen />
+
+    @if (auth.isAuthenticated()) {
+      <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
       
       <!-- Header / Auth Switcher -->
       <app-layout-header />
@@ -96,7 +101,7 @@ import { startWith } from 'rxjs';
       @if (errorService.serverError(); as serverErrorMsg) {
         <app-global-error-modal [message]="serverErrorMsg" />
       }
-    </div>
+    </div> }
   `
 })
 export class App implements OnInit {

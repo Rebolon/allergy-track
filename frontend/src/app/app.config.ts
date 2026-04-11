@@ -16,6 +16,9 @@ import { PERSISTENCE_ADAPTER } from './services/persistence/persistence.interfac
 import { PocketbaseAdapterService } from './services/persistence/pocketbase-adapter.service';
 import { AUTH_ADAPTER } from './services/adapters/auth.adapter';
 import { MockAuthAdapter } from './services/adapters/mock-auth.adapter';
+import { PocketbaseAuthAdapter } from './services/adapters/pocketbase-auth.adapter';
+import { LocalStorageAdapterService } from './services/persistence/local-storage-adapter.service';
+import { environment } from '../environments/environment';
 
 registerLocaleData(localeFr);
 
@@ -29,7 +32,13 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerImmediately'
     }),
-    { provide: AUTH_ADAPTER, useClass: MockAuthAdapter },
-    { provide: PERSISTENCE_ADAPTER, useClass: PocketbaseAdapterService }
+    { 
+      provide: AUTH_ADAPTER, 
+      useClass: environment.useMockAuth ? MockAuthAdapter : PocketbaseAuthAdapter 
+    },
+    { 
+      provide: PERSISTENCE_ADAPTER, 
+      useClass: environment.useMockAuth ? LocalStorageAdapterService : PocketbaseAdapterService 
+    }
   ],
 };
