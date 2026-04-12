@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, BehaviorSubject, map, switchMap, shareReplay } from 'rxjs';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { DailyLog } from '../models/allergy-track.model';
 import { ProtocolService } from './protocol.service';
 import { formatDate, getTodayStr, offsetDate } from '../utils/date.utils';
@@ -36,7 +36,7 @@ export interface GamificationState {
   providedIn: 'root'
 })
 export class GamificationService {
-  private persistence = inject(PERSISTENCE_ADAPTER);
+  private dailyLogsService = inject(DailyLogsService);
   private protocolService = inject(ProtocolService);
   private refresh$ = new BehaviorSubject<void>(undefined);
 
@@ -60,7 +60,7 @@ export class GamificationService {
     const startDate = formatDate(pastDate);
     const endDate = formatDate(today);
 
-    return this.persistence.getDailyLogs(startDate, endDate).pipe(
+    return this.dailyLogsService.getDailyLogs(startDate, endDate).pipe(
       map(logs => {
         const state = this.createInitialState(logs.length > 0);
         if (logs.length === 0) return state;

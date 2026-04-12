@@ -24,12 +24,12 @@
     "@angular/router": "^21.2.7",
     "@angular/service-worker": "^21.2.7",
     "@angular/ssr": "^21.2.6",
-    "@google/genai": "^1.27.0",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "express": "^5.1.0",
     "lucide-angular": "^1.0.0",
     "motion": "^12.23.24",
+    "pocketbase": "^0.22.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

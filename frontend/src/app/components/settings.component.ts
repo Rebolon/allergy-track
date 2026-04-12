@@ -5,6 +5,8 @@ import { AuthService } from '../services/auth.service';
 import { ProtocolService, ProtocolItem, SymptomItem, SYMPTOM_PRESETS } from '../services/protocol.service';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 
+import { ProfileService } from '../services/profile.service';
+
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -55,7 +57,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } fr
       <!-- Protocol Settings -->
       <div [ngClass]="theme.cardClass()">
         <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
-          <span class="text-3xl">📝</span> Configuration du Protocole
+          <span class="text-3xl">📝</span> Configuration du Protocole ({{ auth.activeProfile()?.name }})
         </h2>
         <p class="text-[var(--color-text-muted)] text-sm mb-6 font-medium">Définissez la date de début ainsi que la liste des allergènes à prendre pour les défis gourmands. Si un allergène est à prendre tous les jours, mettez "1". Si tous les deux jours, mettez "2", etc.</p>
 
@@ -118,7 +120,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } fr
         <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
           <span class="text-3xl">🤒</span> Symptômes Configurables
         </h2>
-        <p class="text-[var(--color-text-muted)] text-sm mb-4 font-medium">Définissez la liste des symptômes proposés lors de la saisie quotidienne. Le symptôme "Rien" est toujours présent par défaut et n'est pas modifiable ici.</p>
+        <p class="text-[var(--color-text-muted)] text-sm mb-4 font-medium">Définissez la liste des symptômes proposés lors de la saisie quotidienne.</p>
 
         <!-- Preset buttons -->
         <div class="flex flex-wrap gap-3 mb-6">
@@ -169,13 +171,134 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } fr
               <span>💾</span> Enregistrer
             </button>
           </div>
-          @if (saveSymptomSuccess()) {
-            <div class="mt-4 p-3 bg-emerald-100 text-emerald-800 font-bold rounded-lg flex items-center gap-2 text-sm max-w-fit">
-              <span>✅</span> Symptômes mis à jour avec succès !
-            </div>
-          }
         </form>
       </div>
+
+      <!-- Family Settings (Managed Profiles) -->
+      @if (auth.currentUser()?.profiles; as profiles) {
+        <div [ngClass]="theme.cardClass()">
+          <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
+            <span class="text-3xl">👨‍👩‍👧‍👦</span> Ma Famille & Dossiers
+          </h2>
+          <p class="text-[var(--color-text-muted)] text-sm mb-6 font-medium">Gérez ici les personnes que vous supervisez ou les dossiers partagés.</p>
+
+          <div class="space-y-4 mb-8">
+            @for (profile of profiles; track profile.id) {
+              <div class="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <button (click)="toggleEditAvatar(profile.id)" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform hover:scale-110 active:scale-95 shadow-sm"
+                         [class.bg-violet-100]="profile.role === 'Supervision'"
+                         [class.bg-emerald-100]="profile.role === 'Allergique'">
+                      {{ getDisplayAvatar(profile) }}
+                    </button>
+                    <div class="flex flex-col">
+                      <span class="font-bold text-slate-800">{{ profile.name }}</span>
+                      <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">
+                        {{ profile.role === 'Supervision' ? 'Superviseur' : 'Allergique' }}
+                        {{ profile.isLocal ? '• Dossier Local' : '• Compte Invité' }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="flex items-center gap-2">
+                    <button (click)="toggleEditAvatar(profile.id)" 
+                            class="p-2 text-slate-400 hover:text-[var(--color-primary)] transition-colors">
+                      <span class="text-xl">✏️</span>
+                    </button>
+                    @if (profile.id !== auth.activeProfile()?.id) {
+                      <button (click)="auth.switchProfile(profile.id)" 
+                              class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                        Basculer
+                      </button>
+                    } @else {
+                      <span class="px-4 py-2 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-xl text-sm font-black">Actif</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Avatar Selection Area -->
+                @if (editingProfileId() === profile.id) {
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                    <div class="mb-4">
+                      <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Choisir un emoji</span>
+                      <div class="flex flex-wrap gap-2">
+                        @for (av of avatarOptions; track av.emoji) {
+                          <button (click)="updateAvatar(profile, av.emoji)" 
+                                  [class.ring-2]="profile.avatar === av.emoji || (!profile.avatar && av.emoji === '👶')"
+                                  class="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-lg text-xl transition-all ring-[var(--color-primary)]">
+                            {{ av.emoji }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+
+                    @if (showSkinTones(profile)) {
+                      <div>
+                        <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Couleur de peau</span>
+                        <div class="flex gap-3">
+                          @for (tone of skinTones; track tone.value) {
+                            <button (click)="updateSkinTone(profile, tone.value)"
+                                    class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                                    [style.backgroundColor]="tone.color"
+                                    [class.border-[var(--color-primary)]]="(profile.avatarSkinTone || 'default') === tone.value"
+                                    [class.border-transparent]="(profile.avatarSkinTone || 'default') !== tone.value">
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Actions -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-100">
+            <!-- Local Child -->
+            <div>
+              <h3 class="text-lg font-bold mb-2">Ajouter un dossier local</h3>
+              <div class="flex gap-2 mb-2">
+                <input #childName type="text" placeholder="Nom de l'enfant" 
+                       class="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] font-bold text-sm">
+                <button (click)="createChild(childName.value); childName.value = ''"
+                        class="px-6 py-3 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-100 text-sm whitespace-nowrap">
+                   Créer
+                </button>
+              </div>
+              <p class="text-xs text-slate-400 font-medium">Idéal pour un enfant qui n'a pas encore de compte.</p>
+            </div>
+
+            <!-- Invitations -->
+            <div>
+              <h3 class="text-lg font-bold mb-2">Partager / Inviter</h3>
+              <div class="flex flex-col gap-3">
+                <button (click)="generateCode()" 
+                        class="w-full px-4 py-3 bg-violet-100 text-violet-700 font-black rounded-xl hover:bg-violet-200 transition-colors text-sm flex items-center justify-center gap-2">
+                  <span>🔗</span> Générer un code d'invitation
+                </button>
+                
+                @if (inviteCode()) {
+                  <div class="p-3 bg-violet-600 text-white rounded-xl text-center animate-pulse">
+                    <span class="text-xs uppercase font-bold block opacity-70">Code à partager</span>
+                    <span class="text-xl font-black tracking-widest">{{ inviteCode() }}</span>
+                  </div>
+                }
+
+                <div class="flex gap-2 mt-2">
+                  <input #inviteInput type="text" placeholder="Code d'invitation" 
+                         class="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] font-bold text-sm uppercase tracking-widest">
+                  <button (click)="acceptInvite(inviteInput.value); inviteInput.value = ''"
+                          class="px-4 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-black transition-colors text-sm">
+                     Rejoindre
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
 
     </div>
   `
@@ -184,11 +307,31 @@ export class SettingsComponent implements OnInit {
   theme = inject(ThemeService);
   auth = inject(AuthService);
   protocolService = inject(ProtocolService);
+  profileService = inject(ProfileService);
   fb = inject(FormBuilder);
   
   currentTheme = signal<AppTheme>('colorful');
   saveSuccess = signal<boolean>(false);
   saveSymptomSuccess = signal<boolean>(false);
+  inviteCode = signal<string | null>(null);
+  editingProfileId = signal<string | null>(null);
+
+  avatarOptions = [
+    { emoji: '👶' }, { emoji: '👨' }, { emoji: '👩' }, 
+    { emoji: '🧑‍🦱' }, { emoji: '👩‍🦱' }, { emoji: '👦' }, { emoji: '👧' },
+    { emoji: '🐱' }, { emoji: '🐶' }, { emoji: '🐷' }, { emoji: '🐮' }, { emoji: '👽' }
+  ];
+
+  skinTones = [
+    { value: 'default', color: '#FFCC22' },
+    { value: 'light', color: '#F7D7C4' },
+    { value: 'dark', color: '#8D5524' }
+  ] as const;
+
+  skinToneModifiers: Record<string, string> = {
+    'light': '\u{1F3FB}',
+    'dark': '\u{1F3FF}'
+  };
 
   protocolForm: FormGroup = this.fb.group({
     startDate: [new Date().toISOString().split('T')[0], Validators.required],
@@ -203,6 +346,66 @@ export class SettingsComponent implements OnInit {
     this.currentTheme.set(this.theme.currentTheme());
     this.initProtocolForm();
     this.initSymptomForm();
+
+    // Re-init forms when active profile changes to show correct configuration
+    // (In case user switches profile directly in settings)
+    this.auth.activeProfile(); // Track signal
+  }
+
+  toggleEditAvatar(id: string) {
+    if (this.editingProfileId() === id) this.editingProfileId.set(null);
+    else this.editingProfileId.set(id);
+  }
+
+  getDisplayAvatar(profile: any): string {
+    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : '👶');
+    const modifier = profile.avatarSkinTone && this.skinToneModifiers[profile.avatarSkinTone] ? this.skinToneModifiers[profile.avatarSkinTone] : '';
+    return base + (this.showSkinTones(profile) ? modifier : '');
+  }
+
+  showSkinTones(profile: any): boolean {
+    const base = profile.avatar || '👶';
+    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
+    return !noSkinTone.includes(base);
+  }
+
+  async updateAvatar(profile: any, emoji: string) {
+    profile.avatar = emoji;
+    this.saveProfileUpdate(profile);
+  }
+
+  async updateSkinTone(profile: any, tone: any) {
+    profile.avatarSkinTone = tone;
+    this.saveProfileUpdate(profile);
+  }
+
+  private saveProfileUpdate(profile: any) {
+    this.auth.updateProfile(profile);
+  }
+
+  async createChild(name: string) {
+    if (!name) return;
+    try {
+      await this.profileService.createLocalChild(name);
+    } catch (e) {
+      console.error('Failed to create child profile', e);
+    }
+  }
+
+  async generateCode() {
+    const active = this.auth.activeProfile();
+    if (!active) return;
+    const code = await this.profileService.generateInvitationToken(active.id);
+    this.inviteCode.set(code);
+  }
+
+  async acceptInvite(code: string) {
+    if (!code) return;
+    try {
+      await this.profileService.acceptInvitation(code);
+    } catch (e) {
+      console.error('Failed to accept invitation', e);
+    }
   }
 
   setTheme(newTheme: AppTheme) {

@@ -2,24 +2,32 @@
 
 Ce document détaille les règles de gestion et de calcul au cœur de l'application Allergy Track.
 
-## 👥 Personas
+## 👥 Rôles & Profils
  
-L'application propose deux styles visuels via le système de **Personas** :
+L'application s'articule autour de deux rôles principaux qui définissent l'accès aux fonctionnalités :
  
-1.  **Flashy** : Interface ludique et colorée, mise en avant de la gamification (flammes, confettis).
-2.  **Classique** : Interface sobre et épurée, idéale pour un suivi plus discret ou médical.
+1.  **Supervision** : Rôle destiné aux parents ou soignants. Ils peuvent créer des dossiers pour leurs enfants, configurer les protocoles, et consulter les tableaux de bord de santé de toute la famille.
+2.  **Allergique** : Rôle destiné à la personne qui suit le protocole. Son interface est centrée sur la saisie quotidienne et sa propre progression (gamification).
  
-L'utilisateur peut basculer entre ces deux modes à tout moment selon ses préférences.
+### 📂 Gestion par Dossiers (Profils)
+Un compte utilisateur peut gérer plusieurs **Profils**. Chaque profil est un dossier de données totalement étanche :
+- **Profils Locaux** : Créés par un superviseur pour ses enfants qui n'ont pas encore de compte. Le superviseur fait les saisies pour eux.
+- **Profils Invités** : Profils d'utilisateurs tiers ayant partagé leur dossier (via un code d'invitation) pour être supervisés.
+ 
+### 🎨 Personas (Styles Visuels)
+Le style visuel est configurable par profil :
+1.  **Flashy** : Interface ludique et colorée (🌈), idéale pour motiver les plus jeunes.
+2.  **Classique** : Interface sobre et médicale (🕶️), pour un suivi épuré.
 
 ---
 
-## 💉 Journal des Protocoles
+## 💉 Journal des Protocoles (Par Profil)
  
-Chaque jour, l'utilisateur enregistre la prise de ses doses d'allergènes (ex: Cracotte, Noix de Cajou, Cacahuète).
+Chaque profil possède son propre journal. L'utilisateur (ou son superviseur) enregistre chaque jour la prise des doses d’allergènes définies dans le protocole du profil.
 
-- **Prise Complète** : Toutes les doses cochées.
+- **Prise Complète** : Toutes les doses cochées pour ce profil.
 - **Prise Partielle** : Au moins une dose cochée mais pas toutes.
-- **Oubli** : Aucune dose cochée ou journée non saisie.
+- **Oubli** : Aucune dose cochée ou journée non saisie pour ce profil.
 
 ### 📅 Indicateurs Visuels (Calendrier)
 Le calendrier ("Agenda") offre un aperçu visuel immédiat du suivi du protocole à l'aide de plusieurs **pastilles** par jour :
@@ -52,9 +60,9 @@ L'application utilise une progression par paliers pour récompenser la régulari
 
 ---
 
-## 📊 Bilan Santé (Tableau de Bord)
+## 📊 Bilan Santé (Par Profil)
  
-Le tableau de bord permet de visualiser l'état de santé sur une période donnée (mois en cours par défaut).
+Le tableau de bord permet de visualiser l'état de santé d'un profil spécifique sur une période donnée (mois en cours par défaut).
 
 ### Règle de Détection des Oublis (Doses)
 Le compteur d'oublis suit une logique de **"1 oubli par jour"** :

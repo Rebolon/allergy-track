@@ -12,6 +12,8 @@ import { Symptom } from '../models/allergy-track.model';
 import { SymptomItem } from '../services/protocol.service';
 import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
 
+import { AuthService } from '../services/auth.service';
+
 @Component({
   selector: 'app-daily-entry',
   standalone: true,
@@ -218,6 +220,7 @@ export class DailyEntryComponent {
   date = input.required<string>();
 
   private formService = inject(DailyFormService);
+  auth = inject(AuthService);
   protocolService = inject(ProtocolService);
   theme = inject(ThemeService);
   copy = inject(CopywritingService);
@@ -263,12 +266,11 @@ export class DailyEntryComponent {
 
   constructor() {
     effect(() => {
-      if (this.date()) {
+      if (this.date() || this.auth.activeProfile()) {
         this.formService.loadLogForDate(this.form, this.date());
         this.saveSuccess.set(false);
         this.saveError.set(null);
         this.submitAttempted.set(false);
-        // Force refresh of gamification state
         this.gamification.refresh();
       }
     });

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, FormControl, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Observable, throwError } from 'rxjs';
 import { DailyLog } from '../models/allergy-track.model';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { AuthService } from './auth.service';
 import { ProtocolService, ProtocolItem } from './protocol.service';
 
@@ -31,7 +31,7 @@ export function atLeastOneSymptomValidator(): ValidatorFn {
 })
 export class DailyFormService {
   private fb = inject(FormBuilder);
-  private persistence = inject(PERSISTENCE_ADAPTER);
+  private dailyLogsService = inject(DailyLogsService);
   private auth = inject(AuthService);
   private protocolService = inject(ProtocolService);
 
@@ -72,7 +72,10 @@ export class DailyFormService {
     const protocolStart = this.protocolService.protocolStartDate();
     const isBeforeProtocol = protocolStart ? date < protocolStart : false;
 
-    this.persistence.getDailyLog(date).subscribe(log => {
+    const profile = this.auth.activeProfile();
+    if (!profile) return;
+
+    this.dailyLogsService.getDailyLog(profile.id, date).subscribe(log => {
       const intakesArray = form.get('intakes') as FormArray;
       const treatmentsArray = form.get('treatments') as FormArray;
       const symptomsArray = form.get('symptoms') as FormArray;
@@ -138,13 +141,19 @@ export class DailyFormService {
 
   saveLog(form: FormGroup): Observable<DailyLog> {
     if (form.valid) {
+      const profile = this.auth.activeProfile();
+      const user = this.auth.currentUser();
+      
+      if (!profile || !user) return throwError(() => new Error('No active profile'));
+
       const log: DailyLog = {
         ...form.value,
         updatedAt: new Date().toISOString(),
-        updatedBy: this.auth.currentUser().id
+        updatedBy: user.id,
+        profileId: profile.id
       };
 
-      return this.persistence.saveDailyLog(log);
+      return this.dailyLogsService.saveDailyLog(log);
     }
     return throwError(() => new Error('Form is invalid'));
   }

@@ -1,6 +1,18 @@
 export type Symptom = 'Rien' | 'Démangeaisons bouche' | 'Respiratoire' | 'Abdominal' | 'Autres';
 export type TreatmentName = 'Antihistaminique' | 'Aerius/Aeromire' | 'Adrénaline';
-export type Role = 'Adulte' | 'Enfant';
+export type Role = 'Supervision' | 'Allergique';
+
+export type AvatarSkinTone = 'default' | 'light' | 'dark';
+
+export interface Profile {
+  id: string;
+  name: string;
+  role: Role;
+  themePreference: 'flashy' | 'classic';
+  isLocal?: boolean;
+  avatar?: string;
+  avatarSkinTone?: AvatarSkinTone;
+}
 
 export interface AllergenIntake {
   allergen: string;
@@ -22,15 +34,16 @@ export interface DailyLog {
   symptoms: Symptom[];
   treatments: Treatment[];
   note?: string;
-  updatedAt: string; // ISO string
-  updatedBy: string; // User ID
+  updatedAt: string;
+  updatedBy: string;
+  profileId: string;
 }
 
 export interface User {
   id: string;
+  email: string;
   name: string;
-  role: Role;
-  themePreference: 'flashy' | 'classic';
+  profiles: Profile[];
 }
 
 export interface HealthStatus {

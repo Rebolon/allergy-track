@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { GamificationService, GamificationState } from './gamification.service';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { of } from 'rxjs';
 import { DailyLog } from '../models/allergy-track.model';
 
@@ -16,7 +16,7 @@ describe('GamificationService', () => {
     TestBed.configureTestingModule({
       providers: [
         GamificationService,
-        { provide: PERSISTENCE_ADAPTER, useValue: persistenceMock }
+        { provide: DAILY_LOGS_ADAPTER, useValue: persistenceMock }
       ]
     });
     service = TestBed.inject(GamificationService);

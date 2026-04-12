@@ -15,11 +15,13 @@ import { GamificationSummaryComponent } from './components/layout/gamification-s
 import { GamificationHistoryComponent } from './components/layout/gamification-history.component';
 import { SettingsComponent } from './components/settings.component';
 import { GlobalErrorModalComponent } from './components/layout/global-error-modal.component';
+import { SplashScreenComponent } from './components/splash-screen.component';
 import { TopNavComponent } from './components/layout/top-nav.component';
 import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.component';
 import { ErrorService } from './services/error.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
+import { ProfileSwitcherComponent } from './components/layout/profile-switcher.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -35,19 +37,28 @@ import { startWith } from 'rxjs';
     BottomNavComponent,
     GamificationSummaryComponent,
     GamificationHistoryComponent,
-    SettingsComponent,
     TopNavComponent,
+    ProfileSwitcherComponent,
     GlobalErrorModalComponent,
+    SplashScreenComponent,
+    SettingsComponent,
     MatIconModule
   ],
   template: `
-    <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
+    <!-- Splash Screen Gate -->
+    <app-splash-screen />
+
+    @if (auth.isAuthenticated()) {
+      <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
       
       <!-- Header / Auth Switcher -->
       <app-layout-header />
 
       <!-- Desktop Nav -->
       <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
+
+      <!-- Multi-Profile Tabs (appear only if > 1 profile) -->
+      <app-profile-switcher />
 
       <!-- Main Content -->
       <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
@@ -96,7 +107,7 @@ import { startWith } from 'rxjs';
       @if (errorService.serverError(); as serverErrorMsg) {
         <app-global-error-modal [message]="serverErrorMsg" />
       }
-    </div>
+    </div> }
   `
 })
 export class App implements OnInit {

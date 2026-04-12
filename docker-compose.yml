@@ -11,7 +11,12 @@ services:
       - "8090:8090"
     volumes:
       - pb_data:/srv/pb_data
-    # No need for absolute paths or complex commands here,
+    environment:
+      - SYNOLOGY_CLIENT_ID=${SYNOLOGY_CLIENT_ID}
+      - SYNOLOGY_CLIENT_SECRET=${SYNOLOGY_CLIENT_SECRET}
+      - SYNOLOGY_AUTH_URL=${SYNOLOGY_AUTH_URL}
+      - SYNOLOGY_TOKEN_URL=${SYNOLOGY_TOKEN_URL}
+      - SYNOLOGY_USER_INFO_URL=${SYNOLOGY_USER_INFO_URL}
     # as the Dockerfile handles the structure and entrypoint.
 
 volumes:

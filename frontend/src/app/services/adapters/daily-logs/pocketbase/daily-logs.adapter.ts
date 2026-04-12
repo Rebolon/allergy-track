@@ -2,25 +2,25 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { DailyLog } from '../../models/allergy-track.model';
-import { PersistenceAdapter } from './persistence.interface';
+import { DailyLog } from '../../../../models/allergy-track.model';
+import { DailyLogsAdapter } from '../../../daily-logs.interface';
 
 @Injectable({
   providedIn: 'root'
 })
-export class PocketbaseAdapterService implements PersistenceAdapter {
+export class PocketbaseDailyLogsAdapter implements DailyLogsAdapter {
   // Since the frontend runs from PocketBase's static server, relative paths hit its own API.
   private apiUrl = '/api/collections';
   private http = inject(HttpClient);
 
-  getDailyLogs(startDate?: string, endDate?: string): Observable<DailyLog[]> {
-    let filter = '';
+  getDailyLogs(profileId: string, startDate?: string, endDate?: string): Observable<DailyLog[]> {
+    let filter = `profileId='${profileId}'`;
     if (startDate && endDate) {
-      filter = `date >= '${startDate}' && date <= '${endDate}'`;
+      filter += ` && date >= '${startDate}' && date <= '${endDate}'`;
     } else if (startDate) {
-      filter = `date >= '${startDate}'`;
+      filter += ` && date >= '${startDate}'`;
     } else if (endDate) {
-      filter = `date <= '${endDate}'`;
+      filter += ` && date <= '${endDate}'`;
     }
 
     const params: Record<string, string | number | boolean | readonly (string | number | boolean)[]> = {
@@ -32,9 +32,9 @@ export class PocketbaseAdapterService implements PersistenceAdapter {
       .pipe(map(response => response.items.map(item => ({ ...item, id: item.externalId || item.id }))));
   }
 
-  getDailyLog(date: string): Observable<DailyLog | null> {
-    const filter = `date='${date}'`;
-    const params = { filter, sort: '-created' }; // Get most recent entry for that day
+  getDailyLog(profileId: string, date: string): Observable<DailyLog | null> {
+    const filter = `profileId='${profileId}' && date='${date}'`;
+    const params = { filter, sort: '-created' };
     return this.http.get<{ items: DailyLog[] }>(`${this.apiUrl}/daily_logs/records`, { params })
       .pipe(map(response => response.items.length > 0 ? ({ ...response.items[0], id: response.items[0].externalId || response.items[0].id }) : null));
   }
@@ -46,10 +46,11 @@ export class PocketbaseAdapterService implements PersistenceAdapter {
       .pipe(map(response => ({ ...response, id: response['externalId'] } as DailyLog)));
   }
 
-  getPaginatedDailyLogs(page: number, perPage: number): Observable<{ items: DailyLog[], totalItems: number }> {
+  getPaginatedDailyLogs(profileId: string, page: number, perPage: number): Observable<{ items: DailyLog[], totalItems: number }> {
     const params = {
       page: page.toString(),
       perPage: perPage.toString(),
+      filter: `profileId='${profileId}'`,
       sort: '-date,-created'
     };
 
@@ -60,8 +61,9 @@ export class PocketbaseAdapterService implements PersistenceAdapter {
       })));
   }
 
-  getFirstEntryDate(): Observable<string | null> {
+  getFirstEntryDate(profileId: string): Observable<string | null> {
     const params = {
+      filter: `profileId='${profileId}'`,
       sort: 'date,created',
       perPage: '1'
     };
