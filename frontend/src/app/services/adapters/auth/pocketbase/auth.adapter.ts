@@ -75,7 +75,7 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     const mainProfile: Profile = {
       id: model.id,
       name: model['name'] || model['username'] || 'Moi',
-      themePreference: (model['themePreference'] as 'flashy' | 'classic') || 'classic',
+      themePreference: (model['themePreference'] as 'colorful' | 'classic') || 'classic',
       avatar: model['avatar'],
       avatarSkinTone: model['avatarSkinTone'],
       birthDate: model['birthDate']

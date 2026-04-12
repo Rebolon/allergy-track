@@ -15,7 +15,7 @@ export interface Profile {
   id: string;
   name: string;
   birthDate?: string; // YYYY-MM-DD
-  themePreference: 'flashy' | 'classic';
+  themePreference: 'colorful' | 'classic';
   isLocal?: boolean;
   avatar?: string;
   avatarSkinTone?: AvatarSkinTone;

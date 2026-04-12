@@ -10,13 +10,16 @@ export class ProfileService {
   private auth = inject(AuthService);
   private adapter = inject(AUTH_ADAPTER);
 
-  public async createLocalChild(name: string) {
+  /**
+   * Creates a local profile (e.g. for a child without its own account).
+   */
+  public async createLocalChild(name: string): Promise<Profile> {
     const user = this.auth.currentUser();
-    if (!user) return;
+    if (!user) throw new Error('Not authenticated');
 
     const newProfile: Omit<Profile, 'id'> = {
       name,
-      themePreference: 'flashy',
+      themePreference: 'colorful',
       isLocal: true
     };
 
@@ -29,18 +32,9 @@ export class ProfileService {
     throw new Error('Adapter does not support adding profiles');
   }
 
-  public async generateInvitationToken(profileId: string): Promise<string> {
-    const token = Math.random().toString(36).substring(2, 10).toUpperCase();
-    console.log(`Invitation token for ${profileId}: ${token}`);
-    return token;
-  }
-
-  public async acceptInvitation(token: string) {
-    console.log(`Accepting invitation with token: ${token}`);
-    // Refresh to check if any new access granted
-    this.auth.checkSession();
-  }
-
+  /**
+   * Directly adds a profile via the adapter.
+   */
   async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {
     if (this.adapter.addProfile) {
       const created = await this.adapter.addProfile(profile);

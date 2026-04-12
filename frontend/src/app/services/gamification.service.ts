@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, BehaviorSubject, map, switchMap, shareReplay } from 'rxjs';
 import { DailyLogsService } from './daily-logs.service';
 import { DailyLog } from '../models/allergy-track.model';
-import { ProtocolService } from './protocol.service';
+import { ActiveDossierService } from './active-dossier.service';
 import { formatDate, getTodayStr, offsetDate } from '../utils/date.utils';
 import confetti from 'canvas-confetti';
 
@@ -37,7 +37,7 @@ export interface GamificationState {
 })
 export class GamificationService {
   private dailyLogsService = inject(DailyLogsService);
-  private protocolService = inject(ProtocolService);
+  private protocolService = inject(ActiveDossierService);
   private refresh$ = new BehaviorSubject<void>(undefined);
 
   private state$ = this.refresh$.pipe(

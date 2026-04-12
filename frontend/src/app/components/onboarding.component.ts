@@ -99,7 +99,7 @@ export class OnboardingComponent {
         await this.profileService.addProfile({
           name: userName,
           birthDate: this.birthDate,
-          themePreference: 'flashy',
+          themePreference: 'colorful',
           isLocal: false
         });
       }

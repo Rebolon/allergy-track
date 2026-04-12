@@ -1,6 +1,7 @@
-import { Injectable, signal, effect, inject } from '@angular/core';
+import { Injectable, signal, effect, inject, computed } from '@angular/core';
 import { ProtocolItem, SymptomItem, PROTOCOL_ADAPTER } from './protocol.interface';
 import { AuthService } from './auth.service';
+import { ThemeService, AppTheme } from './theme.service';
 
 export type { ProtocolItem, SymptomItem };
 
@@ -21,13 +22,17 @@ export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
 @Injectable({
   providedIn: 'root'
 })
-export class ProtocolService {
+export class ActiveDossierService {
   private auth = inject(AuthService);
+  private theme = inject(ThemeService);
   private adapter = inject(PROTOCOL_ADAPTER);
 
-  public readonly protocols = signal<ProtocolItem[]>(this.getDefaultProtocols());
+  public readonly protocols = signal<ProtocolItem[]>([]);
   public readonly protocolStartDate = signal<string | null>(null);
-  public readonly symptoms = signal<SymptomItem[]>(SYMPTOM_PRESETS['reintroduction']);
+  public readonly symptoms = signal<SymptomItem[]>([]);
+
+  // Computed for UI
+  public readonly currentTheme = computed(() => this.auth.activeProfile()?.themePreference || 'classic');
 
   constructor() {
     // Watch for profile changes to reload data
@@ -35,6 +40,10 @@ export class ProtocolService {
       const profile = this.auth.activeProfile();
       if (profile) {
         this.loadProfileData(profile.id);
+        // Sync global theme with profile preference
+        if (profile.themePreference) {
+          this.theme.setTheme(profile.themePreference);
+        }
       }
     }, { allowSignalWrites: true });
 
@@ -89,6 +98,11 @@ export class ProtocolService {
 
   public updateStartDate(dateStr: string) {
     this.protocolStartDate.set(dateStr);
+  }
+
+  public updateTheme(newTheme: AppTheme) {
+    this.auth.updateProfileTheme(newTheme);
+    // ThemeService is updated via effect on activeProfile change in constructor
   }
 
   private migrateProtocols() {

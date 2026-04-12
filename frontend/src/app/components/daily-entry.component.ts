@@ -2,7 +2,7 @@ import { Component, inject, input, effect, signal, computed } from '@angular/cor
 import { NgClass, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormGroup, FormArray, FormControl } from '@angular/forms';
 import { DailyFormService } from '../services/daily-form.service';
-import { ProtocolService } from '../services/protocol.service';
+import { ActiveDossierService } from '../services/active-dossier.service';
 import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { GamificationService } from '../services/gamification.service';
@@ -253,7 +253,7 @@ export class DailyEntryComponent {
 
   private formService = inject(DailyFormService);
   auth = inject(AuthService);
-  protocolService = inject(ProtocolService);
+  protocolService = inject(ActiveDossierService);
   theme = inject(ThemeService);
   copy = inject(CopywritingService);
   gamification = inject(GamificationService);

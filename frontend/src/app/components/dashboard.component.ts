@@ -4,7 +4,7 @@ import { NgClass, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ReportService } from '../services/report.service';
 import { GamificationService } from '../services/gamification.service';
-import { ProtocolService } from '../services/protocol.service';
+import { ActiveDossierService } from '../services/active-dossier.service';
 import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { HealthStatus } from '../models/allergy-track.model';
@@ -86,7 +86,7 @@ export class DashboardComponent {
   private reportService = inject(ReportService);
   private dailyLogsService = inject(DailyLogsService);
   private auth = inject(AuthService);
-  private protocolService = inject(ProtocolService);
+  private protocolService = inject(ActiveDossierService);
   gamification = inject(GamificationService);
   theme = inject(ThemeService);
   copy = inject(CopywritingService);

@@ -5,7 +5,7 @@ import { ThemeService } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
 import { DailyLogsService } from '../services/daily-logs.service';
 import { GamificationService } from '../services/gamification.service';
-import { ProtocolService } from '../services/protocol.service';
+import { ActiveDossierService } from '../services/active-dossier.service';
 import { DailyLog } from '../models/allergy-track.model';
 import { take } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -108,7 +108,7 @@ export class AgendaComponent implements OnInit {
   dailyLogsService = inject(DailyLogsService);
   auth = inject(AuthService);
   gamification = inject(GamificationService);
-  protocolService = inject(ProtocolService);
+  protocolService = inject(ActiveDossierService);
   private destroyRef = inject(DestroyRef);
 
   readonly ChevronLeft = ChevronLeft;

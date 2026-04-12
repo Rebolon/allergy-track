@@ -4,7 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { DailyLog } from '../models/allergy-track.model';
 import { DailyLogsService } from './daily-logs.service';
 import { AuthService } from './auth.service';
-import { ProtocolService, ProtocolItem } from './protocol.service';
+import { ActiveDossierService, ProtocolItem } from './active-dossier.service';
 
 export function atLeastOneTakenValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -33,7 +33,7 @@ export class DailyFormService {
   private fb = inject(FormBuilder);
   private dailyLogsService = inject(DailyLogsService);
   private auth = inject(AuthService);
-  private protocolService = inject(ProtocolService);
+  private protocolService = inject(ActiveDossierService);
 
   createForm(): FormGroup {
     return this.fb.group({
@@ -115,7 +115,7 @@ export class DailyFormService {
           note: '',
         });
 
-        // Reset intakes according to ProtocolService rules for this date
+        // Reset intakes according to ActiveDossierService rules for this date
         intakesArray.clear();
         const activeProtocols = this.protocolService.protocols().filter(p => this.protocolService.isProtocolDue(p, date));
         activeProtocols.forEach(p => {

@@ -92,7 +92,7 @@ export class AuthService {
     }
   }
 
-  updateProfileTheme(newTheme: 'flashy' | 'classic') {
+  updateProfileTheme(newTheme: 'colorful' | 'classic') {
     const profile = this.activeProfile();
     if (profile) {
       profile.themePreference = newTheme;

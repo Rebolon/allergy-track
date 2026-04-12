@@ -38,7 +38,7 @@ export class MockAuthAdapter implements AuthAdapter {
       ],
       profiles: [
         { id: 'p2_1', name: 'Maman', themePreference: 'classic', avatar: '👩', birthDate: '1988-03-20' },
-        { id: 'p2_3', name: 'Léo', themePreference: 'flashy', isLocal: true, avatar: '👶', birthDate: '2018-11-10' }
+        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, avatar: '👶', birthDate: '2018-11-10' }
       ]
     },
     {
@@ -49,7 +49,7 @@ export class MockAuthAdapter implements AuthAdapter {
         { profileId: 'p2_3', permission: 'reader', colorCode: '#8b5cf6' }
       ],
       profiles: [
-        { id: 'p2_3', name: 'Léo', themePreference: 'flashy', isLocal: true, avatar: '👶', birthDate: '2018-11-10' }
+        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, avatar: '👶', birthDate: '2018-11-10' }
       ]
     }
   ];

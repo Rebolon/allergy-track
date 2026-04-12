@@ -1,12 +1,13 @@
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, computed, effect } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ThemeService, AppTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
-import { ProtocolService, ProtocolItem, SymptomItem, SYMPTOM_PRESETS } from '../services/protocol.service';
+import { ActiveDossierService, ProtocolItem, SymptomItem, SYMPTOM_PRESETS } from '../services/active-dossier.service';
+import { SharingService } from '../services/sharing.service';
+import { ProfileService } from '../services/profile.service';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { LucideAngularModule, UserPlus, Share2, FolderHeart, ShieldCheck, Eye, Trash2, Plus } from 'lucide-angular';
-
-import { ProfileService } from '../services/profile.service';
+import { PermissionLevel } from '../models/allergy-track.model';
 
 @Component({
   selector: 'app-settings',
@@ -48,9 +49,9 @@ import { ProfileService } from '../services/profile.service';
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button (click)="setTheme('colorful')" 
                         class="p-4 border-4 rounded-2xl flex items-center gap-4 transition-all"
-                        [class.border-emerald-500]="currentTheme() === 'colorful'"
-                        [class.bg-emerald-50]="currentTheme() === 'colorful'"
-                        [class.border-slate-100]="currentTheme() !== 'colorful'">
+                        [class.border-emerald-500]="activeDossier.currentTheme() === 'colorful'"
+                        [class.bg-emerald-50]="activeDossier.currentTheme() === 'colorful'"
+                        [class.border-slate-100]="activeDossier.currentTheme() !== 'colorful'">
                   <span class="text-3xl">🌈</span>
                   <div class="text-left">
                     <p class="font-black text-slate-800">Coloré</p>
@@ -59,9 +60,9 @@ import { ProfileService } from '../services/profile.service';
                 </button>
                 <button (click)="setTheme('classic')" 
                         class="p-4 border-4 rounded-2xl flex items-center gap-4 transition-all"
-                        [class.border-emerald-500]="currentTheme() === 'classic'"
-                        [class.bg-emerald-50]="currentTheme() === 'classic'"
-                        [class.border-slate-100]="currentTheme() !== 'classic'">
+                        [class.border-emerald-500]="activeDossier.currentTheme() === 'classic'"
+                        [class.bg-emerald-50]="activeDossier.currentTheme() === 'classic'"
+                        [class.border-slate-100]="activeDossier.currentTheme() !== 'classic'">
                   <span class="text-3xl">🕶️</span>
                   <div class="text-left">
                     <p class="font-black text-slate-800">Classique</p>
@@ -103,6 +104,53 @@ import { ProfileService } from '../services/profile.service';
                         class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
                   Enregistrer les modifications
                 </button>
+              </form>
+            </section>
+
+            <!-- Symptoms -->
+            <section>
+              <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Symptômes Configurables</span>
+              
+              <div class="flex flex-wrap gap-2 mb-6">
+                <button type="button" (click)="applyPreset('reintroduction')" class="px-4 py-2 rounded-xl border-2 border-violet-100 bg-white text-violet-600 font-bold text-xs hover:border-violet-200 transition-all">
+                  🍽️ Réintroduction
+                </button>
+                <button type="button" (click)="applyPreset('desensibilisation')" class="px-4 py-2 rounded-xl border-2 border-blue-100 bg-white text-blue-600 font-bold text-xs hover:border-blue-200 transition-all">
+                  💉 Désensibilisation
+                </button>
+              </div>
+
+              <form [formGroup]="symptomForm" (ngSubmit)="saveSymptoms()">
+                <div formArrayName="items" class="space-y-3 mb-4">
+                  <!-- Fixed 'Rien' row -->
+                  <div class="flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-50 bg-slate-50/30 opacity-60">
+                    <span class="text-2xl">😎</span>
+                    <span class="font-bold text-slate-600 flex-1">Rien (Toujours présent)</span>
+                  </div>
+
+                  @for (item of symptomsArray.controls; track item.get('id')?.value; let i = $index) {
+                    <div [formGroupName]="i" class="flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-100 bg-white">
+                      <input type="text" formControlName="emoji" class="w-12 p-2 text-center text-xl bg-slate-50 rounded-lg outline-none" placeholder="🤔">
+                      <input type="text" formControlName="label" class="flex-1 p-2 font-bold bg-slate-50 rounded-lg outline-none" placeholder="Symptôme">
+                      <button type="button" (click)="removeSymptom(i)" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
+                        <lucide-icon [img]="Trash2" [size]="20"></lucide-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+
+                <button type="button" (click)="addSymptom()" class="w-full py-3 mb-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-emerald-300 hover:text-emerald-500 transition-all flex items-center justify-center gap-2">
+                  <lucide-icon [img]="Plus" [size]="18"></lucide-icon> Ajouter un symptôme
+                </button>
+
+                <button type="submit" [disabled]="symptomForm.invalid || !symptomForm.dirty" 
+                        class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
+                  Enregistrer les symptômes
+                </button>
+
+                @if (saveSymptomSuccess()) {
+                  <p class="mt-3 text-center text-emerald-600 font-black animate-bounce text-sm">✅ Symptômes mis à jour !</p>
+                }
               </form>
             </section>
           </div>
@@ -167,16 +215,16 @@ import { ProfileService } from '../services/profile.service';
                 </div>
               </div>
               @if (auth.activeProfile()?.id !== profile.id) {
-<button 
-                      (click)="auth.switchProfile(profile.id)"
-                      class="px-4 py-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-100 transition-all">
-                Basculer
-              </button>
-}
+                <button 
+                        (click)="auth.switchProfile(profile.id)"
+                        class="px-4 py-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-100 transition-all">
+                  Basculer
+                </button>
+              }
               @if (auth.activeProfile()?.id === profile.id) {
-<span 
-                    class="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">Actif</span>
-}
+                <span 
+                      class="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">Actif</span>
+              }
             </div>
           }
         </div>
@@ -214,16 +262,21 @@ import { ProfileService } from '../services/profile.service';
 export class SettingsComponent implements OnInit {
   theme = inject(ThemeService);
   auth = inject(AuthService);
-  protocolService = inject(ProtocolService);
+  activeDossier = inject(ActiveDossierService);
   profileService = inject(ProfileService);
+  sharingService = inject(SharingService);
   fb = inject(FormBuilder);
 
-  currentTheme = signal<AppTheme>('colorful');
   inviteCode = signal<string | null>(null);
   inviteRole = signal<string>('');
+  saveSymptomSuccess = signal<boolean>(false);
 
   protocolForm: FormGroup = this.fb.group({
     startDate: ['', Validators.required],
+    items: this.fb.array([])
+  });
+
+  symptomForm: FormGroup = this.fb.group({
     items: this.fb.array([])
   });
 
@@ -236,9 +289,19 @@ export class SettingsComponent implements OnInit {
     return this.inviteRole() === 'editor' ? 'Co-Superviseur' : 'Observateur';
   });
 
+  constructor() {
+    effect(() => {
+      const active = this.auth.activeProfile();
+      if (active) {
+        this.initProtocolForm();
+        this.initSymptomForm();
+      }
+    });
+  }
+
   ngOnInit() {
-    this.currentTheme.set(this.theme.currentTheme());
     this.initProtocolForm();
+    this.initSymptomForm();
   }
 
   async logout() {
@@ -246,8 +309,7 @@ export class SettingsComponent implements OnInit {
   }
 
   setTheme(newTheme: AppTheme) {
-    this.currentTheme.set(newTheme);
-    this.theme.setTheme(newTheme);
+    this.activeDossier.updateTheme(newTheme);
   }
 
   get protocolsArray() {
@@ -256,8 +318,8 @@ export class SettingsComponent implements OnInit {
 
   initProtocolForm() {
     this.protocolsArray.clear();
-    const currentProtocols = this.protocolService.protocols();
-    const startDate = this.protocolService.protocolStartDate() || '';
+    const currentProtocols = this.activeDossier.protocols();
+    const startDate = this.activeDossier.protocolStartDate() || '';
 
     this.protocolForm.patchValue({ startDate });
     currentProtocols.forEach(p => {
@@ -289,9 +351,56 @@ export class SettingsComponent implements OnInit {
 
   saveProtocols() {
     if (this.protocolForm.valid) {
-      this.protocolService.updateProtocols(this.protocolForm.value.items);
-      this.protocolService.updateStartDate(this.protocolForm.value.startDate);
+      this.activeDossier.updateProtocols(this.protocolForm.value.items);
+      this.activeDossier.updateStartDate(this.protocolForm.value.startDate);
       this.protocolForm.markAsPristine();
+    }
+  }
+
+  get symptomsArray() {
+    return this.symptomForm.get('items') as FormArray;
+  }
+
+  initSymptomForm() {
+    this.symptomsArray.clear();
+    const current = this.activeDossier.symptoms();
+    current.forEach(s => {
+      this.symptomsArray.push(this.createSymptomFormGroup(s));
+    });
+  }
+
+  createSymptomFormGroup(item?: SymptomItem): FormGroup {
+    return this.fb.group({
+      id: [item?.id || crypto.randomUUID()],
+      label: [item?.label || '', Validators.required],
+      emoji: [item?.emoji || '']
+    });
+  }
+
+  addSymptom() {
+    this.symptomsArray.push(this.createSymptomFormGroup());
+    this.symptomForm.markAsDirty();
+  }
+
+  removeSymptom(index: number) {
+    this.symptomsArray.removeAt(index);
+    this.symptomForm.markAsDirty();
+  }
+
+  applyPreset(preset: 'reintroduction' | 'desensibilisation') {
+    this.symptomsArray.clear();
+    SYMPTOM_PRESETS[preset].forEach(s => {
+      this.symptomsArray.push(this.createSymptomFormGroup({ ...s, id: crypto.randomUUID() }));
+    });
+    this.symptomForm.markAsDirty();
+  }
+
+  saveSymptoms() {
+    if (this.symptomForm.valid) {
+      this.activeDossier.updateSymptoms(this.symptomForm.value.items);
+      this.symptomForm.markAsPristine();
+      this.saveSymptomSuccess.set(true);
+      setTimeout(() => this.saveSymptomSuccess.set(false), 3000);
     }
   }
 
@@ -299,7 +408,7 @@ export class SettingsComponent implements OnInit {
     const active = this.auth.activeProfile();
     if (!active) return;
     this.inviteRole.set(role);
-    const code = await this.profileService.generateInvitationToken(active.id);
+    const code = await this.sharingService.generateInviteCode(active.id, role as PermissionLevel);
     this.inviteCode.set(code);
   }
 
@@ -310,7 +419,7 @@ export class SettingsComponent implements OnInit {
 
   async acceptInvite(code: string) {
     if (!code) return;
-    await this.profileService.acceptInvitation(code);
+    await this.sharingService.joinDossier(code);
   }
 
   getDisplayAvatar(profile: any): string {
@@ -327,7 +436,7 @@ export class SettingsComponent implements OnInit {
 
   getProfilePermissionLabel(profileId: string): string {
     const perm = this.auth.currentUser()?.profileAccesses.find(a => a.profileId === profileId)?.permission;
-    switch (perm) {
+    switch(perm) {
       case 'owner': return 'Propriétaire';
       case 'editor': return 'Éditeur';
       case 'reader': return 'Observateur';
