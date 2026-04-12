@@ -1,18 +1,23 @@
-import { Component, inject, signal, OnInit, computed, effect } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { NgClass } from '@angular/common';
-import { ThemeService, AppTheme } from '../services/theme.service';
+import { ThemeService } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
-import { ActiveDossierService, ProtocolItem, SymptomItem, SYMPTOM_PRESETS } from '../services/active-dossier.service';
-import { SharingService } from '../services/sharing.service';
-import { ProfileService } from '../services/profile.service';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
-import { LucideAngularModule, UserPlus, Share2, FolderHeart, ShieldCheck, Eye, Trash2, Plus } from 'lucide-angular';
-import { PermissionLevel } from '../models/allergy-track.model';
+import { ActiveDossierService } from '../services/active-dossier.service';
+import { ProtocolFormComponent } from './settings/protocol-form.component';
+import { SymptomFormComponent } from './settings/symptom-form.component';
+import { SharingSettingsComponent } from './settings/sharing-settings.component';
+import { DossierManagementComponent } from './settings/dossier-management.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [NgClass, ReactiveFormsModule, LucideAngularModule],
+  imports: [
+    NgClass, 
+    ProtocolFormComponent, 
+    SymptomFormComponent, 
+    SharingSettingsComponent, 
+    DossierManagementComponent
+  ],
   template: `
     <div class="flex flex-col gap-6 p-6 mb-6 mt-6 md:mt-0">
       
@@ -72,383 +77,41 @@ import { PermissionLevel } from '../models/allergy-track.model';
               </div>
             </section>
 
-            <!-- Protocol -->
-            <section>
-              <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Configuration Protocole</span>
-              <form [formGroup]="protocolForm" (ngSubmit)="saveProtocols()">
-                <div class="mb-6 p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-col gap-2">
-                  <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Date de début</label>
-                  <input type="date" formControlName="startDate" class="p-3 bg-white rounded-xl border border-slate-200 font-bold outline-none focus:ring-2 focus:ring-emerald-500">
-                </div>
+            <!-- Protocol Form -->
+            <app-protocol-form />
 
-                <div formArrayName="items" class="space-y-3 mb-4">
-                  @for (item of protocolsArray.controls; track item.get('id')?.value; let i = $index) {
-                    <div [formGroupName]="i" class="flex flex-col sm:flex-row items-center gap-3 p-4 rounded-2xl border-2 border-slate-100 bg-white">
-                      <input type="text" formControlName="allergen" class="flex-1 w-full p-2 font-bold bg-slate-50 rounded-lg outline-none" placeholder="Allergène">
-                      <div class="flex gap-2 w-full sm:w-auto">
-                        <input type="number" formControlName="dose" class="w-20 p-2 font-bold bg-slate-50 rounded-lg outline-none text-center" placeholder="Dose">
-                        <input type="number" formControlName="frequencyDays" class="w-20 p-2 font-bold bg-slate-50 rounded-lg outline-none text-center" title="Tous les X jours">
-                        <button type="button" (click)="removeProtocol(i)" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
-                          <lucide-icon [img]="Trash2" [size]="20"></lucide-icon>
-                        </button>
-                      </div>
-                    </div>
-                  }
-                </div>
-
-                <button type="button" (click)="addProtocol()" class="w-full py-3 mb-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-emerald-300 hover:text-emerald-500 transition-all flex items-center justify-center gap-2">
-                  <lucide-icon [img]="Plus" [size]="18"></lucide-icon> Ajouter une ligne
-                </button>
-
-                <button type="submit" [disabled]="protocolForm.invalid || !protocolForm.dirty" 
-                        class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
-                  Enregistrer les modifications
-                </button>
-              </form>
-            </section>
-
-            <!-- Symptoms -->
-            <section>
-              <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Symptômes Configurables</span>
-              
-              <div class="flex flex-wrap gap-2 mb-6">
-                <button type="button" (click)="applyPreset('reintroduction')" class="px-4 py-2 rounded-xl border-2 border-violet-100 bg-white text-violet-600 font-bold text-xs hover:border-violet-200 transition-all">
-                  🍽️ Réintroduction
-                </button>
-                <button type="button" (click)="applyPreset('desensibilisation')" class="px-4 py-2 rounded-xl border-2 border-blue-100 bg-white text-blue-600 font-bold text-xs hover:border-blue-200 transition-all">
-                  💉 Désensibilisation
-                </button>
-              </div>
-
-              <form [formGroup]="symptomForm" (ngSubmit)="saveSymptoms()">
-                <div formArrayName="items" class="space-y-3 mb-4">
-                  <!-- Fixed 'Rien' row -->
-                  <div class="flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-50 bg-slate-50/30 opacity-60">
-                    <span class="text-2xl">😎</span>
-                    <span class="font-bold text-slate-600 flex-1">Rien (Toujours présent)</span>
-                  </div>
-
-                  @for (item of symptomsArray.controls; track item.get('id')?.value; let i = $index) {
-                    <div [formGroupName]="i" class="flex items-center gap-3 p-4 rounded-2xl border-2 border-slate-100 bg-white">
-                      <input type="text" formControlName="emoji" class="w-12 p-2 text-center text-xl bg-slate-50 rounded-lg outline-none" placeholder="🤔">
-                      <input type="text" formControlName="label" class="flex-1 p-2 font-bold bg-slate-50 rounded-lg outline-none" placeholder="Symptôme">
-                      <button type="button" (click)="removeSymptom(i)" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
-                        <lucide-icon [img]="Trash2" [size]="20"></lucide-icon>
-                      </button>
-                    </div>
-                  }
-                </div>
-
-                <button type="button" (click)="addSymptom()" class="w-full py-3 mb-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-emerald-300 hover:text-emerald-500 transition-all flex items-center justify-center gap-2">
-                  <lucide-icon [img]="Plus" [size]="18"></lucide-icon> Ajouter un symptôme
-                </button>
-
-                <button type="submit" [disabled]="symptomForm.invalid || !symptomForm.dirty" 
-                        class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
-                  Enregistrer les symptômes
-                </button>
-
-                @if (saveSymptomSuccess()) {
-                  <p class="mt-3 text-center text-emerald-600 font-black animate-bounce text-sm">✅ Symptômes mis à jour !</p>
-                }
-              </form>
-            </section>
+            <!-- Symptom Form -->
+            <app-symptom-form />
           </div>
         </div>
 
         <!-- Sharing Section (Only Owner) -->
         @if (auth.activePermission() === 'owner') {
-          <div [ngClass]="theme.cardClass()" class="border-violet-100 !bg-violet-50/20">
-            <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-violet-800">
-              <span class="text-3xl">🤝</span> Partage du dossier
-            </h2>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <button (click)="generateInvite('editor')" 
-                      class="p-6 bg-white border-4 border-violet-100 rounded-3xl text-left hover:border-violet-400 transition-all group">
-                <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <lucide-icon [img]="ShieldCheck" [size]="24"></lucide-icon>
-                </div>
-                <p class="font-black text-violet-900 leading-tight">Co-Superviseur</p>
-                <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mt-1">Édition & Saisie</p>
-              </button>
-
-              <button (click)="generateInvite('reader')" 
-                      class="p-6 bg-white border-4 border-slate-100 rounded-3xl text-left hover:border-violet-400 transition-all group">
-                <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                  <lucide-icon [img]="Eye" [size]="24"></lucide-icon>
-                </div>
-                <p class="font-black text-slate-900 leading-tight">Observateur</p>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lecture seule</p>
-              </button>
-            </div>
-
-            @if (inviteCode()) {
-              <div class="p-6 bg-violet-600 text-white rounded-3xl text-center space-y-2 animate-in zoom-in duration-300">
-                <p class="text-xs font-black uppercase tracking-widest opacity-70">Code d'invitation ({{ inviteRoleLabel() }})</p>
-                <p class="text-4xl font-black tracking-[0.2em]">{{ inviteCode() }}</p>
-                <p class="text-[10px] font-bold opacity-60">Ce code est valable 24h.</p>
-              </div>
-            }
-          </div>
+          <app-sharing-settings />
         }
       }
 
       <!-- Global Management -->
-      <div [ngClass]="theme.cardClass()">
-        <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-slate-800">
-          <span class="text-3xl">📂</span> Mes Dossiers
-        </h2>
-
-        <div class="space-y-4 mb-8">
-          @for (profile of auth.currentUser()?.profiles; track profile.id) {
-            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-slate-100">
-              <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full border-2 flex items-center justify-center text-2xl"
-                     [style.borderColor]="getProfileColor(profile.id)"
-                     [style.backgroundColor]="getProfileColor(profile.id) + '15'">
-                  {{ getDisplayAvatar(profile) }}
-                </div>
-                <div>
-                  <p class="font-black text-slate-800 leading-none">{{ profile.name }}</p>
-                  <p class="text-[10px] font-bold text-slate-400 uppercase mt-1">{{ getProfilePermissionLabel(profile.id) }}</p>
-                </div>
-              </div>
-              @if (auth.activeProfile()?.id !== profile.id) {
-                <button 
-                        (click)="auth.switchProfile(profile.id)"
-                        class="px-4 py-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-100 transition-all">
-                  Basculer
-                </button>
-              }
-              @if (auth.activeProfile()?.id === profile.id) {
-                <span 
-                      class="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">Actif</span>
-              }
-            </div>
-          }
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
-          <!-- Add Child -->
-          <div class="space-y-3">
-            <h3 class="font-black text-slate-800 flex items-center gap-2">
-              <lucide-icon [img]="FolderHeart" [size]="18" class="text-rose-500"></lucide-icon>
-              Nouveau dossier patient
-            </h3>
-            <div class="flex gap-2">
-              <input #newName type="text" placeholder="Prénom de l'enfant" class="flex-1 p-3 bg-slate-50 rounded-xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500">
-              <button (click)="createChild(newName.value); newName.value = ''" class="px-4 py-3 bg-rose-500 text-white rounded-xl font-black text-sm shadow-md hover:bg-rose-600 transition-all">Créer</button>
-            </div>
-          </div>
-
-          <!-- Join -->
-          <div class="space-y-3">
-            <h3 class="font-black text-slate-800 flex items-center gap-2">
-              <lucide-icon [img]="UserPlus" [size]="18" class="text-violet-500"></lucide-icon>
-              Rejoindre un dossier
-            </h3>
-            <div class="flex gap-2">
-              <input #joinCode type="text" placeholder="Code invitation" class="flex-1 p-3 bg-slate-50 rounded-xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-violet-500 uppercase tracking-widest">
-              <button (click)="acceptInvite(joinCode.value); joinCode.value = ''" class="px-4 py-3 bg-violet-500 text-white rounded-xl font-black text-sm shadow-md hover:bg-violet-600 transition-all">Rejoindre</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <app-dossier-management />
 
     </div>
   `
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent {
   theme = inject(ThemeService);
   auth = inject(AuthService);
   activeDossier = inject(ActiveDossierService);
-  profileService = inject(ProfileService);
-  sharingService = inject(SharingService);
-  fb = inject(FormBuilder);
-
-  inviteCode = signal<string | null>(null);
-  inviteRole = signal<string>('');
-  saveSymptomSuccess = signal<boolean>(false);
-
-  protocolForm: FormGroup = this.fb.group({
-    startDate: ['', Validators.required],
-    items: this.fb.array([])
-  });
-
-  symptomForm: FormGroup = this.fb.group({
-    items: this.fb.array([])
-  });
 
   canEditActive = computed(() => {
     const perm = this.auth.activePermission();
     return perm === 'owner' || perm === 'editor';
   });
 
-  inviteRoleLabel = computed(() => {
-    return this.inviteRole() === 'editor' ? 'Co-Superviseur' : 'Observateur';
-  });
-
-  constructor() {
-    effect(() => {
-      const active = this.auth.activeProfile();
-      if (active) {
-        this.initProtocolForm();
-        this.initSymptomForm();
-      }
-    });
-  }
-
-  ngOnInit() {
-    this.initProtocolForm();
-    this.initSymptomForm();
-  }
-
   async logout() {
     await this.auth.logout();
   }
 
-  setTheme(newTheme: AppTheme) {
+  setTheme(newTheme: any) {
     this.activeDossier.updateTheme(newTheme);
   }
-
-  get protocolsArray() {
-    return this.protocolForm.get('items') as FormArray;
-  }
-
-  initProtocolForm() {
-    this.protocolsArray.clear();
-    const currentProtocols = this.activeDossier.protocols();
-    const startDate = this.activeDossier.protocolStartDate() || '';
-
-    this.protocolForm.patchValue({ startDate });
-    currentProtocols.forEach(p => {
-      this.protocolsArray.push(this.fb.group({
-        id: [p.id],
-        allergen: [p.allergen, Validators.required],
-        dose: [p.dose, [Validators.required, Validators.min(0)]],
-        frequencyDays: [p.frequencyDays, [Validators.required, Validators.min(1)]],
-        createdAt: [p.createdAt]
-      }));
-    });
-  }
-
-  addProtocol() {
-    this.protocolsArray.push(this.fb.group({
-      id: [crypto.randomUUID()],
-      allergen: ['', Validators.required],
-      dose: [1.5, [Validators.required, Validators.min(0)]],
-      frequencyDays: [1, [Validators.required, Validators.min(1)]],
-      createdAt: [new Date().toISOString().split('T')[0]]
-    }));
-    this.protocolForm.markAsDirty();
-  }
-
-  removeProtocol(index: number) {
-    this.protocolsArray.removeAt(index);
-    this.protocolForm.markAsDirty();
-  }
-
-  saveProtocols() {
-    if (this.protocolForm.valid) {
-      this.activeDossier.updateProtocols(this.protocolForm.value.items);
-      this.activeDossier.updateStartDate(this.protocolForm.value.startDate);
-      this.protocolForm.markAsPristine();
-    }
-  }
-
-  get symptomsArray() {
-    return this.symptomForm.get('items') as FormArray;
-  }
-
-  initSymptomForm() {
-    this.symptomsArray.clear();
-    const current = this.activeDossier.symptoms();
-    current.forEach(s => {
-      this.symptomsArray.push(this.createSymptomFormGroup(s));
-    });
-  }
-
-  createSymptomFormGroup(item?: SymptomItem): FormGroup {
-    return this.fb.group({
-      id: [item?.id || crypto.randomUUID()],
-      label: [item?.label || '', Validators.required],
-      emoji: [item?.emoji || '']
-    });
-  }
-
-  addSymptom() {
-    this.symptomsArray.push(this.createSymptomFormGroup());
-    this.symptomForm.markAsDirty();
-  }
-
-  removeSymptom(index: number) {
-    this.symptomsArray.removeAt(index);
-    this.symptomForm.markAsDirty();
-  }
-
-  applyPreset(preset: 'reintroduction' | 'desensibilisation') {
-    this.symptomsArray.clear();
-    SYMPTOM_PRESETS[preset].forEach(s => {
-      this.symptomsArray.push(this.createSymptomFormGroup({ ...s, id: crypto.randomUUID() }));
-    });
-    this.symptomForm.markAsDirty();
-  }
-
-  saveSymptoms() {
-    if (this.symptomForm.valid) {
-      this.activeDossier.updateSymptoms(this.symptomForm.value.items);
-      this.symptomForm.markAsPristine();
-      this.saveSymptomSuccess.set(true);
-      setTimeout(() => this.saveSymptomSuccess.set(false), 3000);
-    }
-  }
-
-  async generateInvite(role: 'editor' | 'reader') {
-    const active = this.auth.activeProfile();
-    if (!active) return;
-    this.inviteRole.set(role);
-    const code = await this.sharingService.generateInviteCode(active.id, role as PermissionLevel);
-    this.inviteCode.set(code);
-  }
-
-  async createChild(name: string) {
-    if (!name) return;
-    await this.profileService.createLocalChild(name);
-  }
-
-  async acceptInvite(code: string) {
-    if (!code) return;
-    await this.sharingService.joinDossier(code);
-  }
-
-  getDisplayAvatar(profile: any): string {
-    const skinToneModifiers: Record<string, string> = { 'light': '\u{1F3FB}', 'dark': '\u{1F3FF}' };
-    const base = profile?.avatar || '👶';
-    const modifier = profile?.avatarSkinTone && skinToneModifiers[profile.avatarSkinTone] ? skinToneModifiers[profile.avatarSkinTone] : '';
-    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
-    return base + (!noSkinTone.includes(base) ? modifier : '');
-  }
-
-  getProfileColor(profileId: string): string {
-    return this.auth.currentUser()?.profileAccesses.find(a => a.profileId === profileId)?.colorCode || '#6366f1';
-  }
-
-  getProfilePermissionLabel(profileId: string): string {
-    const perm = this.auth.currentUser()?.profileAccesses.find(a => a.profileId === profileId)?.permission;
-    switch(perm) {
-      case 'owner': return 'Propriétaire';
-      case 'editor': return 'Éditeur';
-      case 'reader': return 'Observateur';
-      default: return '';
-    }
-  }
-
-  readonly Trash2 = Trash2;
-  readonly Plus = Plus;
-  readonly Share2 = Share2;
-  readonly Eye = Eye;
-  readonly ShieldCheck = ShieldCheck;
-  readonly FolderHeart = FolderHeart;
-  readonly UserPlus = UserPlus;
 }
