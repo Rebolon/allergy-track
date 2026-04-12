@@ -130,6 +130,12 @@ export class App implements OnInit {
 
   gState = toSignal(this.gamification.getGamificationState().pipe(startWith(null)), { initialValue: null });
 
+  constructor() {
+    (window as any).dispatchTabChange = (tab: MobileTab) => {
+      this.activeTab.set(tab);
+    };
+  }
+
   ngOnInit() {
     this.notification.init();
   }
