@@ -21,7 +21,8 @@ import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.co
 import { ErrorService } from './services/error.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
-import { ProfileSwitcherComponent } from './components/layout/profile-switcher.component';
+
+import { OnboardingComponent } from './components/onboarding.component';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,10 +39,10 @@ import { ProfileSwitcherComponent } from './components/layout/profile-switcher.c
     GamificationSummaryComponent,
     GamificationHistoryComponent,
     TopNavComponent,
-    ProfileSwitcherComponent,
     GlobalErrorModalComponent,
     SplashScreenComponent,
     SettingsComponent,
+    OnboardingComponent,
     MatIconModule
   ],
   template: `
@@ -49,6 +50,10 @@ import { ProfileSwitcherComponent } from './components/layout/profile-switcher.c
     <app-splash-screen />
 
     @if (auth.isAuthenticated()) {
+      @if (auth.currentUser()?.profileAccesses?.length === 0) {
+        <app-onboarding />
+      }
+
       <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
       
       <!-- Header / Auth Switcher -->
@@ -56,9 +61,6 @@ import { ProfileSwitcherComponent } from './components/layout/profile-switcher.c
 
       <!-- Desktop Nav -->
       <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
-
-      <!-- Multi-Profile Tabs (appear only if > 1 profile) -->
-      <app-profile-switcher />
 
       <!-- Main Content -->
       <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
@@ -100,7 +102,7 @@ import { ProfileSwitcherComponent } from './components/layout/profile-switcher.c
         
       </main>
 
-      <!-- Bottom Nav (Mobile Only) -->
+      <!-- Bottom Nav (Bottom Only) -->
       <app-bottom-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-bottom-nav>
 
       <!-- Modals -->
@@ -122,7 +124,7 @@ export class App implements OnInit {
 
   selectedDate = signal(this.getTodayStr());
 
-  // Mobile Navigation State
+  // Navigation State
   activeTab = signal<MobileTab>('home');
 
   gState = toSignal(this.gamification.getGamificationState().pipe(startWith(null)), { initialValue: null });
@@ -149,4 +151,3 @@ export class App implements OnInit {
     this.activeTab.set('home');
   }
 }
-

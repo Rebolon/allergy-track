@@ -1,16 +1,17 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { ThemeService, AppTheme } from '../services/theme.service';
 import { AuthService } from '../services/auth.service';
 import { ProtocolService, ProtocolItem, SymptomItem, SYMPTOM_PRESETS } from '../services/protocol.service';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { LucideAngularModule, UserPlus, Share2, FolderHeart, ShieldCheck, Eye, Trash2, Plus } from 'lucide-angular';
 
 import { ProfileService } from '../services/profile.service';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [NgClass, ReactiveFormsModule],
+  imports: [NgClass, ReactiveFormsModule, LucideAngularModule],
   template: `
     <div class="flex flex-col gap-6 p-6 mb-6 mt-6 md:mt-0">
       
@@ -28,336 +29,184 @@ import { ProfileService } from '../services/profile.service';
           </div>
           <button (click)="logout()" 
                   class="w-full md:w-auto py-3 px-8 bg-white border-2 border-rose-200 text-rose-600 font-black rounded-2xl hover:bg-rose-50 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-95">
-            <span class="text-xl">🚪</span>
             Déconnexion
           </button>
         </div>
       </div>
-      
-      <!-- Theme Settings -->
-      <div [ngClass]="theme.cardClass()">
-        <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
-          <span class="text-3xl">⚙️</span> Préférences d'Affichage
-        </h2>
-        <div class="space-y-4 max-w-xl">
-          <span class="block text-sm font-bold mb-3 uppercase tracking-wider text-[var(--color-text-muted)]">Sélecteur de Thème</span>
-          
-          <!-- Option: Colorful -->
-          <label class="relative flex items-center justify-between p-4 border-4 rounded-2xl cursor-pointer hover:bg-violet-50 transition-all font-bold"
-                 [class.border-violet-500]="currentTheme() === 'colorful'"
-                 [class.bg-violet-50]="currentTheme() === 'colorful'"
-                 [class.border-slate-100]="currentTheme() !== 'colorful'">
-            <div class="flex items-center gap-4">
-              <div class="text-4xl">🌈</div>
-              <div class="flex flex-col">
-                <span class="text-slate-800 text-lg">Coloré</span>
-                <span class="text-xs font-bold text-slate-400">Couleurs vives et amusantes</span>
-              </div>
-            </div>
-            <input type="radio" name="theme" value="colorful" [checked]="currentTheme() === 'colorful'" (change)="setTheme('colorful')" class="w-6 h-6 accent-violet-600 focus:ring-violet-500 border-gray-300">
-          </label>
 
-          <!-- Option: Classic -->
-          <label class="relative flex items-center justify-between p-4 border-4 rounded-2xl cursor-pointer hover:bg-blue-50 transition-all font-bold"
-                 [class.border-blue-500]="currentTheme() === 'classic'"
-                 [class.bg-blue-50]="currentTheme() === 'classic'"
-                 [class.border-slate-100]="currentTheme() !== 'classic'">
-            <div class="flex items-center gap-4">
-              <div class="text-4xl">🕶️</div>
-              <div class="flex flex-col">
-                <span class="text-slate-800 text-lg">Classique</span>
-                <span class="text-xs font-bold text-slate-400">Design sobre et épuré</span>
-              </div>
-            </div>
-            <input type="radio" name="theme" value="classic" [checked]="currentTheme() === 'classic'" (change)="setTheme('classic')" class="w-6 h-6 accent-blue-600 focus:ring-blue-500 border-gray-300">
-          </label>
-        </div>
-      </div>
-
-      <!-- Protocol Settings -->
-      <div [ngClass]="theme.cardClass()">
-        <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
-          <span class="text-3xl">📝</span> Configuration du Protocole ({{ auth.activeProfile()?.name }})
-        </h2>
-        <p class="text-[var(--color-text-muted)] text-sm mb-6 font-medium">Définissez la date de début ainsi que la liste des allergènes à prendre pour les défis gourmands. Si un allergène est à prendre tous les jours, mettez "1". Si tous les deux jours, mettez "2", etc.</p>
-
-        <form [formGroup]="protocolForm" (ngSubmit)="saveProtocols()">
-          
-          <div class="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-            <label class="block text-sm font-bold text-slate-700 mb-2">🎈 Date de début du protocole</label>
-            <input type="date" formControlName="startDate" class="w-full max-w-xs p-3 font-bold bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-[var(--color-primary)] outline-none">
-            <p class="text-xs text-slate-500 mt-2">La gamification et l'agenda se baseront sur cette date pour le calcul des historiques.</p>
-          </div>
-
-          <div formArrayName="items" class="space-y-3">
-            @for (item of protocolsArray.controls; track item.get('id')?.value; let i = $index) {
-              <div [formGroupName]="i" class="flex flex-col sm:flex-row items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50">
-                
-                <div class="flex-1 w-full">
-                  <label class="block text-xs font-bold text-slate-500 mb-1">Nom / Allergène</label>
-                  <input type="text" formControlName="allergen" class="w-full p-2 font-bold bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-[var(--color-primary)] outline-none" placeholder="Ex: Cacahuète">
-                </div>
-                
-                <div class="w-full sm:w-24">
-                  <label class="block text-xs font-bold text-slate-500 mb-1">Quantité</label>
-                  <input type="number" step="0.5" min="0" formControlName="dose" class="w-full p-2 font-bold bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-[var(--color-primary)] outline-none" placeholder="1.5">
-                </div>
-
-                <div class="w-full sm:w-32">
-                  <label class="block text-xs font-bold text-slate-500 mb-1">Tous les (jours)</label>
-                  <input type="number" min="1" formControlName="frequencyDays" class="w-full p-2 font-bold bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-[var(--color-primary)] outline-none" placeholder="1">
-                </div>
-
-                <div class="pt-4 sm:pt-5">
-                  <button type="button" (click)="removeProtocol(i)" class="h-10 w-10 flex items-center justify-center rounded-lg bg-rose-100 text-rose-500 hover:bg-rose-200 transition-colors" title="Supprimer">
-                    <span class="text-xl">🗑️</span>
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
-
-          <div class="mt-4 flex gap-4">
-            <button type="button" (click)="addProtocol()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
-              <span>➕</span> Ajouter une ligne
-            </button>
-            <div class="flex-1"></div>
-            <button type="submit" [disabled]="protocolForm.invalid || !protocolForm.dirty" 
-              class="flex items-center gap-2 px-6 py-2 bg-[var(--color-primary)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm">
-              <span>💾</span> Enregistrer
-            </button>
-          </div>
-          @if (saveSuccess()) {
-            <div class="mt-4 p-3 bg-emerald-100 text-emerald-800 font-bold rounded-lg flex items-center gap-2 text-sm max-w-fit">
-              <span>✅</span> Protocole mis à jour avec succès !
-            </div>
-          }
-        </form>
-      </div>
-
-      <!-- Symptoms Settings -->
-      <div [ngClass]="theme.cardClass()">
-        <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
-          <span class="text-3xl">🤒</span> Symptômes Configurables
-        </h2>
-        <p class="text-[var(--color-text-muted)] text-sm mb-4 font-medium">Définissez la liste des symptômes proposés lors de la saisie quotidienne.</p>
-
-        <!-- Preset buttons -->
-        <div class="flex flex-wrap gap-3 mb-6">
-          <span class="text-sm font-bold text-slate-500 self-center">Partir d'un modèle :</span>
-          <button type="button" (click)="applyPreset('reintroduction')" class="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-violet-300 bg-violet-50 text-violet-700 font-bold text-sm hover:bg-violet-100 transition-colors">
-            🍽️ Réintroduction alimentaire
-          </button>
-          <button type="button" (click)="applyPreset('desensibilisation')" class="flex items-center gap-2 px-4 py-2 rounded-lg border-2 border-blue-300 bg-blue-50 text-blue-700 font-bold text-sm hover:bg-blue-100 transition-colors">
-            💉 Désensibilisation
-          </button>
-        </div>
-
-        <form [formGroup]="symptomForm" (ngSubmit)="saveSymptoms()">
-          <div formArrayName="items" class="space-y-3">
-            <!-- Fixed 'Rien' row -->
-            <div class="flex items-center gap-3 p-4 rounded-xl border border-slate-100 bg-slate-50/50 opacity-60">
-              <span class="text-2xl">😎</span>
-              <span class="font-bold text-slate-600 flex-1">Rien</span>
-              <span class="text-xs text-slate-400 italic">Non configurable — toujours présent</span>
-            </div>
-
-            @for (item of symptomsArray.controls; track item.get('id')?.value; let i = $index) {
-              <div [formGroupName]="i" class="flex flex-col sm:flex-row items-center gap-3 p-4 rounded-xl border border-slate-200 bg-slate-50">
-                <div class="w-20">
-                  <label class="block text-xs font-bold text-slate-500 mb-1">Emoji</label>
-                  <input type="text" formControlName="emoji" maxlength="4" class="w-full p-2 text-center text-xl bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-[var(--color-primary)] outline-none" placeholder="🤔">
-                </div>
-                <div class="flex-1 w-full">
-                  <label class="block text-xs font-bold text-slate-500 mb-1">Label du symptôme</label>
-                  <input type="text" formControlName="label" class="w-full p-2 font-bold bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-[var(--color-primary)] outline-none" placeholder="Ex: Démangeaisons">
-                </div>
-                <div class="pt-4 sm:pt-5">
-                  <button type="button" (click)="removeSymptom(i)" class="h-10 w-10 flex items-center justify-center rounded-lg bg-rose-100 text-rose-500 hover:bg-rose-200 transition-colors" title="Supprimer">
-                    <span class="text-xl">🗑️</span>
-                  </button>
-                </div>
-              </div>
-            }
-          </div>
-
-          <div class="mt-4 flex gap-4">
-            <button type="button" (click)="addSymptom()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors">
-              <span>➕</span> Ajouter un symptôme
-            </button>
-            <div class="flex-1"></div>
-            <button type="submit" [disabled]="symptomForm.invalid || !symptomForm.dirty"
-              class="flex items-center gap-2 px-6 py-2 bg-[var(--color-primary)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-sm">
-              <span>💾</span> Enregistrer
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Family Settings (Managed Profiles) -->
-      @if (auth.currentUser()?.profiles; as profiles) {
+      <!-- Active Dossier Management (Only if Owner/Editor) -->
+      @if (canEditActive()) {
         <div [ngClass]="theme.cardClass()">
           <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
-            <span class="text-3xl">👨‍👩‍👧‍👦</span> Ma Famille & Dossiers
+            <span class="text-3xl text-emerald-500">⚙️</span> Dossier Actif : {{ auth.activeProfile()?.name }}
           </h2>
-          <p class="text-[var(--color-text-muted)] text-sm mb-6 font-medium">Gérez ici les personnes que vous supervisez ou les dossiers partagés.</p>
 
-          <div class="space-y-4 mb-8">
-            @for (profile of profiles; track profile.id) {
-              <div class="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 gap-4">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-4">
-                    <button (click)="toggleEditAvatar(profile.id)" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform hover:scale-110 active:scale-95 shadow-sm"
-                         [class.bg-violet-100]="profile.role === 'Supervision'"
-                         [class.bg-emerald-100]="profile.role === 'Allergique'">
-                      {{ getDisplayAvatar(profile) }}
-                    </button>
-                    <div class="flex flex-col">
-                      <span class="font-bold text-slate-800">{{ profile.name }}</span>
-                      <span class="text-[10px] font-black uppercase tracking-widest"
-                            [class.text-emerald-500]="profile.role === 'Allergique'"
-                            [class.text-violet-500]="profile.role === 'Supervision'"
-                            [class.text-blue-500]="profile.role === 'Mixte'">
-                        {{ profile.role === 'Mixte' ? 'Rôle Mixte' : profile.role }}
-                        {{ profile.isLocal ? '• Dossier Local' : '• Compte Invité' }}
-                      </span>
-                    </div>
+          <div class="space-y-8">
+            <!-- Theme -->
+            <section>
+              <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Thème du dossier</span>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button (click)="setTheme('colorful')" 
+                        class="p-4 border-4 rounded-2xl flex items-center gap-4 transition-all"
+                        [class.border-emerald-500]="currentTheme() === 'colorful'"
+                        [class.bg-emerald-50]="currentTheme() === 'colorful'"
+                        [class.border-slate-100]="currentTheme() !== 'colorful'">
+                  <span class="text-3xl">🌈</span>
+                  <div class="text-left">
+                    <p class="font-black text-slate-800">Coloré</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Ludique & Fun</p>
                   </div>
-                  
-                  <div class="flex items-center gap-2">
-                    <button (click)="toggleEditAvatar(profile.id)" 
-                            class="px-3 py-1.5 rounded-lg border-2 border-slate-100 text-slate-400 hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-all font-bold text-xs flex items-center gap-2">
-                      <span class="text-lg">⚙️</span> Gérer
-                    </button>
-                    @if (profile.id !== auth.activeProfile()?.id) {
-                      <button (click)="auth.switchProfile(profile.id)" 
-                              class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                        Basculer
-                      </button>
-                    } @else {
-                      <span class="px-4 py-2 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-xl text-sm font-black">Actif</span>
-                    }
+                </button>
+                <button (click)="setTheme('classic')" 
+                        class="p-4 border-4 rounded-2xl flex items-center gap-4 transition-all"
+                        [class.border-emerald-500]="currentTheme() === 'classic'"
+                        [class.bg-emerald-50]="currentTheme() === 'classic'"
+                        [class.border-slate-100]="currentTheme() !== 'classic'">
+                  <span class="text-3xl">🕶️</span>
+                  <div class="text-left">
+                    <p class="font-black text-slate-800">Classique</p>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase">Épuré & Sobre</p>
                   </div>
+                </button>
+              </div>
+            </section>
+
+            <!-- Protocol -->
+            <section>
+              <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Configuration Protocole</span>
+              <form [formGroup]="protocolForm" (ngSubmit)="saveProtocols()">
+                <div class="mb-6 p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-col gap-2">
+                  <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Date de début</label>
+                  <input type="date" formControlName="startDate" class="p-3 bg-white rounded-xl border border-slate-200 font-bold outline-none focus:ring-2 focus:ring-emerald-500">
                 </div>
 
-                <!-- Avatar Selection Area -->
-                @if (editingProfileId() === profile.id) {
-                  <div class="p-4 bg-white rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
-                    <div class="mb-6">
-                      <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Mon Rôle sur ce dossier</span>
-                      <div class="grid grid-cols-3 gap-2">
-                        <button (click)="updateRole(profile, 'Allergique')"
-                                [class.bg-emerald-500]="profile.role === 'Allergique'"
-                                [class.text-white]="profile.role === 'Allergique'"
-                                [class.bg-slate-50]="profile.role !== 'Allergique'"
-                                class="flex flex-col items-center p-3 rounded-xl border-2 transition-all"
-                                [class.border-emerald-200]="profile.role === 'Allergique'"
-                                [class.border-transparent]="profile.role !== 'Allergique'">
-                          <span class="text-xl">🏃</span>
-                          <span class="text-[10px] font-bold mt-1">Allergique</span>
-                        </button>
-                        <button (click)="updateRole(profile, 'Supervision')"
-                                [class.bg-violet-500]="profile.role === 'Supervision'"
-                                [class.text-white]="profile.role === 'Supervision'"
-                                [class.bg-slate-50]="profile.role !== 'Supervision'"
-                                class="flex flex-col items-center p-3 rounded-xl border-2 transition-all"
-                                [class.border-violet-200]="profile.role === 'Supervision'"
-                                [class.border-transparent]="profile.role !== 'Supervision'">
-                          <span class="text-xl">🧐</span>
-                          <span class="text-[10px] font-bold mt-1">Superviseur</span>
-                        </button>
-                        <button (click)="updateRole(profile, 'Mixte')"
-                                [class.bg-blue-500]="profile.role === 'Mixte'"
-                                [class.text-white]="profile.role === 'Mixte'"
-                                [class.bg-slate-50]="profile.role !== 'Mixte'"
-                                class="flex flex-col items-center p-3 rounded-xl border-2 transition-all"
-                                [class.border-blue-200]="profile.role === 'Mixte'"
-                                [class.border-transparent]="profile.role !== 'Mixte'">
-                          <span class="text-xl">🎭</span>
-                          <span class="text-[10px] font-bold mt-1">Les deux</span>
+                <div formArrayName="items" class="space-y-3 mb-4">
+                  @for (item of protocolsArray.controls; track item.get('id')?.value; let i = $index) {
+                    <div [formGroupName]="i" class="flex flex-col sm:flex-row items-center gap-3 p-4 rounded-2xl border-2 border-slate-100 bg-white">
+                      <input type="text" formControlName="allergen" class="flex-1 w-full p-2 font-bold bg-slate-50 rounded-lg outline-none" placeholder="Allergène">
+                      <div class="flex gap-2 w-full sm:w-auto">
+                        <input type="number" formControlName="dose" class="w-20 p-2 font-bold bg-slate-50 rounded-lg outline-none text-center" placeholder="Dose">
+                        <input type="number" formControlName="frequencyDays" class="w-20 p-2 font-bold bg-slate-50 rounded-lg outline-none text-center" title="Tous les X jours">
+                        <button type="button" (click)="removeProtocol(i)" class="p-2 text-rose-500 hover:bg-rose-50 rounded-lg">
+                          <lucide-icon [img]="Trash2" [size]="20"></lucide-icon>
                         </button>
                       </div>
                     </div>
+                  }
+                </div>
 
-                    <div class="mb-6">
-                      <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Choisir un emoji</span>
-                      <div class="flex flex-wrap gap-2">
-                        @for (av of avatarOptions; track av.emoji) {
-                          <button (click)="updateAvatar(profile, av.emoji)" 
-                                  [class.ring-2]="profile.avatar === av.emoji || (!profile.avatar && av.emoji === '👶')"
-                                  class="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-lg text-xl transition-all ring-[var(--color-primary)]">
-                            {{ av.emoji }}
-                          </button>
-                        }
-                      </div>
-                    </div>
+                <button type="button" (click)="addProtocol()" class="w-full py-3 mb-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:border-emerald-300 hover:text-emerald-500 transition-all flex items-center justify-center gap-2">
+                  <lucide-icon [img]="Plus" [size]="18"></lucide-icon> Ajouter une ligne
+                </button>
 
-                    @if (showSkinTones(profile)) {
-                      <div>
-                        <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Couleur de peau</span>
-                        <div class="flex gap-3">
-                          @for (tone of skinTones; track tone.value) {
-                            <button (click)="updateSkinTone(profile, tone.value)"
-                                    class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
-                                    [style.backgroundColor]="tone.color"
-                                    [class.border-[var(--color-primary)]]="(profile.avatarSkinTone || 'default') === tone.value"
-                                    [class.border-transparent]="(profile.avatarSkinTone || 'default') !== tone.value">
-                            </button>
-                          }
-                        </div>
-                      </div>
-                    }
-                  </div>
-                }
+                <button type="submit" [disabled]="protocolForm.invalid || !protocolForm.dirty" 
+                        class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
+                  Enregistrer les modifications
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+
+        <!-- Sharing Section (Only Owner) -->
+        @if (auth.activePermission() === 'owner') {
+          <div [ngClass]="theme.cardClass()" class="border-violet-100 !bg-violet-50/20">
+            <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-violet-800">
+              <span class="text-3xl">🤝</span> Partage du dossier
+            </h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <button (click)="generateInvite('editor')" 
+                      class="p-6 bg-white border-4 border-violet-100 rounded-3xl text-left hover:border-violet-400 transition-all group">
+                <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <lucide-icon [img]="ShieldCheck" [size]="24"></lucide-icon>
+                </div>
+                <p class="font-black text-violet-900 leading-tight">Co-Superviseur</p>
+                <p class="text-[10px] font-bold text-violet-400 uppercase tracking-widest mt-1">Édition & Saisie</p>
+              </button>
+
+              <button (click)="generateInvite('reader')" 
+                      class="p-6 bg-white border-4 border-slate-100 rounded-3xl text-left hover:border-violet-400 transition-all group">
+                <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <lucide-icon [img]="Eye" [size]="24"></lucide-icon>
+                </div>
+                <p class="font-black text-slate-900 leading-tight">Observateur</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Lecture seule</p>
+              </button>
+            </div>
+
+            @if (inviteCode()) {
+              <div class="p-6 bg-violet-600 text-white rounded-3xl text-center space-y-2 animate-in zoom-in duration-300">
+                <p class="text-xs font-black uppercase tracking-widest opacity-70">Code d'invitation ({{ inviteRoleLabel() }})</p>
+                <p class="text-4xl font-black tracking-[0.2em]">{{ inviteCode() }}</p>
+                <p class="text-[10px] font-bold opacity-60">Ce code est valable 24h.</p>
               </div>
             }
           </div>
+        }
+      }
 
-          <!-- Actions -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-100">
-            <!-- Local Child -->
-            <div>
-              <h3 class="text-lg font-bold mb-2">Ajouter un dossier local</h3>
-              <div class="flex gap-2 mb-2">
-                <input #childName type="text" placeholder="Nom de l'enfant" 
-                       class="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] font-bold text-sm">
-                <button (click)="createChild(childName.value); childName.value = ''"
-                        class="px-6 py-3 bg-emerald-500 text-white font-black rounded-xl hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-100 text-sm whitespace-nowrap">
-                   Créer
-                </button>
-              </div>
-              <p class="text-xs text-slate-400 font-medium">Idéal pour un enfant qui n'a pas encore de compte.</p>
-            </div>
+      <!-- Global Management -->
+      <div [ngClass]="theme.cardClass()">
+        <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-slate-800">
+          <span class="text-3xl">📂</span> Mes Dossiers
+        </h2>
 
-            <!-- Invitations -->
-            <div>
-              <h3 class="text-lg font-bold mb-2">Partager / Inviter</h3>
-              <div class="flex flex-col gap-3">
-                <button (click)="generateCode()" 
-                        class="w-full px-4 py-3 bg-violet-100 text-violet-700 font-black rounded-xl hover:bg-violet-200 transition-colors text-sm flex items-center justify-center gap-2">
-                  <span>🔗</span> Générer un code d'invitation
-                </button>
-                
-                @if (inviteCode()) {
-                  <div class="p-3 bg-violet-600 text-white rounded-xl text-center animate-pulse">
-                    <span class="text-xs uppercase font-bold block opacity-70">Code à partager</span>
-                    <span class="text-xl font-black tracking-widest">{{ inviteCode() }}</span>
-                  </div>
-                }
-
-                <div class="flex gap-2 mt-2">
-                  <input #inviteInput type="text" placeholder="Code d'invitation" 
-                         class="flex-1 p-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-[var(--color-primary)] font-bold text-sm uppercase tracking-widest">
-                  <button (click)="acceptInvite(inviteInput.value); inviteInput.value = ''"
-                          class="px-4 py-3 bg-slate-800 text-white font-black rounded-xl hover:bg-black transition-colors text-sm">
-                     Rejoindre
-                  </button>
+        <div class="space-y-4 mb-8">
+          @for (profile of auth.currentUser()?.profiles; track profile.id) {
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-slate-100">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full border-2 flex items-center justify-center text-2xl"
+                     [style.borderColor]="getProfileColor(profile.id)"
+                     [style.backgroundColor]="getProfileColor(profile.id) + '15'">
+                  {{ getDisplayAvatar(profile) }}
+                </div>
+                <div>
+                  <p class="font-black text-slate-800 leading-none">{{ profile.name }}</p>
+                  <p class="text-[10px] font-bold text-slate-400 uppercase mt-1">{{ getProfilePermissionLabel(profile.id) }}</p>
                 </div>
               </div>
+              @if (auth.activeProfile()?.id !== profile.id) {
+<button 
+                      (click)="auth.switchProfile(profile.id)"
+                      class="px-4 py-2 bg-white border-2 border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-100 transition-all">
+                Basculer
+              </button>
+}
+              @if (auth.activeProfile()?.id === profile.id) {
+<span 
+                    class="px-4 py-2 bg-emerald-100 text-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest">Actif</span>
+}
+            </div>
+          }
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+          <!-- Add Child -->
+          <div class="space-y-3">
+            <h3 class="font-black text-slate-800 flex items-center gap-2">
+              <lucide-icon [img]="FolderHeart" [size]="18" class="text-rose-500"></lucide-icon>
+              Nouveau dossier patient
+            </h3>
+            <div class="flex gap-2">
+              <input #newName type="text" placeholder="Prénom de l'enfant" class="flex-1 p-3 bg-slate-50 rounded-xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-rose-500">
+              <button (click)="createChild(newName.value); newName.value = ''" class="px-4 py-3 bg-rose-500 text-white rounded-xl font-black text-sm shadow-md hover:bg-rose-600 transition-all">Créer</button>
+            </div>
+          </div>
+
+          <!-- Join -->
+          <div class="space-y-3">
+            <h3 class="font-black text-slate-800 flex items-center gap-2">
+              <lucide-icon [img]="UserPlus" [size]="18" class="text-violet-500"></lucide-icon>
+              Rejoindre un dossier
+            </h3>
+            <div class="flex gap-2">
+              <input #joinCode type="text" placeholder="Code invitation" class="flex-1 p-3 bg-slate-50 rounded-xl border-none font-bold text-sm outline-none focus:ring-2 focus:ring-violet-500 uppercase tracking-widest">
+              <button (click)="acceptInvite(joinCode.value); joinCode.value = ''" class="px-4 py-3 bg-violet-500 text-white rounded-xl font-black text-sm shadow-md hover:bg-violet-600 transition-all">Rejoindre</button>
             </div>
           </div>
         </div>
-      }
+      </div>
 
     </div>
   `
@@ -368,112 +217,32 @@ export class SettingsComponent implements OnInit {
   protocolService = inject(ProtocolService);
   profileService = inject(ProfileService);
   fb = inject(FormBuilder);
-  
+
   currentTheme = signal<AppTheme>('colorful');
-  saveSuccess = signal<boolean>(false);
-  saveSymptomSuccess = signal<boolean>(false);
   inviteCode = signal<string | null>(null);
-  editingProfileId = signal<string | null>(null);
-
-  avatarOptions = [
-    { emoji: '👶' }, { emoji: '👨' }, { emoji: '👩' }, 
-    { emoji: '🧑‍🦱' }, { emoji: '👩‍🦱' }, { emoji: '👦' }, { emoji: '👧' },
-    { emoji: '🐱' }, { emoji: '🐶' }, { emoji: '🐷' }, { emoji: '🐮' }, { emoji: '👽' }
-  ];
-
-  skinTones = [
-    { value: 'default', color: '#FFCC22' },
-    { value: 'light', color: '#F7D7C4' },
-    { value: 'dark', color: '#8D5524' }
-  ] as const;
-
-  skinToneModifiers: Record<string, string> = {
-    'light': '\u{1F3FB}',
-    'dark': '\u{1F3FF}'
-  };
+  inviteRole = signal<string>('');
 
   protocolForm: FormGroup = this.fb.group({
-    startDate: [new Date().toISOString().split('T')[0], Validators.required],
+    startDate: ['', Validators.required],
     items: this.fb.array([])
   });
 
-  symptomForm: FormGroup = this.fb.group({
-    items: this.fb.array([])
+  canEditActive = computed(() => {
+    const perm = this.auth.activePermission();
+    return perm === 'owner' || perm === 'editor';
+  });
+
+  inviteRoleLabel = computed(() => {
+    return this.inviteRole() === 'editor' ? 'Co-Superviseur' : 'Observateur';
   });
 
   ngOnInit() {
     this.currentTheme.set(this.theme.currentTheme());
     this.initProtocolForm();
-    this.initSymptomForm();
-
-    // Re-init forms when active profile changes to show correct configuration
-    // (In case user switches profile directly in settings)
-    this.auth.activeProfile(); // Track signal
-  }
-
-  toggleEditAvatar(id: string) {
-    if (this.editingProfileId() === id) this.editingProfileId.set(null);
-    else this.editingProfileId.set(id);
   }
 
   async logout() {
     await this.auth.logout();
-  }
-
-  getDisplayAvatar(profile: any): string {
-    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : profile.role === 'Mixte' ? '👤' : '👶');
-    const modifier = profile.avatarSkinTone && this.skinToneModifiers[profile.avatarSkinTone] ? this.skinToneModifiers[profile.avatarSkinTone] : '';
-    return base + (this.showSkinTones(profile) ? modifier : '');
-  }
-
-  showSkinTones(profile: any): boolean {
-    const base = profile.avatar || '👶';
-    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
-    return !noSkinTone.includes(base);
-  }
-
-  async updateAvatar(profile: any, emoji: string) {
-    profile.avatar = emoji;
-    this.saveProfileUpdate(profile);
-  }
-
-  async updateRole(profile: any, role: any) {
-    profile.role = role;
-    this.saveProfileUpdate(profile);
-  }
-
-  async updateSkinTone(profile: any, tone: any) {
-    profile.avatarSkinTone = tone;
-    this.saveProfileUpdate(profile);
-  }
-
-  private saveProfileUpdate(profile: any) {
-    this.auth.updateProfile(profile);
-  }
-
-  async createChild(name: string) {
-    if (!name) return;
-    try {
-      await this.profileService.createLocalChild(name);
-    } catch (e) {
-      console.error('Failed to create child profile', e);
-    }
-  }
-
-  async generateCode() {
-    const active = this.auth.activeProfile();
-    if (!active) return;
-    const code = await this.profileService.generateInvitationToken(active.id);
-    this.inviteCode.set(code);
-  }
-
-  async acceptInvite(code: string) {
-    if (!code) return;
-    try {
-      await this.profileService.acceptInvitation(code);
-    } catch (e) {
-      console.error('Failed to accept invitation', e);
-    }
   }
 
   setTheme(newTheme: AppTheme) {
@@ -488,27 +257,28 @@ export class SettingsComponent implements OnInit {
   initProtocolForm() {
     this.protocolsArray.clear();
     const currentProtocols = this.protocolService.protocols();
-    const startDate = this.protocolService.protocolStartDate() || new Date().toISOString().split('T')[0];
-    
-    this.protocolForm.patchValue({ startDate });
-    
-    currentProtocols.forEach(p => {
-      this.protocolsArray.push(this.createProtocolFormGroup(p));
-    });
-  }
+    const startDate = this.protocolService.protocolStartDate() || '';
 
-  createProtocolFormGroup(item?: ProtocolItem): FormGroup {
-    return this.fb.group({
-      id: [item?.id || crypto.randomUUID()],
-      allergen: [item?.allergen || '', Validators.required],
-      dose: [item?.dose ?? 1.5, [Validators.required, Validators.min(0)]],
-      frequencyDays: [item?.frequencyDays || 1, [Validators.required, Validators.min(1)]],
-      createdAt: [item?.createdAt || new Date().toISOString().split('T')[0]]
+    this.protocolForm.patchValue({ startDate });
+    currentProtocols.forEach(p => {
+      this.protocolsArray.push(this.fb.group({
+        id: [p.id],
+        allergen: [p.allergen, Validators.required],
+        dose: [p.dose, [Validators.required, Validators.min(0)]],
+        frequencyDays: [p.frequencyDays, [Validators.required, Validators.min(1)]],
+        createdAt: [p.createdAt]
+      }));
     });
   }
 
   addProtocol() {
-    this.protocolsArray.push(this.createProtocolFormGroup());
+    this.protocolsArray.push(this.fb.group({
+      id: [crypto.randomUUID()],
+      allergen: ['', Validators.required],
+      dose: [1.5, [Validators.required, Validators.min(0)]],
+      frequencyDays: [1, [Validators.required, Validators.min(1)]],
+      createdAt: [new Date().toISOString().split('T')[0]]
+    }));
     this.protocolForm.markAsDirty();
   }
 
@@ -519,60 +289,57 @@ export class SettingsComponent implements OnInit {
 
   saveProtocols() {
     if (this.protocolForm.valid) {
-      const formValue = this.protocolForm.value;
-      this.protocolService.updateProtocols(formValue.items);
-      this.protocolService.updateStartDate(formValue.startDate);
+      this.protocolService.updateProtocols(this.protocolForm.value.items);
+      this.protocolService.updateStartDate(this.protocolForm.value.startDate);
       this.protocolForm.markAsPristine();
-      
-      this.saveSuccess.set(true);
-      setTimeout(() => this.saveSuccess.set(false), 3000);
     }
   }
 
-  get symptomsArray() {
-    return this.symptomForm.get('items') as FormArray;
+  async generateInvite(role: 'editor' | 'reader') {
+    const active = this.auth.activeProfile();
+    if (!active) return;
+    this.inviteRole.set(role);
+    const code = await this.profileService.generateInvitationToken(active.id);
+    this.inviteCode.set(code);
   }
 
-  initSymptomForm() {
-    this.symptomsArray.clear();
-    const current = this.protocolService.symptoms();
-    current.forEach(s => {
-      this.symptomsArray.push(this.createSymptomFormGroup(s));
-    });
+  async createChild(name: string) {
+    if (!name) return;
+    await this.profileService.createLocalChild(name);
   }
 
-  createSymptomFormGroup(item?: SymptomItem): FormGroup {
-    return this.fb.group({
-      id: [item?.id || crypto.randomUUID()],
-      label: [item?.label || '', Validators.required],
-      emoji: [item?.emoji || '']
-    });
+  async acceptInvite(code: string) {
+    if (!code) return;
+    await this.profileService.acceptInvitation(code);
   }
 
-  addSymptom() {
-    this.symptomsArray.push(this.createSymptomFormGroup());
-    this.symptomForm.markAsDirty();
+  getDisplayAvatar(profile: any): string {
+    const skinToneModifiers: Record<string, string> = { 'light': '\u{1F3FB}', 'dark': '\u{1F3FF}' };
+    const base = profile?.avatar || '👶';
+    const modifier = profile?.avatarSkinTone && skinToneModifiers[profile.avatarSkinTone] ? skinToneModifiers[profile.avatarSkinTone] : '';
+    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
+    return base + (!noSkinTone.includes(base) ? modifier : '');
   }
 
-  removeSymptom(index: number) {
-    this.symptomsArray.removeAt(index);
-    this.symptomForm.markAsDirty();
+  getProfileColor(profileId: string): string {
+    return this.auth.currentUser()?.profileAccesses.find(a => a.profileId === profileId)?.colorCode || '#6366f1';
   }
 
-  applyPreset(preset: 'reintroduction' | 'desensibilisation') {
-    this.symptomsArray.clear();
-    SYMPTOM_PRESETS[preset].forEach(s => {
-      this.symptomsArray.push(this.createSymptomFormGroup({ ...s, id: crypto.randomUUID() }));
-    });
-    this.symptomForm.markAsDirty();
-  }
-
-  saveSymptoms() {
-    if (this.symptomForm.valid) {
-      this.protocolService.updateSymptoms(this.symptomForm.value.items);
-      this.symptomForm.markAsPristine();
-      this.saveSymptomSuccess.set(true);
-      setTimeout(() => this.saveSymptomSuccess.set(false), 3000);
+  getProfilePermissionLabel(profileId: string): string {
+    const perm = this.auth.currentUser()?.profileAccesses.find(a => a.profileId === profileId)?.permission;
+    switch (perm) {
+      case 'owner': return 'Propriétaire';
+      case 'editor': return 'Éditeur';
+      case 'reader': return 'Observateur';
+      default: return '';
     }
   }
+
+  readonly Trash2 = Trash2;
+  readonly Plus = Plus;
+  readonly Share2 = Share2;
+  readonly Eye = Eye;
+  readonly ShieldCheck = ShieldCheck;
+  readonly FolderHeart = FolderHeart;
+  readonly UserPlus = UserPlus;
 }

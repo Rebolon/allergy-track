@@ -1,13 +1,20 @@
 export type Symptom = 'Rien' | 'Démangeaisons bouche' | 'Respiratoire' | 'Abdominal' | 'Autres';
 export type TreatmentName = 'Antihistaminique' | 'Aerius/Aeromire' | 'Adrénaline';
-export type Role = 'Supervision' | 'Allergique' | 'Mixte';
+
+export type PermissionLevel = 'owner' | 'editor' | 'reader';
+
+export interface ProfileAccess {
+  profileId: string;
+  permission: PermissionLevel;
+  colorCode?: string; // Hex color for the context circle
+}
 
 export type AvatarSkinTone = 'default' | 'light' | 'dark';
 
 export interface Profile {
   id: string;
   name: string;
-  role: Role;
+  birthDate?: string; // YYYY-MM-DD
   themePreference: 'flashy' | 'classic';
   isLocal?: boolean;
   avatar?: string;
@@ -43,7 +50,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  profiles: Profile[];
+  profileAccesses: ProfileAccess[];
+  profiles: Profile[]; // Loaded profiles
 }
 
 export interface HealthStatus {

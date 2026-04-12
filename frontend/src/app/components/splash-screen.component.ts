@@ -1,14 +1,15 @@
 import { Component, inject, signal, OnInit, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
 import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide-angular';
+import { LayoutFooterComponent } from './layout/footer.component';
 
 @Component({
   selector: 'app-splash-screen',
   standalone: true,
-  imports: [CommonModule, LucideAngularModule, FormsModule],
+  imports: [LucideAngularModule, FormsModule, LayoutFooterComponent],
   template: `
     <div class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-white via-emerald-50/50 to-blue-50/50 transition-opacity duration-700"
          [class.opacity-0]="isfadingOut()"
@@ -78,7 +79,6 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
                 <p class="text-rose-500 text-xs font-bold animate-shake">{{ error() }}</p>
               }
 
-              <p class="mt-2 text-[10px] text-slate-400 font-medium">Authentification sécurisée allergie-track.fr</p>
             </div>
           } @else {
             <div class="flex items-center gap-3 text-emerald-600 bg-emerald-50/80 backdrop-blur-sm px-6 py-3 rounded-2xl border-2 border-emerald-100 font-black animate-pulse">
@@ -97,7 +97,7 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
 
       <!-- Footer -->
       <div class="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
-        <p class="text-[9px] text-slate-300 font-black uppercase tracking-[0.3em]">Allergy Track Intelligence</p>
+        <app-layout-footer/>
       </div>
 
     </div>
@@ -134,7 +134,7 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
 export class SplashScreenComponent implements OnInit {
   auth = inject(AuthService);
   theme = inject(ThemeService);
-  
+
   isfadingOut = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -150,7 +150,7 @@ export class SplashScreenComponent implements OnInit {
       } else {
         // Only auto-close if it's already ready
         if (this.auth.isReady()) {
-           this.isfadingOut.set(true);
+          this.isfadingOut.set(true);
         }
       }
     });
@@ -180,7 +180,7 @@ export class SplashScreenComponent implements OnInit {
 
   async loginPassword() {
     if (!this.email || !this.password) return;
-    
+
     try {
       this.loading.set(true);
       this.error.set(null);

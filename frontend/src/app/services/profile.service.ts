@@ -16,16 +16,14 @@ export class ProfileService {
 
     const newProfile: Omit<Profile, 'id'> = {
       name,
-      role: 'Allergique',
       themePreference: 'flashy',
       isLocal: true
     };
 
     if (this.adapter.addProfile) {
       const created = await this.adapter.addProfile(newProfile);
-      // Refresh current user signal in AuthService
-      const updatedUser = { ...user, profiles: [...user.profiles, created] };
-      this.auth.currentUser.set(updatedUser);
+      // Refresh session to get updated profileAccesses and profiles
+      this.auth.checkSession();
       return created;
     }
     throw new Error('Adapter does not support adding profiles');
@@ -39,6 +37,8 @@ export class ProfileService {
 
   public async acceptInvitation(token: string) {
     console.log(`Accepting invitation with token: ${token}`);
+    // Refresh to check if any new access granted
+    this.auth.checkSession();
   }
 
   async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {

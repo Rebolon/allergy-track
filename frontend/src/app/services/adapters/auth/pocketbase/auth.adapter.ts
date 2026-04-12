@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthAdapter } from '../../../auth.interface';
-import { User, Role, Profile } from '../../../../models/allergy-track.model';
+import { User, Profile, ProfileAccess, PermissionLevel } from '../../../../models/allergy-track.model';
 import PocketBase from 'pocketbase';
 import { environment } from '../../../../../environments/environment';
 
@@ -20,13 +20,10 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
   }
 
   updateUser(updatedUser: User): void {
-    // This would need to update the profiles in PocketBase
-    // For now, let's keep it simple and update the primary profile
     const primary = updatedUser.profiles[0];
     if (this.pb.authStore.isValid && this.pb.authStore.model?.id === updatedUser.id && primary) {
       this.pb.collection('users').update(updatedUser.id, {
         name: updatedUser.name,
-        role: primary.role,
         themePreference: primary.themePreference,
         avatar: primary.avatar,
         avatarSkinTone: primary.avatarSkinTone
@@ -53,8 +50,11 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     const newProfile: Profile = { ...profile, id: crypto.randomUUID() };
     const updatedProfiles = [...user.profiles, newProfile];
     
+    // In PB, we update the user model
     await this.pb.collection('users').update(user.id, {
-      profiles: updatedProfiles
+      profiles: updatedProfiles,
+      // For now, auto-add as owner in accesses
+      profile_accesses: [...user.profileAccesses, { profileId: newProfile.id, permission: 'owner' }]
     });
 
     return newProfile;
@@ -71,22 +71,25 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
 
     const model = this.pb.authStore.model;
     
-    // On construit un profil à partir des données de l'utilisateur
-    // Dans une version future, on pourrait avoir une collection séparée pour les profils
+    // Legacy support: extract profile from user model if no explicit profiles list
     const mainProfile: Profile = {
       id: model.id,
       name: model['name'] || model['username'] || 'Moi',
-      role: (model['role'] as Role) || 'Mixte',
       themePreference: (model['themePreference'] as 'flashy' | 'classic') || 'classic',
       avatar: model['avatar'],
-      avatarSkinTone: model['avatarSkinTone']
+      avatarSkinTone: model['avatarSkinTone'],
+      birthDate: model['birthDate']
     };
+
+    const profileAccesses: ProfileAccess[] = model['profile_accesses'] || [{ profileId: model.id, permission: 'owner' }];
+    const profiles: Profile[] = model['profiles'] || [mainProfile];
 
     return {
       id: model.id,
       email: model['email'],
       name: model['name'] || model['username'] || 'Utilisateur',
-      profiles: [mainProfile]
+      profileAccesses,
+      profiles
     };
   }
 }

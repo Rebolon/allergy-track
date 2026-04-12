@@ -1,5 +1,5 @@
-import { Component, input, output, inject } from '@angular/core';
-import { LucideAngularModule, Home, Activity, Trophy, Settings } from 'lucide-angular';
+import { Component, input, output, inject, computed } from '@angular/core';
+import { LucideAngularModule, PencilLine, Activity, Trophy, Settings } from 'lucide-angular';
 import { NgClass } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 
@@ -13,27 +13,15 @@ export type MobileTab = 'home' | 'supervision' | 'gaming' | 'preferences';
     <nav class="md:hidden fixed bottom-0 left-0 right-0 glass border-t border-[var(--color-border)] safe-padding-bottom z-40">
       <div class="flex justify-around items-center h-16">
         
-        @if (canSee('home')) {
-          <button (click)="selectTab('home')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors"
-                  [ngClass]="activeTab() === 'home' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'">
-            <lucide-icon [img]="Home" [size]="24" [strokeWidth]="activeTab() === 'home' ? 2.5 : 2"></lucide-icon>
-            <span class="text-[10px] font-bold">Accueil</span>
-          </button>
-        }
-
-        @if (canSee('supervision')) {
-          <button (click)="selectTab('supervision')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors"
-                  [ngClass]="activeTab() === 'supervision' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'">
-            <lucide-icon [img]="Activity" [size]="24" [strokeWidth]="activeTab() === 'supervision' ? 2.5 : 2"></lucide-icon>
-            <span class="text-[10px] font-bold">Supervision</span>
-          </button>
-        }
-
-        @if (canSee('gaming')) {
-          <button (click)="selectTab('gaming')" class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors"
-                  [ngClass]="activeTab() === 'gaming' ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'">
-            <lucide-icon [img]="Trophy" [size]="24" [strokeWidth]="activeTab() === 'gaming' ? 2.5 : 2"></lucide-icon>
-            <span class="text-[10px] font-bold">Challenge</span>
+        @for (tab of orderedTabs(); track tab.id) {
+          <button (click)="tab.disabled ? null : selectTab(tab.id)" 
+                  class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors"
+                  [ngClass]="[
+                    activeTab() === tab.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]',
+                    tab.disabled ? 'opacity-30 grayscale' : ''
+                  ]">
+            <lucide-icon [img]="tab.icon" [size]="24" [strokeWidth]="activeTab() === tab.id ? 2.5 : 2"></lucide-icon>
+            <span class="text-[10px] font-bold">{{ tab.label }}</span>
           </button>
         }
 
@@ -50,7 +38,7 @@ export type MobileTab = 'home' | 'supervision' | 'gaming' | 'preferences';
                [class.scale-110]="activeTab() === 'preferences'">
             <lucide-icon [img]="Settings" [size]="24" [strokeWidth]="activeTab() === 'preferences' ? 2.5 : 2"></lucide-icon>
           </div>
-          <span class="text-[10px] font-bold tracking-wide">Préférences</span>
+          <span class="text-[10px] font-bold tracking-wide">Paramètres</span>
         </button>
 
       </div>
@@ -62,19 +50,29 @@ export class BottomNavComponent {
   activeTab = input<MobileTab>('home');
   onTabChange = output<MobileTab>();
 
-  readonly Home = Home;
+  readonly PencilLine = PencilLine;
   readonly Activity = Activity;
   readonly Trophy = Trophy;
   readonly Settings = Settings;
 
-  canSee(tab: MobileTab): boolean {
-    if (tab === 'preferences') return true;
-    const role = this.auth.activeProfile()?.role || 'Mixte';
-    if (role === 'Mixte') return true;
-    if (role === 'Allergique') return tab === 'home' || tab === 'gaming';
-    if (role === 'Supervision') return tab === 'supervision';
-    return true;
-  }
+  orderedTabs = computed(() => {
+    const perm = this.auth.activePermission();
+    const isReader = perm === 'reader';
+    const hasOtherProfiles = (this.auth.currentUser()?.profiles?.length || 0) > 1;
+    const isPatientOnly = !hasOtherProfiles && perm === 'owner';
+
+    const tabs = [
+      { id: 'home' as MobileTab, label: 'Saisie', icon: PencilLine, disabled: isReader },
+      { id: 'supervision' as MobileTab, label: 'Supervision', icon: Activity, disabled: false },
+      { id: 'gaming' as MobileTab, label: 'Challenge', icon: Trophy, disabled: false }
+    ];
+
+    if (isPatientOnly) {
+      return [tabs[0], tabs[2], tabs[1]];
+    }
+
+    return tabs;
+  });
 
   selectTab(tab: MobileTab) {
     this.onTabChange.emit(tab);

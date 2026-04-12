@@ -15,90 +15,92 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   standalone: true,
   imports: [LucideAngularModule, NgClass],
   template: `
-    <div class="flex flex-col items-center p-5 mb-6" [ngClass]="theme.cardClass()">
-      <div class="flex justify-between w-full items-center mb-6 px-2">
-        <button (click)="previousWeek()" class="p-3 rounded-2xl transition-colors"
-                [class.bg-violet-50]="theme.persona() === 'child'"
-                [class.text-violet-600]="theme.persona() === 'child'"
-                [class.hover:bg-violet-100]="theme.persona() === 'child'"
-                [class.bg-slate-100]="theme.persona() !== 'child'"
-                [class.text-slate-600]="theme.persona() !== 'child'"
-                [class.hover:bg-slate-200]="theme.persona() !== 'child'">
-          <lucide-icon [img]="ChevronLeft" [size]="24" [strokeWidth]="2.5"></lucide-icon>
-        </button>
-        <h2 class="text-xl font-black capitalize"
-            [class.text-violet-900]="theme.persona() === 'child'"
-            [class.text-slate-800]="theme.persona() !== 'child'">
-          {{ currentMonthYear() }}
-        </h2>
-        <button (click)="nextWeek()" class="p-3 rounded-2xl transition-colors"
-                [class.bg-violet-50]="theme.persona() === 'child'"
-                [class.text-violet-600]="theme.persona() === 'child'"
-                [class.hover:bg-violet-100]="theme.persona() === 'child'"
-                [class.bg-slate-100]="theme.persona() !== 'child'"
-                [class.text-slate-600]="theme.persona() !== 'child'"
-                [class.hover:bg-slate-200]="theme.persona() !== 'child'">
-          <lucide-icon [img]="ChevronRight" [size]="24" [strokeWidth]="2.5"></lucide-icon>
-        </button>
-      </div>
+    @if (protocolService.protocols().length > 0) {
+      <div class="flex flex-col items-center p-5 mb-6" [ngClass]="theme.cardClass()">
+        <div class="flex justify-between w-full items-center mb-6 px-2">
+          <button (click)="previousWeek()" class="p-3 rounded-2xl transition-colors"
+                  [class.bg-violet-50]="theme.persona() === 'child'"
+                  [class.text-violet-600]="theme.persona() === 'child'"
+                  [class.hover:bg-violet-100]="theme.persona() === 'child'"
+                  [class.bg-slate-100]="theme.persona() !== 'child'"
+                  [class.text-slate-600]="theme.persona() !== 'child'"
+                  [class.hover:bg-slate-200]="theme.persona() !== 'child'">
+            <lucide-icon [img]="ChevronLeft" [size]="24" [strokeWidth]="2.5"></lucide-icon>
+          </button>
+          <h2 class="text-xl font-black capitalize"
+              [class.text-violet-900]="theme.persona() === 'child'"
+              [class.text-slate-800]="theme.persona() !== 'child'">
+            {{ currentMonthYear() }}
+          </h2>
+          <button (click)="nextWeek()" class="p-3 rounded-2xl transition-colors"
+                  [class.bg-violet-50]="theme.persona() === 'child'"
+                  [class.text-violet-600]="theme.persona() === 'child'"
+                  [class.hover:bg-violet-100]="theme.persona() === 'child'"
+                  [class.bg-slate-100]="theme.persona() !== 'child'"
+                  [class.text-slate-600]="theme.persona() !== 'child'"
+                  [class.hover:bg-slate-200]="theme.persona() !== 'child'">
+            <lucide-icon [img]="ChevronRight" [size]="24" [strokeWidth]="2.5"></lucide-icon>
+          </button>
+        </div>
 
-      <div class="grid grid-cols-7 gap-2 w-full">
-        @for (day of weekDays(); track day.date) {
-          <div
-              (click)="selectDate(day.date)"
-              (keydown.enter)="selectDate(day.date)"
-              tabindex="0"
-              class="flex flex-col items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1 relative"
-              [class.bg-gradient-to-b]="day.date === selectedDate() && theme.persona() === 'child'"
-              [class.from-violet-500]="day.date === selectedDate() && theme.persona() === 'child'"
-              [class.to-fuchsia-500]="day.date === selectedDate() && theme.persona() === 'child'"
-              [class.bg-blue-600]="day.date === selectedDate() && theme.persona() === 'teen'"
-              [class.bg-slate-800]="day.date === selectedDate() && theme.persona() === 'adult'"
-              [class.text-white]="day.date === selectedDate()"
-              [class.shadow-lg]="day.date === selectedDate()"
-              [class.shadow-violet-200]="day.date === selectedDate() && theme.persona() === 'child'"
-              [class.shadow-blue-200]="day.date === selectedDate() && theme.persona() === 'teen'"
-              [class.shadow-slate-200]="day.date === selectedDate() && theme.persona() === 'adult'"
-              [class.hover:bg-violet-50]="day.date !== selectedDate() && theme.persona() === 'child'"
-              [class.hover:bg-slate-50]="day.date !== selectedDate() && theme.persona() !== 'child'"
-              [class.bg-violet-100]="day.isToday && day.date !== selectedDate() && theme.persona() === 'child'"
-              [class.bg-blue-50]="day.isToday && day.date !== selectedDate() && theme.persona() === 'teen'"
-              [class.bg-slate-100]="day.isToday && day.date !== selectedDate() && theme.persona() === 'adult'"
-          >
-            @if (day.isMissed) {
-              <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></div>
-            }
-            @if (day.isWarningToday) {
-              <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 shadow-sm shadow-amber-200 animate-pulse-slow"></div>
-            }
-            @if (day.isPartial) {
-              <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-200"></div>
-            }
+        <div class="grid grid-cols-7 gap-2 w-full">
+          @for (day of weekDays(); track day.date) {
+            <div
+                (click)="selectDate(day.date)"
+                (keydown.enter)="selectDate(day.date)"
+                tabindex="0"
+                class="flex flex-col items-center p-3 rounded-2xl cursor-pointer transition-all duration-300 transform hover:-translate-y-1 relative"
+                [class.bg-gradient-to-b]="day.date === selectedDate() && theme.persona() === 'child'"
+                [class.from-violet-500]="day.date === selectedDate() && theme.persona() === 'child'"
+                [class.to-fuchsia-500]="day.date === selectedDate() && theme.persona() === 'child'"
+                [class.bg-blue-600]="day.date === selectedDate() && theme.persona() === 'teen'"
+                [class.bg-slate-800]="day.date === selectedDate() && theme.persona() === 'adult'"
+                [class.text-white]="day.date === selectedDate()"
+                [class.shadow-lg]="day.date === selectedDate()"
+                [class.shadow-violet-200]="day.date === selectedDate() && theme.persona() === 'child'"
+                [class.shadow-blue-200]="day.date === selectedDate() && theme.persona() === 'teen'"
+                [class.shadow-slate-200]="day.date === selectedDate() && theme.persona() === 'adult'"
+                [class.hover:bg-violet-50]="day.date !== selectedDate() && theme.persona() === 'child'"
+                [class.hover:bg-slate-50]="day.date !== selectedDate() && theme.persona() !== 'child'"
+                [class.bg-violet-100]="day.isToday && day.date !== selectedDate() && theme.persona() === 'child'"
+                [class.bg-blue-50]="day.isToday && day.date !== selectedDate() && theme.persona() === 'teen'"
+                [class.bg-slate-100]="day.isToday && day.date !== selectedDate() && theme.persona() === 'adult'"
+            >
+              @if (day.isMissed) {
+                <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-200"></div>
+              }
+              @if (day.isWarningToday) {
+                <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 shadow-sm shadow-amber-200 animate-pulse-slow"></div>
+              }
+              @if (day.isPartial) {
+                <div class="absolute top-2 right-2 w-2 h-2 rounded-full bg-orange-500 shadow-sm shadow-orange-200"></div>
+              }
 
-            <span class="text-xs font-bold mb-1 uppercase tracking-wider"
-                  [class.text-violet-100]="day.date === selectedDate() && theme.persona() === 'child'"
-                  [class.text-blue-100]="day.date === selectedDate() && theme.persona() === 'teen'"
-                  [class.text-slate-300]="day.date === selectedDate() && theme.persona() === 'adult'"
-                  [class.text-violet-400]="day.date !== selectedDate() && theme.persona() === 'child'"
-                  [class.text-slate-400]="day.date !== selectedDate() && theme.persona() !== 'child'">
-              {{ day.dayName }}
-            </span>
-            <span class="text-xl font-black transition-colors"
-                  [class.text-white]="day.date === selectedDate()"
-                  [class.text-rose-500]="day.isMissed && day.date !== selectedDate()"
-                  [class.text-amber-500]="day.isWarningToday && day.date !== selectedDate()"
-                  [class.text-orange-500]="day.isPartial && day.date !== selectedDate()"
-                  [class.animate-pulse-slow]="day.isWarningToday && day.date !== selectedDate()"
-                  [class.text-violet-600]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'child'"
-                  [class.text-blue-600]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'teen'"
-                  [class.text-slate-800]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'adult'"
-                  [class.text-slate-700]="!day.isToday && !day.isMissed && day.date !== selectedDate()">
-              {{ day.dayNumber }}
-            </span>
-          </div>
-        }
+              <span class="text-xs font-bold mb-1 uppercase tracking-wider"
+                    [class.text-violet-100]="day.date === selectedDate() && theme.persona() === 'child'"
+                    [class.text-blue-100]="day.date === selectedDate() && theme.persona() === 'teen'"
+                    [class.text-slate-300]="day.date === selectedDate() && theme.persona() === 'adult'"
+                    [class.text-violet-400]="day.date !== selectedDate() && theme.persona() === 'child'"
+                    [class.text-slate-400]="day.date !== selectedDate() && theme.persona() !== 'child'">
+                {{ day.dayName }}
+              </span>
+              <span class="text-xl font-black transition-colors"
+                    [class.text-white]="day.date === selectedDate()"
+                    [class.text-rose-500]="day.isMissed && day.date !== selectedDate()"
+                    [class.text-amber-500]="day.isWarningToday && day.date !== selectedDate()"
+                    [class.text-orange-500]="day.isPartial && day.date !== selectedDate()"
+                    [class.animate-pulse-slow]="day.isWarningToday && day.date !== selectedDate()"
+                    [class.text-violet-600]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'child'"
+                    [class.text-blue-600]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'teen'"
+                    [class.text-slate-800]="day.isToday && !day.isWarningToday && day.date !== selectedDate() && theme.persona() === 'adult'"
+                    [class.text-slate-700]="!day.isToday && !day.isMissed && day.date !== selectedDate()">
+                {{ day.dayNumber }}
+              </span>
+            </div>
+          }
+        </div>
       </div>
-    </div>
+    }
   `
 })
 export class AgendaComponent implements OnInit {

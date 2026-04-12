@@ -1,5 +1,5 @@
-import { Injectable, inject, signal } from '@angular/core';
-import { User, Role, Profile } from '../models/allergy-track.model';
+import { Injectable, inject, signal, computed } from '@angular/core';
+import { User, Profile, PermissionLevel } from '../models/allergy-track.model';
 import { AUTH_ADAPTER } from './auth.interface';
 
 @Injectable({
@@ -14,6 +14,21 @@ export class AuthService {
   isAuthenticated = signal<boolean>(false);
   isReady = signal<boolean>(false);
 
+  // Derivate signals for UI context
+  activePermission = computed<PermissionLevel | null>(() => {
+    const profile = this.activeProfile();
+    const user = this.currentUser();
+    if (!profile || !user || !user.profileAccesses) return null;
+    return user.profileAccesses.find(a => a.profileId === profile.id)?.permission || null;
+  });
+
+  activeColor = computed<string>(() => {
+    const profile = this.activeProfile();
+    const user = this.currentUser();
+    if (!profile || !user || !user.profileAccesses) return '#6366f1'; // Default violet
+    return user.profileAccesses.find(a => a.profileId === profile.id)?.colorCode || '#6366f1';
+  });
+
   constructor() {
     this.checkSession();
   }
@@ -24,8 +39,15 @@ export class AuthService {
       this.isAuthenticated.set(isAuth);
       const user = this.adapter.getAuthUser();
       this.currentUser.set(user);
-      if (user && user.profiles.length > 0) {
-        this.activeProfile.set(user.profiles[0]);
+      if (user && user.profiles && user.profiles.length > 0) {
+        // Recovery of first profile if none active
+        if (!this.activeProfile()) {
+          this.activeProfile.set(user.profiles[0]);
+        } else {
+          // Sync active profile with updated user data if needed
+          const updatedActive = user.profiles.find(p => p.id === this.activeProfile()?.id);
+          if (updatedActive) this.activeProfile.set(updatedActive);
+        }
       }
     }
     this.isReady.set(true);
@@ -56,7 +78,7 @@ export class AuthService {
 
   updateProfile(profile: Profile) {
     const user = this.currentUser();
-    if (user) {
+    if (user && user.profiles) {
       const pIdx = user.profiles.findIndex(p => p.id === profile.id);
       if (pIdx !== -1) {
         user.profiles[pIdx] = { ...profile };
@@ -80,7 +102,7 @@ export class AuthService {
 
   switchProfile(profileId: string) {
     const user = this.currentUser();
-    if (user) {
+    if (user && user.profiles) {
       const profile = user.profiles.find(p => p.id === profileId);
       if (profile) {
         this.activeProfile.set(profile);
