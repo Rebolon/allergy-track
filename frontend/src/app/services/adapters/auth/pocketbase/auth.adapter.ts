@@ -15,19 +15,27 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
   }
 
   getUsers(): User[] {
-    const user = this.getAuthUser();
-    return user ? [user] : [];
+    // This might be problematic if called synchronously, but we mostly use getAuthUser
+    return [];
   }
 
-  updateUser(updatedUser: User): void {
-    const primary = updatedUser.profiles[0];
-    if (this.pb.authStore.isValid && this.pb.authStore.model?.id === updatedUser.id && primary) {
-      this.pb.collection('users').update(updatedUser.id, {
-        name: updatedUser.name,
-        themePreference: primary.themePreference,
-        avatar: primary.avatar,
-        avatarSkinTone: primary.avatarSkinTone
-      });
+  async updateUser(updatedUser: User): Promise<void> {
+    if (this.pb.authStore.isValid && this.pb.authStore.model?.id === updatedUser.id) {
+        // Sync user name
+        await this.pb.collection('users').update(updatedUser.id, {
+            name: updatedUser.name
+        });
+        
+        // Sync profiles in their own collection
+        for (const profile of updatedUser.profiles) {
+            await this.pb.collection('profiles').update(profile.id, {
+                name: profile.name,
+                birthDate: profile.birthDate,
+                avatar: profile.avatar,
+                avatarSkinTone: profile.avatarSkinTone,
+                themePreference: profile.themePreference
+            });
+        }
     }
   }
 
@@ -43,19 +51,32 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     this.pb.authStore.clear();
   }
 
-  // @todo y a t il une faille ici ? si on force l'appel dans la console JS en faisant l'update sur la collecction avec l'id => si ça passe alors il faut mettre un hoo côté PocketBase
   async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {
-    const user = this.getAuthUser();
+    const user = this.pb.authStore.model;
     if (!user) throw new Error('Not authenticated');
 
-    const newProfile: Profile = { ...profile, id: crypto.randomUUID() };
-    const updatedProfiles = [...user.profiles, newProfile];
+    // 1. Create Profile in 'profiles' collection
+    const profileRecord = await this.pb.collection('profiles').create({
+      ...profile,
+      ownerId: user.id
+    });
 
-    // In PB, we update the user model
+    const newProfile: Profile = {
+      id: profileRecord.id,
+      name: profileRecord['name'],
+      birthDate: profileRecord['birthDate'],
+      avatar: profileRecord['avatar'],
+      avatarSkinTone: profileRecord['avatarSkinTone'],
+      themePreference: profileRecord['themePreference']
+    };
+
+    // 2. Add Access to current User
+    const currentAccesses = user['profile_accesses'] || [];
     await this.pb.collection('users').update(user.id, {
-      profiles: updatedProfiles,
-      // For now, auto-add as owner in accesses
-      profile_accesses: [...user.profileAccesses, { profileId: newProfile.id, permission: 'owner' }]
+      'profile_accesses+': [{
+        profileId: newProfile.id,
+        permission: 'owner'
+      }]
     });
 
     return newProfile;
@@ -65,25 +86,42 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     return this.pb.authStore.isValid;
   }
 
-  getAuthUser(): User | null {
+  async getAuthUser(): Promise<User | null> {
     if (!this.pb.authStore.isValid || !this.pb.authStore.model) {
       return null;
     }
 
     const model = this.pb.authStore.model;
+    const profileAccesses: ProfileAccess[] = model['profile_accesses'] || [];
+    
+    // Fallback if no accesses yet (e.g. legacy or first login)
+    if (profileAccesses.length === 0) {
+        // We might want to create a default profile or just return the user with empty profiles
+    }
 
-    // Legacy support: extract profile from user model if no explicit profiles list
-    const mainProfile: Profile = {
-      id: model.id,
-      name: model['name'] || model['username'] || 'Moi',
-      themePreference: (model['themePreference'] as 'colorful' | 'classic') || 'classic',
-      avatar: model['avatar'],
-      avatarSkinTone: model['avatarSkinTone'],
-      birthDate: model['birthDate']
-    };
-
-    const profileAccesses: ProfileAccess[] = model['profile_accesses'] || [{ profileId: model.id, permission: 'owner' }];
-    const profiles: Profile[] = model['profiles'] || [mainProfile];
+    // Load actual profiles from 'profiles' collection
+    const profiles: Profile[] = [];
+    if (profileAccesses.length > 0) {
+        const profileIds = profileAccesses.map(a => a.profileId);
+        // Fetch all profiles in one go if possible, or iterate
+        // PocketBase doesn't have a direct 'IN' filter in the same way, but we can use OR
+        const filter = profileIds.map(id => `id="${id}"`).join(' || ');
+        try {
+            const records = await this.pb.collection('profiles').getFullList({ filter });
+            records.forEach(r => {
+                profiles.push({
+                    id: r.id,
+                    name: r['name'],
+                    birthDate: r['birthDate'],
+                    avatar: r['avatar'],
+                    avatarSkinTone: r['avatarSkinTone'],
+                    themePreference: r['themePreference']
+                });
+            });
+        } catch (e) {
+            console.error('[PocketbaseAuthAdapter] Failed to load profiles', e);
+        }
+    }
 
     return {
       id: model.id,

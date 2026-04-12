@@ -21,6 +21,9 @@ import { AUTH_ADAPTER } from './services/auth.interface';
 import { MockAuthAdapter } from './services/adapters/auth/local-storage/mock-auth.adapter';
 import { PocketbaseAuthAdapter } from './services/adapters/auth/pocketbase/auth.adapter';
 import { LocalStorageDailyLogsAdapter } from './services/adapters/daily-logs/local-storage/daily-logs.adapter';
+import { SHARING_ADAPTER } from './services/sharing.interface';
+import { LocalStorageSharingAdapter } from './services/adapters/sharing/local-storage/sharing.adapter';
+import { PocketbaseSharingAdapter } from './services/adapters/sharing/pocketbase/sharing.adapter';
 import { environment } from '../environments/environment';
 
 registerLocaleData(localeFr);
@@ -38,6 +41,10 @@ export const appConfig: ApplicationConfig = {
     { 
       provide: AUTH_ADAPTER, 
       useClass: environment.useMockAuth ? MockAuthAdapter : PocketbaseAuthAdapter 
+    },
+    {
+      provide: SHARING_ADAPTER,
+      useClass: environment.useMockAuth ? LocalStorageSharingAdapter : PocketbaseSharingAdapter
     },
     { 
       provide: DAILY_LOGS_ADAPTER, 

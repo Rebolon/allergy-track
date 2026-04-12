@@ -33,11 +33,11 @@ export class AuthService {
     this.checkSession();
   }
 
-  checkSession() {
+  async checkSession() {
     if (this.adapter.getAuthUser && this.adapter.isAuthenticated) {
       const isAuth = this.adapter.isAuthenticated();
       this.isAuthenticated.set(isAuth);
-      const user = this.adapter.getAuthUser();
+      const user = await this.adapter.getAuthUser();
       this.currentUser.set(user);
       if (user && user.profiles && user.profiles.length > 0) {
         // Recovery of first profile if none active
@@ -56,14 +56,14 @@ export class AuthService {
   async login() {
     if (this.adapter.login) {
       await this.adapter.login();
-      this.checkSession();
+      await this.checkSession();
     }
   }
 
   async loginWithPassword(email: string, pass: string) {
     if (this.adapter.loginWithPassword) {
       await this.adapter.loginWithPassword(email, pass);
-      this.checkSession();
+      await this.checkSession();
     }
   }
 
@@ -76,13 +76,13 @@ export class AuthService {
     this.isAuthenticated.set(false);
   }
 
-  updateProfile(profile: Profile) {
+  async updateProfile(profile: Profile) {
     const user = this.currentUser();
     if (user && user.profiles) {
       const pIdx = user.profiles.findIndex(p => p.id === profile.id);
       if (pIdx !== -1) {
         user.profiles[pIdx] = { ...profile };
-        this.adapter.updateUser(user);
+        await this.adapter.updateUser(user);
         this.currentUser.set({ ...user });
         
         if (this.activeProfile()?.id === profile.id) {
@@ -92,11 +92,11 @@ export class AuthService {
     }
   }
 
-  updateProfileTheme(newTheme: 'colorful' | 'classic') {
+  async updateProfileTheme(newTheme: 'colorful' | 'classic') {
     const profile = this.activeProfile();
     if (profile) {
       profile.themePreference = newTheme;
-      this.updateProfile(profile);
+      await this.updateProfile(profile);
     }
   }
 

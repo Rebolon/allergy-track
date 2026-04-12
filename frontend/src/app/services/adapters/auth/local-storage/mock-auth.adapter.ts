@@ -58,7 +58,7 @@ export class MockAuthAdapter implements AuthAdapter {
     return this.users;
   }
 
-  updateUser(updatedUser: User): void {
+  async updateUser(updatedUser: User): Promise<void> {
     const index = this.users.findIndex(u => u.id === updatedUser.id);
     if (index !== -1) {
       this.users[index] = { ...updatedUser };
@@ -89,12 +89,12 @@ export class MockAuthAdapter implements AuthAdapter {
     return !!this.sessionUserId;
   }
 
-  getAuthUser(): User | null {
+  async getAuthUser(): Promise<User | null> {
     return this.users.find(u => u.id === this.sessionUserId) || null;
   }
 
   async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {
-    const user = this.getAuthUser() || this.users[0];
+    const user = (await this.getAuthUser()) || this.users[0];
     const newProfile: Profile = {
       ...profile,
       id: 'p' + (Math.random().toString(36).substr(2, 9)),
@@ -102,7 +102,7 @@ export class MockAuthAdapter implements AuthAdapter {
     };
     user.profiles.push(newProfile);
     user.profileAccesses.push({ profileId: newProfile.id, permission: 'owner', colorCode: '#10b981' });
-    this.updateUser(user);
+    await this.updateUser(user);
     return newProfile;
   }
 }
