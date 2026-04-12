@@ -14,6 +14,26 @@ import { ProfileService } from '../services/profile.service';
   template: `
     <div class="flex flex-col gap-6 p-6 mb-6 mt-6 md:mt-0">
       
+      <!-- Account & Logout -->
+      <div [ngClass]="theme.cardClass()" class="!bg-rose-50/30 border-rose-100">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center text-2xl shadow-sm">
+              👤
+            </div>
+            <div>
+              <h2 class="text-xl font-black text-rose-800">Mon Compte</h2>
+              <p class="text-xs font-bold text-rose-400 uppercase tracking-wider">{{ auth.currentUser()?.email }}</p>
+            </div>
+          </div>
+          <button (click)="logout()" 
+                  class="w-full md:w-auto py-3 px-8 bg-white border-2 border-rose-200 text-rose-600 font-black rounded-2xl hover:bg-rose-50 transition-all flex items-center justify-center gap-3 shadow-sm active:scale-95">
+            <span class="text-xl">🚪</span>
+            Déconnexion
+          </button>
+        </div>
+      </div>
+      
       <!-- Theme Settings -->
       <div [ngClass]="theme.cardClass()">
         <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
@@ -194,8 +214,11 @@ import { ProfileService } from '../services/profile.service';
                     </button>
                     <div class="flex flex-col">
                       <span class="font-bold text-slate-800">{{ profile.name }}</span>
-                      <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">
-                        {{ profile.role === 'Supervision' ? 'Superviseur' : 'Allergique' }}
+                      <span class="text-[10px] font-black uppercase tracking-widest"
+                            [class.text-emerald-500]="profile.role === 'Allergique'"
+                            [class.text-violet-500]="profile.role === 'Supervision'"
+                            [class.text-blue-500]="profile.role === 'Mixte'">
+                        {{ profile.role === 'Mixte' ? 'Rôle Mixte' : profile.role }}
                         {{ profile.isLocal ? '• Dossier Local' : '• Compte Invité' }}
                       </span>
                     </div>
@@ -203,8 +226,8 @@ import { ProfileService } from '../services/profile.service';
                   
                   <div class="flex items-center gap-2">
                     <button (click)="toggleEditAvatar(profile.id)" 
-                            class="p-2 text-slate-400 hover:text-[var(--color-primary)] transition-colors">
-                      <span class="text-xl">✏️</span>
+                            class="px-3 py-1.5 rounded-lg border-2 border-slate-100 text-slate-400 hover:text-[var(--color-primary)] hover:border-[var(--color-primary)] transition-all font-bold text-xs flex items-center gap-2">
+                      <span class="text-lg">⚙️</span> Gérer
                     </button>
                     @if (profile.id !== auth.activeProfile()?.id) {
                       <button (click)="auth.switchProfile(profile.id)" 
@@ -220,7 +243,43 @@ import { ProfileService } from '../services/profile.service';
                 <!-- Avatar Selection Area -->
                 @if (editingProfileId() === profile.id) {
                   <div class="p-4 bg-white rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
-                    <div class="mb-4">
+                    <div class="mb-6">
+                      <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Mon Rôle sur ce dossier</span>
+                      <div class="grid grid-cols-3 gap-2">
+                        <button (click)="updateRole(profile, 'Allergique')"
+                                [class.bg-emerald-500]="profile.role === 'Allergique'"
+                                [class.text-white]="profile.role === 'Allergique'"
+                                [class.bg-slate-50]="profile.role !== 'Allergique'"
+                                class="flex flex-col items-center p-3 rounded-xl border-2 transition-all"
+                                [class.border-emerald-200]="profile.role === 'Allergique'"
+                                [class.border-transparent]="profile.role !== 'Allergique'">
+                          <span class="text-xl">🏃</span>
+                          <span class="text-[10px] font-bold mt-1">Allergique</span>
+                        </button>
+                        <button (click)="updateRole(profile, 'Supervision')"
+                                [class.bg-violet-500]="profile.role === 'Supervision'"
+                                [class.text-white]="profile.role === 'Supervision'"
+                                [class.bg-slate-50]="profile.role !== 'Supervision'"
+                                class="flex flex-col items-center p-3 rounded-xl border-2 transition-all"
+                                [class.border-violet-200]="profile.role === 'Supervision'"
+                                [class.border-transparent]="profile.role !== 'Supervision'">
+                          <span class="text-xl">🧐</span>
+                          <span class="text-[10px] font-bold mt-1">Superviseur</span>
+                        </button>
+                        <button (click)="updateRole(profile, 'Mixte')"
+                                [class.bg-blue-500]="profile.role === 'Mixte'"
+                                [class.text-white]="profile.role === 'Mixte'"
+                                [class.bg-slate-50]="profile.role !== 'Mixte'"
+                                class="flex flex-col items-center p-3 rounded-xl border-2 transition-all"
+                                [class.border-blue-200]="profile.role === 'Mixte'"
+                                [class.border-transparent]="profile.role !== 'Mixte'">
+                          <span class="text-xl">🎭</span>
+                          <span class="text-[10px] font-bold mt-1">Les deux</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="mb-6">
                       <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Choisir un emoji</span>
                       <div class="flex flex-wrap gap-2">
                         @for (av of avatarOptions; track av.emoji) {
@@ -357,8 +416,12 @@ export class SettingsComponent implements OnInit {
     else this.editingProfileId.set(id);
   }
 
+  async logout() {
+    await this.auth.logout();
+  }
+
   getDisplayAvatar(profile: any): string {
-    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : '👶');
+    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : profile.role === 'Mixte' ? '👤' : '👶');
     const modifier = profile.avatarSkinTone && this.skinToneModifiers[profile.avatarSkinTone] ? this.skinToneModifiers[profile.avatarSkinTone] : '';
     return base + (this.showSkinTones(profile) ? modifier : '');
   }
@@ -371,6 +434,11 @@ export class SettingsComponent implements OnInit {
 
   async updateAvatar(profile: any, emoji: string) {
     profile.avatar = emoji;
+    this.saveProfileUpdate(profile);
+  }
+
+  async updateRole(profile: any, role: any) {
+    profile.role = role;
     this.saveProfileUpdate(profile);
   }
 

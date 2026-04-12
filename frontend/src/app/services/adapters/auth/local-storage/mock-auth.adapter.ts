@@ -10,11 +10,10 @@ export class MockAuthAdapter implements AuthAdapter {
   private users: User[] = [
     {
       id: 'u_super_all_no_child',
-      email: 'superviseur.allergique.nochild@test.fr',
-      name: 'Jean-Marc (Superviseur Allergique)',
+      email: 'mixte@test.fr',
+      name: 'Jean-Marc (Mixte)',
       profiles: [
-        { id: 'p1_1', name: 'Mon Compte (Superviseur)', role: 'Supervision', themePreference: 'classic', avatar: '🏠' },
-        { id: 'p1_2', name: 'Moi (Allergique)', role: 'Allergique', themePreference: 'classic', avatar: '🧘' }
+        { id: 'p1_1', name: 'Mon Compte', role: 'Mixte', themePreference: 'classic', avatar: '🧘' }
       ]
     },
     {
@@ -22,8 +21,7 @@ export class MockAuthAdapter implements AuthAdapter {
       email: 'parent.allergique@test.fr',
       name: 'Famille Dupont',
       profiles: [
-        { id: 'p2_1', name: 'Maman (Superviseur)', role: 'Supervision', themePreference: 'classic', avatar: '🏠' },
-        { id: 'p2_2', name: 'Maman (Allergique)', role: 'Allergique', themePreference: 'classic', avatar: '👩' },
+        { id: 'p2_1', name: 'Maman (Mixte)', role: 'Mixte', themePreference: 'classic', avatar: '👩' },
         { id: 'p2_3', name: 'Léo', role: 'Allergique', themePreference: 'flashy', isLocal: true, avatar: '👶' }
       ]
     },

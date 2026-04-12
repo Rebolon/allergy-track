@@ -61,7 +61,7 @@ export class ProfileSwitcherComponent {
       'light': '\u{1F3FB}',
       'dark': '\u{1F3FF}'
     };
-    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : '👶');
+    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : profile.role === 'Mixte' ? '👤' : '👶');
     const modifier = profile.avatarSkinTone && skinToneModifiers[profile.avatarSkinTone] ? skinToneModifiers[profile.avatarSkinTone] : '';
     
     const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];

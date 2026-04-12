@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
@@ -10,23 +10,24 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
   standalone: true,
   imports: [CommonModule, LucideAngularModule, FormsModule],
   template: `
-    <div class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white transition-opacity duration-700"
+    <div class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-white via-emerald-50/50 to-blue-50/50 transition-opacity duration-700"
          [class.opacity-0]="isfadingOut()"
          [class.pointer-events-none]="isfadingOut()">
       
-      <!-- Background elements for premium feel -->
-      <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-emerald-50 rounded-full blur-3xl opacity-60"></div>
-        <div class="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-50 rounded-full blur-3xl opacity-60"></div>
+      <!-- Background elements for child-friendly feel -->
+      <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
+        <div class="absolute top-[10%] -left-[5%] w-64 h-64 bg-emerald-100 rounded-full blur-3xl animate-float-slow"></div>
+        <div class="absolute bottom-[10%] -right-[5%] w-80 h-80 bg-blue-100 rounded-full blur-3xl animate-float-medium"></div>
+        <div class="absolute top-[40%] left-[20%] w-32 h-32 bg-amber-50 rounded-full blur-2xl animate-pulse"></div>
       </div>
 
-      <div class="relative flex flex-col items-center gap-6 max-w-md w-full px-8 text-center scrollbar-hide overflow-y-auto max-h-[90vh]">
+      <div class="relative flex flex-col items-center gap-6 max-w-md w-full px-8 text-center scrollbar-hide overflow-y-auto max-h-[95vh]">
         
-        <!-- Logo Animation -->
-        <div class="relative mt-8">
-          <div class="w-24 h-24 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-[2rem] shadow-2xl flex items-center justify-center animate-bounce-slow">
-            <lucide-icon [img]="ShieldCheck" [size]="48" [strokeWidth]="2.5" class="text-white"></lucide-icon>
-          </div>
+        <!-- App Icon -->
+        <div class="relative mt-4">
+          <div class="absolute -inset-4 bg-white/40 blur-2xl rounded-full"></div>
+          <img src="icons/icon-192x192.png" alt="Allergy Track Logo" 
+               class="w-28 h-28 relative drop-shadow-2xl rounded-[2.5rem] animate-bounce-slow border-4 border-white bg-white">
         </div>
 
         <div class="space-y-1">
@@ -40,7 +41,7 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
         @if (auth.isReady()) {
           @if (!auth.isAuthenticated()) {
             
-            <div class="w-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div class="w-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 mt-4 mb-8">
               
               <!-- SSO Button -->
               <button (click)="loginSSO()" 
@@ -50,9 +51,9 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
               </button>
 
               <div class="relative flex items-center gap-4 py-2">
-                <div class="flex-1 h-px bg-slate-100"></div>
-                <span class="text-[10px] font-black uppercase text-slate-300 tracking-widest">OU</span>
-                <div class="flex-1 h-px bg-slate-100"></div>
+                <div class="flex-1 h-px bg-slate-200"></div>
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">OU</span>
+                <div class="flex-1 h-px bg-slate-200"></div>
               </div>
 
               <!-- Classic Login Form -->
@@ -60,12 +61,12 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
                 <div class="relative">
                   <lucide-icon [img]="Mail" [size]="18" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></lucide-icon>
                   <input type="email" name="email" [(ngModel)]="email" placeholder="Email" required
-                         class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-700">
+                         class="w-full pl-12 pr-4 py-4 bg-white/80 border-2 border-slate-100 focus:border-emerald-500/20 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-700 shadow-sm">
                 </div>
                 <div class="relative">
                   <lucide-icon [img]="Lock" [size]="18" class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></lucide-icon>
                   <input type="password" name="password" [(ngModel)]="password" placeholder="Mot de passe" required
-                         class="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-emerald-500/20 focus:bg-white rounded-2xl outline-none transition-all font-medium text-slate-700">
+                         class="w-full pl-12 pr-4 py-4 bg-white/80 border-2 border-slate-100 focus:border-emerald-500/20 focus:bg-white rounded-2xl outline-none transition-all font-bold text-slate-700 shadow-sm">
                 </div>
                 <button type="submit" [disabled]="loading()"
                         class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
@@ -80,15 +81,15 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
               <p class="mt-2 text-[10px] text-slate-400 font-medium">Authentification sécurisée allergie-track.fr</p>
             </div>
           } @else {
-            <div class="flex items-center gap-3 text-emerald-600 bg-emerald-50 px-6 py-3 rounded-2xl border-2 border-emerald-100 font-black animate-pulse">
+            <div class="flex items-center gap-3 text-emerald-600 bg-emerald-50/80 backdrop-blur-sm px-6 py-3 rounded-2xl border-2 border-emerald-100 font-black animate-pulse">
                <span>✓</span> Session active
             </div>
           }
         } @else {
           <div class="flex items-center gap-2 mt-4">
-            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-            <div class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
+            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+            <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-bounce"></div>
           </div>
         }
 
@@ -103,11 +104,21 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
   `,
   styles: [`
     @keyframes bounce-slow {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
+      0%, 100% { transform: translateY(0) rotate(-1deg); }
+      50% { transform: translateY(-12px) rotate(1deg); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(15px, -20px); }
     }
     .animate-bounce-slow {
       animation: bounce-slow 4s ease-in-out infinite;
+    }
+    .animate-float-slow {
+      animation: float 10s ease-in-out infinite;
+    }
+    .animate-float-medium {
+      animation: float 7s ease-in-out infinite reverse;
     }
     .animate-shake {
       animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
@@ -131,7 +142,22 @@ export class SplashScreenComponent implements OnInit {
   email = '';
   password = '';
 
+  constructor() {
+    // Reset splash screen when logging out
+    effect(() => {
+      if (!this.auth.isAuthenticated()) {
+        this.isfadingOut.set(false);
+      } else {
+        // Only auto-close if it's already ready
+        if (this.auth.isReady()) {
+           this.isfadingOut.set(true);
+        }
+      }
+    });
+  }
+
   ngOnInit() {
+    // Initial check with delay for nice animation
     setTimeout(() => {
       this.checkAndClose();
     }, 2000);
@@ -140,10 +166,6 @@ export class SplashScreenComponent implements OnInit {
   checkAndClose() {
     if (this.auth.isReady() && this.auth.isAuthenticated()) {
       this.isfadingOut.set(true);
-    } else if (this.auth.isReady() && !this.auth.isAuthenticated()) {
-      // Remain on login
-    } else {
-      setTimeout(() => this.checkAndClose(), 500);
     }
   }
 
