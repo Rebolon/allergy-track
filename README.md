@@ -119,8 +119,6 @@ Pour travailler sur le frontend avec rechargement à chaud :
     at new _DashboardComponent (dashboard.component.ts:119:16)
     at NodeInjectorFactory.DashboardComponent_Factory [as factory] (dashboard.component.ts:137:3)
 
-- Possible de supprimer l'usage des await/async pour passer sur du signal (voir du Observable au pire, ou alors exposer des signaux et utiliser les Promise uniquement à l'intérieur des adapters concernés) ?
 - Dans les Symptomes pour la désensibilisation tu peux rajouter Démangeaisons oeil
-- Améliorer les hooks : dans Profiles il faut vérifier les propriétés de chaque entrée des tableaux protocol/symptom/medicShield
 
 - En dev avec le localStorage, c'est normal que si je rafraichis la page je perds mon contexte ? je semble encore connecté mais je repasse toujours par le tunnel de première connection
