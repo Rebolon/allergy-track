@@ -37,19 +37,19 @@ export class DailyFormService {
 
   createForm(): FormGroup {
     const shields = this.protocolService.medicsShields();
+    const date = new Date().toISOString().split('T')[0];
+    const activeProtocols = this.protocolService.protocols().filter(p => this.protocolService.isProtocolDue(p, date));
+    
     return this.fb.group({
       id: [crypto.randomUUID()],
-      date: [new Date().toISOString().split('T')[0], Validators.required],
-      intakes: this.fb.array([], { validators: atLeastOneTakenValidator() }),
+      date: [date, Validators.required],
+      intakes: this.fb.array(
+        activeProtocols.map(p => this.createIntakeGroup(p.allergen, p.dose)),
+        { validators: atLeastOneTakenValidator() }
+      ),
       symptoms: this.fb.array([], { validators: atLeastOneSymptomValidator() }),
       treatments: this.fb.array(
-        shields.length > 0 
-          ? shields.map(s => this.createTreatmentGroup(s.label))
-          : [
-              this.createTreatmentGroup('Antihistaminique'),
-              this.createTreatmentGroup('Aerius/Aeromire'),
-              this.createTreatmentGroup('Adrénaline')
-            ]
+        shields.map(s => this.createTreatmentGroup(s.label))
       ),
       note: ['']
     });
@@ -85,6 +85,8 @@ export class DailyFormService {
       const treatmentsArray = form.get('treatments') as FormArray;
       const symptomsArray = form.get('symptoms') as FormArray;
 
+      const currentShields = this.protocolService.medicsShields();
+
       if (log) {
         form.patchValue({
           id: log.id,
@@ -92,7 +94,7 @@ export class DailyFormService {
           note: log.note || ''
         });
 
-        // Re-create the form controls based on saved log
+        // Sync Intakes
         intakesArray.clear();
         log.intakes.forEach(intake => {
           const group = this.createIntakeGroup(intake.allergen, intake.dose);
@@ -100,30 +102,18 @@ export class DailyFormService {
           intakesArray.push(group);
         });
 
-        // Sync treatments with current config if names match, otherwise just patch what we have
-        const currentShields = this.protocolService.medicsShields();
-        
-        // If we have a config, we re-build the array based on it
-        if (currentShields.length > 0) {
-          treatmentsArray.clear();
-          currentShields.forEach(shield => {
-            const savedTreatment = log.treatments.find(t => t.name === shield.label);
-            const group = this.createTreatmentGroup(shield.label);
-            if (savedTreatment) {
-              group.patchValue(savedTreatment);
-            }
-            treatmentsArray.push(group);
-          });
-        } else {
-          // Fallback legacy behavior
-          log.treatments.forEach((treatment, i) => {
-            if (treatmentsArray.at(i)) {
-              treatmentsArray.at(i).patchValue(treatment);
-            }
-          });
-        }
+        // Sync Treatments with current config
+        treatmentsArray.clear();
+        currentShields.forEach(shield => {
+          const savedTreatment = log.treatments.find(t => t.name === shield.label);
+          const group = this.createTreatmentGroup(shield.label);
+          if (savedTreatment) {
+            group.patchValue(savedTreatment);
+          }
+          treatmentsArray.push(group);
+        });
 
-        // Patch symptoms
+        // Sync Symptoms
         symptomsArray.clear();
         log.symptoms.forEach(symptom => {
           symptomsArray.push(new FormControl(symptom));
@@ -136,27 +126,20 @@ export class DailyFormService {
           note: '',
         });
 
-        // Reset intakes according to ActiveDossierService rules for this date
+        // Reset intakes
         intakesArray.clear();
         const activeProtocols = this.protocolService.protocols().filter(p => this.protocolService.isProtocolDue(p, date));
         activeProtocols.forEach(p => {
           intakesArray.push(this.createIntakeGroup(p.allergen, p.dose));
         });
 
-        // Reset treatments based on current config
-        const currentShields = this.protocolService.medicsShields();
-        if (currentShields.length > 0) {
-          treatmentsArray.clear();
-          currentShields.forEach(s => {
-            treatmentsArray.push(this.createTreatmentGroup(s.label));
-          });
-        } else {
-          treatmentsArray.controls.forEach(ctrl => {
-            ctrl.patchValue({ before: false, after: false });
-          });
-        }
+        // Reset treatments
+        treatmentsArray.clear();
+        currentShields.forEach(s => {
+          treatmentsArray.push(this.createTreatmentGroup(s.label));
+        });
 
-        const symptomsArray = form.get('symptoms') as FormArray;
+        // Reset symptoms
         symptomsArray.clear();
       }
 

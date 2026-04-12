@@ -78,44 +78,30 @@ export class App implements OnInit {
   errorService = inject(ErrorService);
   router = inject(Router);
 
-  // Navigation State
-  activeTab = signal<MobileTab>('home');
-  isOnboarding = signal(false);
+  // Navigation State reactively linked to Router
+  url = toSignal(this.router.events.pipe(
+    filter(event => event instanceof NavigationEnd),
+    map(e => (e as NavigationEnd).urlAfterRedirects),
+    startWith(this.router.url)
+  ), { initialValue: this.router.url });
+
+  isOnboarding = computed(() => this.url().includes('/onboarding'));
+  
+  activeTab = computed<MobileTab>(() => {
+    const current = this.url();
+    if (current.includes('/home')) return 'home';
+    if (current.includes('/supervision')) return 'supervision';
+    if (current.includes('/gaming')) return 'gaming';
+    if (current.includes('/settings')) return 'preferences';
+    return 'home';
+  });
 
   constructor() {
-    // Sync activeTab and isOnboarding with URL
-    this.router.events.pipe(
-      filter(event => event instanceof NavigationEnd)
-    ).subscribe((event: any) => {
-      const url = event.urlAfterRedirects;
-      this.isOnboarding.set(url.includes('/onboarding'));
-      
-      if (url.includes('/home')) this.activeTab.set('home');
-      else if (url.includes('/supervision')) this.activeTab.set('supervision');
-      else if (url.includes('/gaming')) this.activeTab.set('gaming');
-      else if (url.includes('/settings')) this.activeTab.set('preferences');
-    });
-
     // Handle global tab change requests
     (window as any).dispatchTabChange = (tab: MobileTab) => {
       const route = tab === 'preferences' ? 'settings' : tab;
       this.router.navigate([`/${route}`]);
     };
-
-    // Global Redirect Logic
-    effect(() => {
-      const isAuth = this.auth.isAuthenticated();
-      const user = this.auth.currentUser();
-      const ready = this.auth.isReady();
-
-      if (ready && isAuth) {
-        if (user && user.profileAccesses && user.profileAccesses.length === 0) {
-          if (!this.router.url.includes('/onboarding')) {
-            this.router.navigate(['/onboarding']);
-          }
-        }
-      }
-    });
   }
 
   ngOnInit() {
