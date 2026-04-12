@@ -2,6 +2,7 @@ import { Injectable, signal, effect, inject, computed } from '@angular/core';
 import { ProtocolItem, SymptomItem, PROTOCOL_ADAPTER } from './protocol.interface';
 import { AuthService } from './auth.service';
 import { ThemeService, AppTheme } from './theme.service';
+import { forkJoin } from 'rxjs';
 
 export type { ProtocolItem, SymptomItem };
 
@@ -30,6 +31,8 @@ export class ActiveDossierService {
   public readonly protocols = signal<ProtocolItem[]>([]);
   public readonly protocolStartDate = signal<string | null>(null);
   public readonly symptoms = signal<SymptomItem[]>([]);
+  
+  private dataLoaded = signal(false);
 
   // Computed for UI
   public readonly currentTheme = computed(() => this.auth.activeProfile()?.themePreference || 'classic');
@@ -47,11 +50,11 @@ export class ActiveDossierService {
       }
     }, { allowSignalWrites: true });
 
-    // Auto-save effects
+    // Auto-save effects - ONLY if data is already loaded to avoid overwriting with initial nulls
     effect(() => {
       const current = this.protocols();
       const profile = this.auth.activeProfile();
-      if (profile && this.auth.isAuthenticated()) {
+      if (this.dataLoaded() && profile && this.auth.isAuthenticated()) {
         this.adapter.saveProtocols(profile.id, current).subscribe();
       }
     });
@@ -59,7 +62,7 @@ export class ActiveDossierService {
     effect(() => {
       const start = this.protocolStartDate();
       const profile = this.auth.activeProfile();
-      if (profile && this.auth.isAuthenticated()) {
+      if (this.dataLoaded() && profile && this.auth.isAuthenticated()) {
         this.adapter.saveProtocolStartDate(profile.id, start).subscribe();
       }
     });
@@ -67,31 +70,33 @@ export class ActiveDossierService {
     effect(() => {
       const syms = this.symptoms();
       const profile = this.auth.activeProfile();
-      if (profile && this.auth.isAuthenticated()) {
+      if (this.dataLoaded() && profile && this.auth.isAuthenticated()) {
         this.adapter.saveSymptoms(profile.id, syms).subscribe();
       }
     });
   }
 
   private loadProfileData(profileId: string) {
-    this.adapter.getProtocols(profileId).subscribe(protocols => {
-      if (protocols && protocols.length > 0) {
-        this.protocols.set(protocols);
-      } else {
+    this.dataLoaded.set(false);
+    
+    forkJoin({
+      protocols: this.adapter.getProtocols(profileId),
+      startDate: this.adapter.getProtocolStartDate(profileId),
+      symptoms: this.adapter.getSymptoms(profileId)
+    }).subscribe({
+      next: ({ protocols, startDate, symptoms }) => {
+        this.protocols.set(protocols.length > 0 ? protocols : this.getDefaultProtocols());
+        this.protocolStartDate.set(startDate);
+        this.symptoms.set(symptoms.length > 0 ? symptoms : SYMPTOM_PRESETS['reintroduction']);
+        this.migrateProtocols();
+        this.dataLoaded.set(true);
+      },
+      error: (err) => {
+        console.error('[ActiveDossierService] Load failed', err);
+        // Fallback to defaults anyway to allow editing
         this.protocols.set(this.getDefaultProtocols());
-      }
-      this.migrateProtocols();
-    });
-
-    this.adapter.getProtocolStartDate(profileId).subscribe(start => {
-      this.protocolStartDate.set(start);
-    });
-
-    this.adapter.getSymptoms(profileId).subscribe(symptoms => {
-      if (symptoms && symptoms.length > 0) {
-        this.symptoms.set(symptoms);
-      } else {
         this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
+        this.dataLoaded.set(true);
       }
     });
   }
@@ -102,7 +107,6 @@ export class ActiveDossierService {
 
   public updateTheme(newTheme: AppTheme) {
     this.auth.updateProfileTheme(newTheme);
-    // ThemeService is updated via effect on activeProfile change in constructor
   }
 
   private migrateProtocols() {
@@ -150,14 +154,11 @@ export class ActiveDossierService {
   public isProtocolDue(item: ProtocolItem, targetDate: string): boolean {
     if (item.frequencyDays === 1) return true;
 
-    // Check if target date is >= createdAt
     if (targetDate < item.createdAt) return false;
 
-    // Calculate diff in days
     const createdDate = new Date(item.createdAt);
     const target = new Date(targetDate);
-
-    // Reset times to compare strictly dates
+    
     createdDate.setHours(0, 0, 0, 0);
     target.setHours(0, 0, 0, 0);
 

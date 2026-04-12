@@ -103,4 +103,21 @@ Pour travailler sur le frontend avec rechargement à chaud :
 - Check push notifications (Service Worker)
 - Optimization for multi-device real-time sync
 - Advanced charts for long-term health trends
+- Passer les parametres par des formulaires independant
+- Passer les paramétres sur les même styles que la page de saisie : Défis gourmands / Comment je me sens / Mes boucliers magiques => reprendre la bordure fine, une couleur de fond plus clair que la bordure, le côté gauche avec une bordure pour les boutons, champs ou boc unitaire, case à cocher avec un cercle animé...
+- Splashscreen : le système d'authentification doit etre une pile de moyen disponibles sur lequel le composant va boucler pour proposer les possibilités. En dev on a que login/pwd. En prod on peut avoir synology et login/pwd (et peut être d'autres plus tard)
+- Tester la 1ere connection : 
+    * il semble que rien ne soit persisté (ni la date de naissance, ni le choix d'usage de l'app) + si on clic sur le 2nd choix il ne se passe rien
+    * dans la console on a une erreur alors que c'est juste que l'on est en train de tout configurer : ERROR Error: No active profile
+    at report.service.ts:16:43
+    at Observable2.init [as _subscribe] (throwError.js:5:64)
+    at Observable2._trySubscribe (Observable.js:38:25)
+    at Observable.js:32:31
+    at errorContext (errorContext.js:19:9)
+    at Observable2.subscribe (Observable.js:23:9)
+    at _DashboardComponent.loadStatus (dashboard.component.ts:127:72)
+    at new _DashboardComponent (dashboard.component.ts:119:16)
+    at NodeInjectorFactory.DashboardComponent_Factory [as factory] (dashboard.component.ts:137:3)
+
+- Possible de supprimer l'usage des await/async pour passer sur du signal (voir du Observable au pire) ?
 

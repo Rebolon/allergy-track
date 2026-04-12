@@ -52,64 +52,65 @@ import { OnboardingComponent } from './components/onboarding.component';
     @if (auth.isAuthenticated()) {
       @if (auth.currentUser()?.profileAccesses?.length === 0) {
         <app-onboarding />
+      } @else {
+        <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
+        
+        <!-- Header / Auth Switcher -->
+        <app-layout-header />
+
+        <!-- Desktop Nav -->
+        <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
+
+        <!-- Main Content -->
+        <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
+
+          <!-- Gamification Summary (Home + Gaming) -->
+          <div class="mb-6" [class.hidden]="activeTab() !== 'gaming' && activeTab() !== 'home'">
+            <app-gamification-summary [state]="gState()" />
+          </div>
+          
+          <!-- Gamification History (Gaming only) -->
+          <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'gaming'">
+            <app-gamification-history [state]="gState()" />
+          </div>
+
+          <!-- Preferences Tab -->
+          <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'preferences'">
+            <app-settings />
+          </div>
+          
+          <!-- Supervision Tab (Full Width) -->
+          <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'supervision'">
+            <app-dashboard />
+            <app-audit-log />
+          </div>
+          
+          <!-- Home View (Agenda + Daily Entry) -->
+          <div class="flex flex-col gap-6" [class.hidden]="activeTab() !== 'home'">
+            
+            <!-- Agenda -->
+            <app-agenda (dateSelected)="onDateSelected($event)" />
+            
+            <!-- Daily Entry Form -->
+            <app-daily-entry [date]="selectedDate()" />
+            
+          </div>
+          
+          <!-- Footer -->
+          <app-layout-footer class="hidden md:block mt-8" />
+          
+        </main>
+
+        <!-- Bottom Nav (Bottom Only) -->
+        <app-bottom-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-bottom-nav>
+
+        <!-- Modals -->
+        @if (errorService.serverError(); as serverErrorMsg) {
+          <app-global-error-modal [message]="serverErrorMsg" />
+        }
+      </div> 
       }
-
-      <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
-      
-      <!-- Header / Auth Switcher -->
-      <app-layout-header />
-
-      <!-- Desktop Nav -->
-      <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
-
-      <!-- Main Content -->
-      <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
-
-        <!-- Gamification Summary (Home + Gaming) -->
-        <div class="mb-6" [class.hidden]="activeTab() !== 'gaming' && activeTab() !== 'home'">
-           <app-gamification-summary [state]="gState()" />
-        </div>
-        
-        <!-- Gamification History (Gaming only) -->
-        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'gaming'">
-           <app-gamification-history [state]="gState()" />
-        </div>
-
-        <!-- Preferences Tab -->
-        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'preferences'">
-           <app-settings />
-        </div>
-        
-        <!-- Supervision Tab (Full Width) -->
-        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'supervision'">
-           <app-dashboard />
-           <app-audit-log />
-        </div>
-        
-        <!-- Home View (Agenda + Daily Entry) -->
-        <div class="flex flex-col gap-6" [class.hidden]="activeTab() !== 'home'">
-          
-          <!-- Agenda -->
-          <app-agenda (dateSelected)="onDateSelected($event)" />
-          
-          <!-- Daily Entry Form -->
-          <app-daily-entry [date]="selectedDate()" />
-          
-        </div>
-        
-        <!-- Footer -->
-        <app-layout-footer class="hidden md:block mt-8" />
-        
-      </main>
-
-      <!-- Bottom Nav (Bottom Only) -->
-      <app-bottom-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-bottom-nav>
-
-      <!-- Modals -->
-      @if (errorService.serverError(); as serverErrorMsg) {
-        <app-global-error-modal [message]="serverErrorMsg" />
-      }
-    </div> }
+    }
   `
 })
 export class App implements OnInit {
