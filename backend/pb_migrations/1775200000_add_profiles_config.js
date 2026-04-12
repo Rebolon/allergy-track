@@ -39,6 +39,14 @@ migrate((app) => {
                 "presentable": false,
                 "unique": false,
                 "options": {}
+            },
+            {
+                "name": "medicsShields",
+                "type": "json",
+                "required": false,
+                "presentable": false,
+                "unique": false,
+                "options": {}
             }
         ],
         "listRule": "",
