@@ -1,5 +1,4 @@
 import { Component, inject, signal, OnInit, effect } from '@angular/core';
-
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
@@ -145,15 +144,15 @@ export class SplashScreenComponent implements OnInit {
   constructor() {
     // Reset splash screen when logging out
     effect(() => {
-      if (!this.auth.isAuthenticated()) {
+      const isAuth = this.auth.isAuthenticated();
+      const isReady = this.auth.isReady();
+      
+      if (!isAuth) {
         this.isfadingOut.set(false);
-      } else {
-        // Only auto-close if it's already ready
-        if (this.auth.isReady()) {
-          this.isfadingOut.set(true);
-        }
+      } else if (isReady) {
+        this.isfadingOut.set(true);
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {

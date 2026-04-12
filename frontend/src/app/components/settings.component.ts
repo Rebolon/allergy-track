@@ -13,11 +13,11 @@ import { DossierManagementComponent } from './settings/dossier-management.compon
   selector: 'app-settings',
   standalone: true,
   imports: [
-    NgClass, 
-    ProtocolFormComponent, 
-    SymptomFormComponent, 
+    NgClass,
+    ProtocolFormComponent,
+    SymptomFormComponent,
     MedicsShieldFormComponent,
-    SharingSettingsComponent, 
+    SharingSettingsComponent,
     DossierManagementComponent
   ],
   template: `
@@ -55,7 +55,7 @@ import { DossierManagementComponent } from './settings/dossier-management.compon
               <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Thème du dossier</span>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button (click)="setTheme('colorful')" 
-                        class="p-4 border-4 rounded-2xl flex items-center gap-4 transition-all"
+                        class="p-4 border-2 rounded-2xl flex items-center gap-4 transition-all"
                         [class.border-emerald-500]="activeDossier.currentTheme() === 'colorful'"
                         [class.bg-emerald-50]="activeDossier.currentTheme() === 'colorful'"
                         [class.border-slate-100]="activeDossier.currentTheme() !== 'colorful'">
@@ -66,7 +66,7 @@ import { DossierManagementComponent } from './settings/dossier-management.compon
                   </div>
                 </button>
                 <button (click)="setTheme('classic')" 
-                        class="p-4 border-4 rounded-2xl flex items-center gap-4 transition-all"
+                        class="p-4 border-2 rounded-2xl flex items-center gap-4 transition-all"
                         [class.border-emerald-500]="activeDossier.currentTheme() === 'classic'"
                         [class.bg-emerald-50]="activeDossier.currentTheme() === 'classic'"
                         [class.border-slate-100]="activeDossier.currentTheme() !== 'classic'">

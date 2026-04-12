@@ -1,9 +1,12 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit, effect } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
 import { NotificationService } from './services/notification.service';
+import { GamificationService } from './services/gamification.service';
 import { CopywritingService } from './services/copywriting.service';
 import { MatIconModule } from '@angular/material/icon';
 import { LayoutHeaderComponent } from './components/layout/header.component';
@@ -29,7 +32,7 @@ import { ErrorService } from './services/error.service';
     MatIconModule
   ],
   template: `
-    <!-- Splash Screen Gate -->
+    <!-- Splash Screen Gate (Login) -->
     <app-splash-screen />
 
     @if (auth.isAuthenticated()) {
@@ -38,8 +41,10 @@ import { ErrorService } from './services/error.service';
         <!-- Header / Auth Switcher -->
         <app-layout-header />
 
-        <!-- Desktop Nav -->
-        <app-top-nav></app-top-nav>
+        <!-- Navigation (Hidden if in onboarding) -->
+        @if (!isOnboarding()) {
+          <app-top-nav></app-top-nav>
+        }
 
         <!-- Main Content -->
         <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
@@ -51,8 +56,10 @@ import { ErrorService } from './services/error.service';
           
         </main>
 
-        <!-- Bottom Nav (Bottom Only) -->
-        <app-bottom-nav></app-bottom-nav>
+        <!-- Bottom Nav (Hidden if in onboarding) -->
+        @if (!isOnboarding()) {
+          <app-bottom-nav></app-bottom-nav>
+        }
 
         <!-- Modals -->
         @if (errorService.serverError(); as serverErrorMsg) {
@@ -66,32 +73,49 @@ export class App implements OnInit {
   auth = inject(AuthService);
   theme = inject(ThemeService);
   notification = inject(NotificationService);
+  gamification = inject(GamificationService);
   copy = inject(CopywritingService);
   errorService = inject(ErrorService);
   router = inject(Router);
 
-  // Navigation State (mostly for legacy sync if needed, but updated via URL)
+  // Navigation State
   activeTab = signal<MobileTab>('home');
+  isOnboarding = signal(false);
 
   constructor() {
-    /** @todo is it really needed? I comment for instance*/
-    /* */
-    // Sync activeTab with URL for components that might still use it
+    // Sync activeTab and isOnboarding with URL
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
     ).subscribe((event: any) => {
       const url = event.urlAfterRedirects;
+      this.isOnboarding.set(url.includes('/onboarding'));
+      
       if (url.includes('/home')) this.activeTab.set('home');
       else if (url.includes('/supervision')) this.activeTab.set('supervision');
       else if (url.includes('/gaming')) this.activeTab.set('gaming');
       else if (url.includes('/settings')) this.activeTab.set('preferences');
     });
 
+    // Handle global tab change requests
     (window as any).dispatchTabChange = (tab: MobileTab) => {
       const route = tab === 'preferences' ? 'settings' : tab;
       this.router.navigate([`/${route}`]);
     };
-    /* */
+
+    // Global Redirect Logic
+    effect(() => {
+      const isAuth = this.auth.isAuthenticated();
+      const user = this.auth.currentUser();
+      const ready = this.auth.isReady();
+
+      if (ready && isAuth) {
+        if (user && user.profileAccesses && user.profileAccesses.length === 0) {
+          if (!this.router.url.includes('/onboarding')) {
+            this.router.navigate(['/onboarding']);
+          }
+        }
+      }
+    });
   }
 
   ngOnInit() {
