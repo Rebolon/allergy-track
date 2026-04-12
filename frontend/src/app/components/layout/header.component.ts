@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
-import { LucideAngularModule, ChevronDown, Check } from 'lucide-angular';
+import { LucideAngularModule, ChevronDown, Check, User } from 'lucide-angular';
 
 @Component({
   selector: 'app-layout-header',
@@ -23,7 +23,7 @@ import { LucideAngularModule, ChevronDown, Check } from 'lucide-angular';
               <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm shadow-sm"
                    [style.borderColor]="auth.activeColor()"
                    [style.backgroundColor]="auth.activeColor() + '20'">
-                {{ getDisplayAvatar(auth.activeProfile()) }}
+                <lucide-icon [img]="User" [size]="14" [strokeWidth]="3" [style.color]="auth.activeColor()"></lucide-icon>
               </div>
               <span class="font-bold text-sm">{{ auth.activeProfile()?.name }}</span>
               <lucide-icon [img]="ChevronDown" [size]="16" [strokeWidth]="3" class="opacity-60" [class.rotate-180]="isMenuOpen()"></lucide-icon>
@@ -43,7 +43,7 @@ import { LucideAngularModule, ChevronDown, Check } from 'lucide-angular';
                       <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg transition-transform group-hover:scale-110"
                            [style.borderColor]="getProfileColor(profile.id)"
                            [style.backgroundColor]="getProfileColor(profile.id) + '15'">
-                        {{ getDisplayAvatar(profile) }}
+                        <lucide-icon [img]="User" [size]="18" [strokeWidth]="3" [style.color]="getProfileColor(profile.id)"></lucide-icon>
                       </div>
                       <div class="flex-1 text-left">
                         <p class="font-black text-slate-800 text-sm leading-tight">{{ profile.name }}</p>
@@ -75,21 +75,11 @@ export class LayoutHeaderComponent {
 
   readonly ChevronDown = ChevronDown;
   readonly Check = Check;
+  readonly User = User;
 
   switch(id: string) {
     this.auth.switchProfile(id);
     this.isMenuOpen.set(false);
-  }
-
-  getDisplayAvatar(profile: any): string {
-    const skinToneModifiers: Record<string, string> = {
-      'light': '\u{1F3FB}',
-      'dark': '\u{1F3FF}'
-    };
-    const base = profile?.avatar || '👶';
-    const modifier = profile?.avatarSkinTone && skinToneModifiers[profile.avatarSkinTone] ? skinToneModifiers[profile.avatarSkinTone] : '';
-    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
-    return base + (!noSkinTone.includes(base) ? modifier : '');
   }
 
   getProfileColor(profileId: string): string {

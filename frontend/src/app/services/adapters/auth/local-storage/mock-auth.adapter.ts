@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthAdapter } from '../../../auth.interface';
-import { User, Profile, ProfileAccess } from '../../../../models/allergy-track.model';
+import { User, Profile, ProfileAccess, PermissionLevel } from '../../../../models/allergy-track.model';
 
 @Injectable({ providedIn: 'root' })
 export class MockAuthAdapter implements AuthAdapter {
@@ -25,7 +25,7 @@ export class MockAuthAdapter implements AuthAdapter {
         { profileId: 'p1_1', permission: 'owner', colorCode: '#10b981' }
       ],
       profiles: [
-        { id: 'p1_1', name: 'Mon Compte', themePreference: 'classic', avatar: '🧘', birthDate: '1985-06-15' }
+        { id: 'p1_1', name: 'Mon Compte', themePreference: 'classic', birthDate: '1985-06-15' }
       ]
     },
     {
@@ -37,8 +37,8 @@ export class MockAuthAdapter implements AuthAdapter {
         { profileId: 'p2_3', permission: 'owner', colorCode: '#f59e0b' }
       ],
       profiles: [
-        { id: 'p2_1', name: 'Maman', themePreference: 'classic', avatar: '👩', birthDate: '1988-03-20' },
-        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, avatar: '👶', birthDate: '2018-11-10' }
+        { id: 'p2_1', name: 'Maman', themePreference: 'classic', birthDate: '1988-03-20' },
+        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, birthDate: '2018-11-10' }
       ]
     },
     {
@@ -49,7 +49,7 @@ export class MockAuthAdapter implements AuthAdapter {
         { profileId: 'p2_3', permission: 'reader', colorCode: '#8b5cf6' }
       ],
       profiles: [
-        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, avatar: '👶', birthDate: '2018-11-10' }
+        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, birthDate: '2018-11-10' }
       ]
     }
   ];
@@ -97,8 +97,7 @@ export class MockAuthAdapter implements AuthAdapter {
     const user = (await this.getAuthUser()) || this.users[0];
     const newProfile: Profile = {
       ...profile,
-      id: 'p' + (Math.random().toString(36).substr(2, 9)),
-      avatar: profile.avatar || '👶'
+      id: 'p' + (Math.random().toString(36).substr(2, 9))
     };
     user.profiles.push(newProfile);
     user.profileAccesses.push({ profileId: newProfile.id, permission: 'owner', colorCode: '#10b981' });

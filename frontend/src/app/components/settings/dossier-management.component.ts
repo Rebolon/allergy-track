@@ -3,7 +3,7 @@ import { AuthService } from '../../services/auth.service';
 import { ProfileService } from '../../services/profile.service';
 import { SharingService } from '../../services/sharing.service';
 import { ThemeService } from '../../services/theme.service';
-import { LucideAngularModule, FolderHeart, UserPlus } from 'lucide-angular';
+import { LucideAngularModule, FolderHeart, UserPlus, User } from 'lucide-angular';
 
 @Component({
   selector: 'app-dossier-management',
@@ -19,10 +19,10 @@ import { LucideAngularModule, FolderHeart, UserPlus } from 'lucide-angular';
         @for (profile of auth.currentUser()?.profiles; track profile.id) {
           <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 shadow-sm">
             <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full border-2 flex items-center justify-center text-2xl"
+              <div class="w-12 h-12 rounded-full border-2 flex items-center justify-center"
                    [style.borderColor]="getProfileColor(profile.id)"
                    [style.backgroundColor]="getProfileColor(profile.id) + '15'">
-                {{ getDisplayAvatar(profile) }}
+                <lucide-icon [img]="User" [size]="20" [strokeWidth]="3" [style.color]="getProfileColor(profile.id)"></lucide-icon>
               </div>
               <div>
                 <p class="font-black text-slate-800 leading-none">{{ profile.name }}</p>
@@ -80,13 +80,9 @@ export class DossierManagementComponent {
   private profileService = inject(ProfileService);
   private sharingService = inject(SharingService);
 
-  getDisplayAvatar(profile: any): string {
-    const skinToneModifiers: Record<string, string> = { 'light': '\u{1F3FB}', 'dark': '\u{1F3FF}' };
-    const base = profile?.avatar || '👶';
-    const modifier = profile?.avatarSkinTone && skinToneModifiers[profile.avatarSkinTone] ? skinToneModifiers[profile.avatarSkinTone] : '';
-    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
-    return base + (!noSkinTone.includes(base) ? modifier : '');
-  }
+  readonly FolderHeart = FolderHeart;
+  readonly UserPlus = UserPlus;
+  readonly User = User;
 
   getProfileColor(profileId: string): string {
     return this.auth.currentUser()?.profileAccesses.find(a => a.profileId === profileId)?.colorCode || '#6366f1';
@@ -111,7 +107,4 @@ export class DossierManagementComponent {
     if (!code) return;
     await this.sharingService.joinDossier(code);
   }
-
-  readonly FolderHeart = FolderHeart;
-  readonly UserPlus = UserPlus;
 }

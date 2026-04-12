@@ -9,16 +9,12 @@ export interface ProfileAccess {
   colorCode?: string; // Hex color for the context circle
 }
 
-export type AvatarSkinTone = 'default' | 'light' | 'dark';
-
 export interface Profile {
   id: string;
   name: string;
   birthDate?: string; // YYYY-MM-DD
   themePreference: 'colorful' | 'classic';
   isLocal?: boolean;
-  avatar?: string;
-  avatarSkinTone?: AvatarSkinTone;
 }
 
 export interface AllergenIntake {

@@ -16,35 +16,22 @@ export type MobileTab = 'home' | 'supervision' | 'gaming' | 'preferences';
         
         @for (tab of orderedTabs(); track tab.id) {
           <a [routerLink]="tab.disabled ? null : tab.route" 
-                  routerLinkActive="text-[var(--color-primary)]"
-                  [routerLinkActiveOptions]="{exact: true}"
+                  routerLinkActive="text-[var(--color-primary)] active-tab"
+                  [routerLinkActiveOptions]="{exact: tab.route === '/home' || tab.route === '/'}"
                   #rla="routerLinkActive"
-                  class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors cursor-pointer"
+                  class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors cursor-pointer relative"
                   [ngClass]="[
                     !rla.isActive ? 'text-[var(--color-text-muted)]' : '',
-                    tab.disabled ? 'opacity-30 grayscale' : ''
+                    tab.disabled ? 'opacity-30 grayscale pointer-events-none' : ''
                   ]">
             <lucide-icon [img]="tab.icon" [size]="24" [strokeWidth]="rla.isActive ? 2.5 : 2"></lucide-icon>
             <span class="text-[10px] font-bold">{{ tab.label }}</span>
+            
+            @if (rla.isActive) {
+              <div class="absolute -top-[1px] left-1/4 right-1/4 h-0.5 bg-[var(--color-primary)] rounded-full"></div>
+            }
           </a>
         }
-
-        <a 
-          routerLink="/settings"
-          routerLinkActive="text-[var(--color-primary)]"
-          #rlaPrefs="routerLinkActive"
-          class="flex flex-col items-center justify-center w-full h-full space-y-1 transition-all rounded-full hover:bg-slate-50 cursor-pointer"
-          [class.opacity-100]="rlaPrefs.isActive"
-          [class.opacity-50]="!rlaPrefs.isActive">
-          <div class="relative flex items-center justify-center p-1.5 transition-transform"
-               [class.bg-[var(--color-primary)]]="rlaPrefs.isActive"
-               [class.text-white]="rlaPrefs.isActive"
-               [class.rounded-xl]="rlaPrefs.isActive"
-               [class.scale-110]="rlaPrefs.isActive">
-            <lucide-icon [img]="Settings" [size]="24" [strokeWidth]="rlaPrefs.isActive ? 2.5 : 2"></lucide-icon>
-          </div>
-          <span class="text-[10px] font-bold tracking-wide">Paramètres</span>
-        </a>
 
       </div>
     </nav>
@@ -67,11 +54,13 @@ export class BottomNavComponent {
     const tabs = [
       { id: 'home' as MobileTab, label: 'Saisie', icon: PencilLine, disabled: isReader, route: '/home' },
       { id: 'supervision' as MobileTab, label: 'Supervision', icon: Activity, disabled: false, route: '/supervision' },
-      { id: 'gaming' as MobileTab, label: 'Challenge', icon: Trophy, disabled: false, route: '/gaming' }
+      { id: 'gaming' as MobileTab, label: 'Challenge', icon: Trophy, disabled: false, route: '/gaming' },
+      { id: 'preferences' as MobileTab, label: 'Paramètres', icon: Settings, disabled: false, route: '/settings' }
     ];
 
     if (isPatientOnly) {
-      return [tabs[0], tabs[2], tabs[1]];
+      // Reorder for patient: Saisie, Challenge, Supervision, Paramètres
+      return [tabs[0], tabs[2], tabs[1], tabs[3]];
     }
 
     return tabs;

@@ -15,7 +15,6 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
   }
 
   getUsers(): User[] {
-    // This might be problematic if called synchronously, but we mostly use getAuthUser
     return [];
   }
 
@@ -31,8 +30,6 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
             await this.pb.collection('profiles').update(profile.id, {
                 name: profile.name,
                 birthDate: profile.birthDate,
-                avatar: profile.avatar,
-                avatarSkinTone: profile.avatarSkinTone,
                 themePreference: profile.themePreference
             });
         }
@@ -65,13 +62,10 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
       id: profileRecord.id,
       name: profileRecord['name'],
       birthDate: profileRecord['birthDate'],
-      avatar: profileRecord['avatar'],
-      avatarSkinTone: profileRecord['avatarSkinTone'],
       themePreference: profileRecord['themePreference']
     };
 
     // 2. Add Access to current User
-    const currentAccesses = user['profile_accesses'] || [];
     await this.pb.collection('users').update(user.id, {
       'profile_accesses+': [{
         profileId: newProfile.id,
@@ -94,17 +88,10 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     const model = this.pb.authStore.model;
     const profileAccesses: ProfileAccess[] = model['profile_accesses'] || [];
     
-    // Fallback if no accesses yet (e.g. legacy or first login)
-    if (profileAccesses.length === 0) {
-        // We might want to create a default profile or just return the user with empty profiles
-    }
-
     // Load actual profiles from 'profiles' collection
     const profiles: Profile[] = [];
     if (profileAccesses.length > 0) {
         const profileIds = profileAccesses.map(a => a.profileId);
-        // Fetch all profiles in one go if possible, or iterate
-        // PocketBase doesn't have a direct 'IN' filter in the same way, but we can use OR
         const filter = profileIds.map(id => `id="${id}"`).join(' || ');
         try {
             const records = await this.pb.collection('profiles').getFullList({ filter });
@@ -113,8 +100,6 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
                     id: r.id,
                     name: r['name'],
                     birthDate: r['birthDate'],
-                    avatar: r['avatar'],
-                    avatarSkinTone: r['avatarSkinTone'],
                     themePreference: r['themePreference']
                 });
             });
