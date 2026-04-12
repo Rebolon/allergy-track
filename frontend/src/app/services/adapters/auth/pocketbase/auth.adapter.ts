@@ -43,13 +43,14 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     this.pb.authStore.clear();
   }
 
+  // @todo y a t il une faille ici ? si on force l'appel dans la console JS en faisant l'update sur la collecction avec l'id => si ça passe alors il faut mettre un hoo côté PocketBase
   async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {
     const user = this.getAuthUser();
     if (!user) throw new Error('Not authenticated');
 
     const newProfile: Profile = { ...profile, id: crypto.randomUUID() };
     const updatedProfiles = [...user.profiles, newProfile];
-    
+
     // In PB, we update the user model
     await this.pb.collection('users').update(user.id, {
       profiles: updatedProfiles,
@@ -70,7 +71,7 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     }
 
     const model = this.pb.authStore.model;
-    
+
     // Legacy support: extract profile from user model if no explicit profiles list
     const mainProfile: Profile = {
       id: model.id,

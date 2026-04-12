@@ -1,10 +1,10 @@
-import { Injectable, signal, effect, inject, computed } from '@angular/core';
-import { ProtocolItem, SymptomItem, PROTOCOL_ADAPTER } from './protocol.interface';
+import { Injectable, signal, effect, inject, computed, untracked } from '@angular/core';
+import { ProtocolItem, SymptomItem, MedicsShieldItem, PROTOCOL_ADAPTER } from './protocol.interface';
 import { AuthService } from './auth.service';
 import { ThemeService, AppTheme } from './theme.service';
 import { forkJoin } from 'rxjs';
 
-export type { ProtocolItem, SymptomItem };
+export type { ProtocolItem, SymptomItem, MedicsShieldItem };
 
 export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
   reintroduction: [
@@ -20,6 +20,19 @@ export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
   ]
 };
 
+export const SHIELD_PRESETS: Record<string, MedicsShieldItem[]> = {
+  reintroduction: [
+    { id: 'msr1', label: 'Antihistaminique', emoji: '💊' },
+    { id: 'msr2', label: 'Aerius/Aeromire', emoji: '💊' },
+    { id: 'msr3', label: 'Adrénaline', emoji: '💉' },
+  ],
+  desensibilisation: [
+    { id: 'msd1', label: 'Antihistaminique', emoji: '💊' },
+    { id: 'msd2', label: 'Gouttes occulaires', emoji: '💧' },
+    { id: 'msd3', label: 'Ventoline', emoji: '💨' },
+  ]
+};
+
 @Injectable({
   providedIn: 'root'
 })
@@ -31,6 +44,7 @@ export class ActiveDossierService {
   public readonly protocols = signal<ProtocolItem[]>([]);
   public readonly protocolStartDate = signal<string | null>(null);
   public readonly symptoms = signal<SymptomItem[]>([]);
+  public readonly medicsShields = signal<MedicsShieldItem[]>([]);
   
   private dataLoaded = signal(false);
 
@@ -42,7 +56,7 @@ export class ActiveDossierService {
     effect(() => {
       const profile = this.auth.activeProfile();
       if (profile) {
-        this.loadProfileData(profile.id);
+        untracked(() => this.loadProfileData(profile.id));
         // Sync global theme with profile preference
         if (profile.themePreference) {
           this.theme.setTheme(profile.themePreference);
@@ -50,28 +64,25 @@ export class ActiveDossierService {
       }
     }, { allowSignalWrites: true });
 
-    // Auto-save effects - ONLY if data is already loaded to avoid overwriting with initial nulls
+    // Auto-save effect - watches all config signals and saves to backend
     effect(() => {
-      const current = this.protocols();
-      const profile = this.auth.activeProfile();
-      if (this.dataLoaded() && profile && this.auth.isAuthenticated()) {
-        this.adapter.saveProtocols(profile.id, current).subscribe();
-      }
-    });
+      if (!this.dataLoaded()) return;
 
-    effect(() => {
-      const start = this.protocolStartDate();
+      const protocols = this.protocols();
+      const startDate = this.protocolStartDate();
+      const symptoms = this.symptoms();
+      const medicsShields = this.medicsShields();
       const profile = this.auth.activeProfile();
-      if (this.dataLoaded() && profile && this.auth.isAuthenticated()) {
-        this.adapter.saveProtocolStartDate(profile.id, start).subscribe();
-      }
-    });
 
-    effect(() => {
-      const syms = this.symptoms();
-      const profile = this.auth.activeProfile();
-      if (this.dataLoaded() && profile && this.auth.isAuthenticated()) {
-        this.adapter.saveSymptoms(profile.id, syms).subscribe();
+      if (profile && this.auth.isAuthenticated()) {
+        untracked(() => {
+          this.adapter.saveFullConfig(profile.id, {
+            protocols,
+            startDate,
+            symptoms,
+            medicsShields
+          }).subscribe();
+        });
       }
     });
   }
@@ -82,20 +93,24 @@ export class ActiveDossierService {
     forkJoin({
       protocols: this.adapter.getProtocols(profileId),
       startDate: this.adapter.getProtocolStartDate(profileId),
-      symptoms: this.adapter.getSymptoms(profileId)
+      symptoms: this.adapter.getSymptoms(profileId),
+      shields: this.adapter.getMedicsShields(profileId)
     }).subscribe({
-      next: ({ protocols, startDate, symptoms }) => {
-        this.protocols.set(protocols.length > 0 ? protocols : this.getDefaultProtocols());
+      next: ({ protocols, startDate, symptoms, shields }) => {
+        // Atomic update of signals
+        this.protocols.set(protocols && protocols.length > 0 ? protocols : this.getDefaultProtocols());
         this.protocolStartDate.set(startDate);
-        this.symptoms.set(symptoms.length > 0 ? symptoms : SYMPTOM_PRESETS['reintroduction']);
+        this.symptoms.set(symptoms && symptoms.length > 0 ? symptoms : SYMPTOM_PRESETS['reintroduction']);
+        this.medicsShields.set(shields && shields.length > 0 ? shields : SHIELD_PRESETS['reintroduction']);
+        
         this.migrateProtocols();
         this.dataLoaded.set(true);
       },
       error: (err) => {
         console.error('[ActiveDossierService] Load failed', err);
-        // Fallback to defaults anyway to allow editing
         this.protocols.set(this.getDefaultProtocols());
         this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
+        this.medicsShields.set(SHIELD_PRESETS['reintroduction']);
         this.dataLoaded.set(true);
       }
     });
@@ -147,8 +162,16 @@ export class ActiveDossierService {
     this.symptoms.set(newSymptoms);
   }
 
+  public updateMedicsShields(newShields: MedicsShieldItem[]) {
+    this.medicsShields.set(newShields);
+  }
+
   public applySymptomPreset(preset: 'reintroduction' | 'desensibilisation') {
     this.symptoms.set(SYMPTOM_PRESETS[preset].map(s => ({ ...s, id: crypto.randomUUID() })));
+  }
+
+  public applyShieldPreset(preset: 'reintroduction' | 'desensibilisation') {
+    this.medicsShields.set(SHIELD_PRESETS[preset].map(s => ({ ...s, id: crypto.randomUUID() })));
   }
 
   public isProtocolDue(item: ProtocolItem, targetDate: string): boolean {

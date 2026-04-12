@@ -10,7 +10,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { LucideAngularModule, Activity, Check, Pill, Settings, UserPlus, Lock } from 'lucide-angular';
 import { Symptom } from '../models/allergy-track.model';
 import { SymptomItem } from '../services/protocol.interface';
-import { getSymptomEmoji, getTreatmentIcon } from '../utils/allergy.constants';
+import { getSymptomEmoji } from '../utils/allergy.constants';
 
 import { AuthService } from '../services/auth.service';
 
@@ -163,7 +163,7 @@ import { AuthService } from '../services/auth.service';
                   <div class="absolute left-0 top-4 bottom-4 w-1.5 rounded-r-md bg-emerald-400"></div>
                   <div class="flex items-center gap-4 pl-3 flex-1">
                     <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl">
-                      {{ getTreatmentIcon(treatment.get('name')?.value) }}
+                      {{ getShieldEmoji(treatment.get('name')?.value) }}
                     </div>
                     <span class="font-bold text-[var(--color-text)]">{{ treatment.get('name')?.value }}</span>
                   </div>
@@ -354,7 +354,11 @@ export class DailyEntryComponent {
   }
 
   getSymptomEmoji = getSymptomEmoji;
-  getTreatmentIcon = getTreatmentIcon;
+  
+  getShieldEmoji(name: string): string {
+    const shield = this.protocolService.medicsShields().find(s => s.label === name);
+    return shield?.emoji || '💊';
+  }
 
   toggleIntake(index: number) {
     if (this.form.disabled) return;

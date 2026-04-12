@@ -22,10 +22,11 @@ export class ProtocolFormService {
     const currentProtocols = this.activeDossier.protocols();
     const startDate = this.activeDossier.protocolStartDate() || '';
 
-    form.patchValue({ startDate });
+    form.patchValue({ startDate }, { emitEvent: false });
     currentProtocols.forEach(p => {
       protocolsArray.push(this.createProtocolFormGroup(p));
     });
+    form.markAsPristine();
   }
 
   createProtocolFormGroup(item?: ProtocolItem): FormGroup {
@@ -52,7 +53,9 @@ export class ProtocolFormService {
 
   save(form: FormGroup) {
     if (form.valid) {
-      this.activeDossier.updateProtocols(form.value.items);
+      // Ensure we take a fresh copy of the form values
+      const protocols = [...form.value.items];
+      this.activeDossier.updateProtocols(protocols);
       this.activeDossier.updateStartDate(form.value.startDate);
       form.markAsPristine();
       return true;

@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 import { SharingService } from '../services/sharing.service';
@@ -191,6 +192,7 @@ export class OnboardingComponent {
   private auth = inject(AuthService);
   private profileService = inject(ProfileService);
   private sharingService = inject(SharingService);
+  private router = inject(Router);
 
   step = signal<'birthdate' | 'choice' | 'proche_choice' | 'proche_create' | 'proche_join' | 'success_me'>('birthdate');
   loading = signal(false);
@@ -242,6 +244,7 @@ export class OnboardingComponent {
         isLocal: true
       });
       this.auth.checkSession();
+      this.router.navigate(['/settings']);
     } catch (e) {
       console.error('Proche creation failed', e);
       this.error.set("Erreur lors de la création du dossier.");
@@ -255,6 +258,8 @@ export class OnboardingComponent {
     this.error.set(null);
     try {
       await this.sharingService.joinDossier(this.inviteCode);
+      this.auth.checkSession();
+      this.router.navigate(['/settings']);
     } catch (e) {
       console.error('Join failed', e);
       this.error.set("Code invalide ou dossier introuvable.");
@@ -264,8 +269,8 @@ export class OnboardingComponent {
   }
 
   finishOnboarding() {
-    (window as any).dispatchTabChange?.('preferences');
     this.auth.checkSession();
+    this.router.navigate(['/settings']);
   }
 
   readonly Sparkles = Sparkles;

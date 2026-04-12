@@ -36,16 +36,21 @@ export class DailyFormService {
   private protocolService = inject(ActiveDossierService);
 
   createForm(): FormGroup {
+    const shields = this.protocolService.medicsShields();
     return this.fb.group({
       id: [crypto.randomUUID()],
       date: [new Date().toISOString().split('T')[0], Validators.required],
       intakes: this.fb.array([], { validators: atLeastOneTakenValidator() }),
       symptoms: this.fb.array([], { validators: atLeastOneSymptomValidator() }),
-      treatments: this.fb.array([
-        this.createTreatmentGroup('Antihistaminique'),
-        this.createTreatmentGroup('Aerius/Aeromire'),
-        this.createTreatmentGroup('Adrénaline')
-      ]),
+      treatments: this.fb.array(
+        shields.length > 0 
+          ? shields.map(s => this.createTreatmentGroup(s.label))
+          : [
+              this.createTreatmentGroup('Antihistaminique'),
+              this.createTreatmentGroup('Aerius/Aeromire'),
+              this.createTreatmentGroup('Adrénaline')
+            ]
+      ),
       note: ['']
     });
   }
@@ -95,12 +100,28 @@ export class DailyFormService {
           intakesArray.push(group);
         });
 
-        // Explicitly patch treatments
-        log.treatments.forEach((treatment, i) => {
-          if (treatmentsArray.at(i)) {
-            treatmentsArray.at(i).patchValue(treatment);
-          }
-        });
+        // Sync treatments with current config if names match, otherwise just patch what we have
+        const currentShields = this.protocolService.medicsShields();
+        
+        // If we have a config, we re-build the array based on it
+        if (currentShields.length > 0) {
+          treatmentsArray.clear();
+          currentShields.forEach(shield => {
+            const savedTreatment = log.treatments.find(t => t.name === shield.label);
+            const group = this.createTreatmentGroup(shield.label);
+            if (savedTreatment) {
+              group.patchValue(savedTreatment);
+            }
+            treatmentsArray.push(group);
+          });
+        } else {
+          // Fallback legacy behavior
+          log.treatments.forEach((treatment, i) => {
+            if (treatmentsArray.at(i)) {
+              treatmentsArray.at(i).patchValue(treatment);
+            }
+          });
+        }
 
         // Patch symptoms
         symptomsArray.clear();
@@ -122,10 +143,18 @@ export class DailyFormService {
           intakesArray.push(this.createIntakeGroup(p.allergen, p.dose));
         });
 
-        // Reset treatments
-        treatmentsArray.controls.forEach(ctrl => {
-          ctrl.patchValue({ before: false, after: false });
-        });
+        // Reset treatments based on current config
+        const currentShields = this.protocolService.medicsShields();
+        if (currentShields.length > 0) {
+          treatmentsArray.clear();
+          currentShields.forEach(s => {
+            treatmentsArray.push(this.createTreatmentGroup(s.label));
+          });
+        } else {
+          treatmentsArray.controls.forEach(ctrl => {
+            ctrl.patchValue({ before: false, after: false });
+          });
+        }
 
         const symptomsArray = form.get('symptoms') as FormArray;
         symptomsArray.clear();

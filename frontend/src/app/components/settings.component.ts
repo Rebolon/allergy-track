@@ -5,6 +5,7 @@ import { AuthService } from '../services/auth.service';
 import { ActiveDossierService } from '../services/active-dossier.service';
 import { ProtocolFormComponent } from './settings/protocol-form.component';
 import { SymptomFormComponent } from './settings/symptom-form.component';
+import { MedicsShieldFormComponent } from './settings/medics-shield-form.component';
 import { SharingSettingsComponent } from './settings/sharing-settings.component';
 import { DossierManagementComponent } from './settings/dossier-management.component';
 
@@ -15,6 +16,7 @@ import { DossierManagementComponent } from './settings/dossier-management.compon
     NgClass, 
     ProtocolFormComponent, 
     SymptomFormComponent, 
+    MedicsShieldFormComponent,
     SharingSettingsComponent, 
     DossierManagementComponent
   ],
@@ -82,6 +84,9 @@ import { DossierManagementComponent } from './settings/dossier-management.compon
 
             <!-- Symptom Form -->
             <app-symptom-form />
+
+            <!-- Medics Shield Form -->
+            <app-medics-shield-form />
           </div>
         </div>
 

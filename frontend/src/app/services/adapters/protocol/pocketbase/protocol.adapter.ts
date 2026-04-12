@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
-import { ProtocolAdapter, ProtocolItem, SymptomItem } from '../../../protocol.interface';
+import { ProtocolAdapter, ProtocolItem, SymptomItem, MedicsShieldItem } from '../../../protocol.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -66,5 +66,20 @@ export class PocketbaseProtocolAdapter implements ProtocolAdapter {
 
   saveSymptoms(profileId: string, symptoms: SymptomItem[]): Observable<void> {
     return this.upsertConfig(profileId, { symptoms });
+  }
+
+  getMedicsShields(profileId: string): Observable<MedicsShieldItem[]> {
+    return this.getConfig(profileId).pipe(
+      map(config => config?.medicsShields || []),
+      catchError(() => of([]))
+    );
+  }
+
+  saveMedicsShields(profileId: string, medicsShields: MedicsShieldItem[]): Observable<void> {
+    return this.upsertConfig(profileId, { medicsShields });
+  }
+
+  saveFullConfig(profileId: string, config: any): Observable<void> {
+    return this.upsertConfig(profileId, config);
   }
 }
