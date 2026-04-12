@@ -5,12 +5,13 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 import { SharingService } from '../services/sharing.service';
+import { ActiveDossierService } from '../services/active-dossier.service';
 import { LucideAngularModule, Heart, Users, ArrowRight, Sparkles, UserPlus, FolderHeart, CheckCircle2, AlertCircle, Calendar, Zap, ShieldCheck } from 'lucide-angular';
 import { ProtocolFormComponent } from './settings/protocol-form.component';
 import { SymptomFormComponent } from './settings/symptom-form.component';
 import { MedicsShieldFormComponent } from './settings/medics-shield-form.component';
 
-type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create' | 'proche_join' | 'config_protocol' | 'config_symptoms' | 'config_shields' | 'success_me';
+type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create' | 'proche_join' | 'protocol_type' | 'config_protocol' | 'config_symptoms' | 'config_shields' | 'success_me';
 
 @Component({
   selector: 'app-onboarding',
@@ -24,7 +25,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
     MedicsShieldFormComponent
   ],
   template: `
-    <div class="fixed inset-0 z-[110] bg-white flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
+    <div class="min-h-screen bg-white flex flex-col items-center justify-center p-6 text-center">
       
       <div class="max-w-md w-full space-y-8 animate-in fade-in zoom-in duration-500 py-12">
         
@@ -166,6 +167,34 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
           </div>
         }
 
+        <!-- STEP: Protocol Type Selection -->
+        @if (step() === 'protocol_type') {
+          <div class="space-y-6 text-left">
+            <h1 class="text-3xl font-black text-slate-800">Quel protocole suis-tu ?</h1>
+            <p class="text-slate-500 font-bold">Nous allons pré-configurer tes défis et tes symptômes.</p>
+            
+            <div class="grid grid-cols-1 gap-3">
+              <button (click)="setProtocolType('reintroduction')" 
+                      class="p-5 border-2 border-slate-100 rounded-3xl hover:border-emerald-400 hover:bg-emerald-50 transition-all text-left flex items-center gap-4">
+                <span class="text-3xl">🍽️</span>
+                <div>
+                  <p class="font-black text-slate-800">Réintroduction alimentaire</p>
+                  <p class="text-xs font-bold text-slate-400 uppercase">Lait, Oeuf, Arachide...</p>
+                </div>
+              </button>
+
+              <button (click)="setProtocolType('desensibilisation')" 
+                      class="p-5 border-2 border-slate-100 rounded-3xl hover:border-blue-400 hover:bg-blue-50 transition-all text-left flex items-center gap-4">
+                <span class="text-3xl">💉</span>
+                <div>
+                  <p class="font-black text-slate-800">Désensibilisation</p>
+                  <p class="text-xs font-bold text-slate-400 uppercase">Acariens, Pollens...</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        }
+
         <!-- STEP: Config Protocol -->
         @if (step() === 'config_protocol') {
           <div class="space-y-6">
@@ -174,8 +203,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
                 <lucide-icon [img]="Calendar" [size]="24"></lucide-icon>
               </div>
               <div>
-                <h1 class="text-2xl font-black text-slate-800 leading-tight">Tes Défis Gourmands</h1>
-                <p class="text-slate-500 font-bold text-sm">Quand commences-tu et quels sont les allergènes ?</p>
+                <h1 class="text-2xl font-black text-slate-800 leading-tight">Quand commences-tu et quels sont tes allergènes ?</h1>
               </div>
             </div>
             
@@ -191,8 +219,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
                 <lucide-icon [img]="Zap" [size]="24"></lucide-icon>
               </div>
               <div>
-                <h1 class="text-2xl font-black text-slate-800 leading-tight">Signaux d'alerte</h1>
-                <p class="text-slate-500 font-bold text-sm">Quels symptômes souhaites-tu surveiller ?</p>
+                <h1 class="text-2xl font-black text-slate-800 leading-tight">Quels symptômes souhaites-tu surveiller ?</h1>
               </div>
             </div>
             
@@ -208,8 +235,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
                 <lucide-icon [img]="ShieldCheck" [size]="24"></lucide-icon>
               </div>
               <div>
-                <h1 class="text-2xl font-black text-slate-800 leading-tight">Boucliers Magiques</h1>
-                <p class="text-slate-500 font-bold text-sm">Quels médicaments as-tu à disposition ?</p>
+                <h1 class="text-2xl font-black text-slate-800 leading-tight">Quels médicaments as-tu à disposition ?</h1>
               </div>
             </div>
             
@@ -255,15 +281,16 @@ export class OnboardingComponent {
   private auth = inject(AuthService);
   private profileService = inject(ProfileService);
   private sharingService = inject(SharingService);
+  private activeDossier = inject(ActiveDossierService);
   private router = inject(Router);
 
   step = signal<OnboardingStep>('birthdate');
   loading = signal(false);
   error = signal<string | null>(null);
   
-  userBirthDate = '';
+  userBirthDate = '1990-01-01';
   procheName = '';
-  procheBirthDate = '';
+  procheBirthDate = '2015-01-01';
   inviteCode = '';
 
   goToChoice() {
@@ -287,9 +314,9 @@ export class OnboardingComponent {
         themePreference: 'colorful',
         isLocal: false
       });
-      // After profile creation, start config steps
+      // After profile creation, ask for protocol type
       this.auth.checkSession();
-      this.step.set('config_protocol');
+      this.step.set('protocol_type');
     } catch (e) {
       console.error('Me creation failed', e);
       this.error.set("Impossible de créer ton profil. Réessaye !");
@@ -308,15 +335,21 @@ export class OnboardingComponent {
         themePreference: 'colorful',
         isLocal: true
       });
-      // After profile creation, start config steps
+      // After profile creation, ask for protocol type
       this.auth.checkSession();
-      this.step.set('config_protocol');
+      this.step.set('protocol_type');
     } catch (e) {
       console.error('Proche creation failed', e);
       this.error.set("Erreur lors de la création du dossier.");
     } finally {
       this.loading.set(false);
     }
+  }
+
+  setProtocolType(type: 'reintroduction' | 'desensibilisation') {
+    this.activeDossier.applyProtocolTypePreset(type);
+    this.activeDossier.updateStartDate(new Date().toISOString().split('T')[0]);
+    this.step.set('config_protocol');
   }
 
   async joinDossier() {

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, effect } from '@angular/core';
+import { Component, inject, signal, OnInit, effect, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
@@ -146,13 +146,13 @@ export class SplashScreenComponent implements OnInit {
     effect(() => {
       const isAuth = this.auth.isAuthenticated();
       const isReady = this.auth.isReady();
-      
+
       if (!isAuth) {
-        this.isfadingOut.set(false);
+        untracked(() => this.isfadingOut.set(false));
       } else if (isReady) {
-        this.isfadingOut.set(true);
+        untracked(() => this.isfadingOut.set(true));
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   ngOnInit() {

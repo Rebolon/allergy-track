@@ -1,4 +1,4 @@
-import { Injectable, signal, Inject, PLATFORM_ID, effect } from '@angular/core';
+import { Injectable, signal, Inject, PLATFORM_ID, effect, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 
 export type AppTheme = 'classic' | 'colorful';
@@ -46,13 +46,13 @@ export class ThemeService {
         
         if (theme === 'colorful') {
           document.body.classList.add('theme-colorful');
-          this.persona.set('child');
+          untracked(() => this.persona.set('child'));
         } else {
           document.body.classList.remove('theme-colorful');
-          this.persona.set('teen');
+          untracked(() => this.persona.set('teen'));
         }
       }
-    }, { allowSignalWrites: true });
+    });
   }
 
   public toggleTheme(): void {

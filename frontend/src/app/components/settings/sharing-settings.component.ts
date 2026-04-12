@@ -17,7 +17,7 @@ import { PermissionLevel } from '../../models/allergy-track.model';
       
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <button (click)="generateInvite('editor')" 
-                class="p-6 bg-white border-4 border-violet-100 rounded-3xl text-left hover:border-violet-400 transition-all group shadow-sm">
+                class="p-6 bg-white border-2 border-violet-100 rounded-3xl text-left hover:border-violet-400 transition-all group shadow-sm">
           <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <lucide-icon [img]="ShieldCheck" [size]="24"></lucide-icon>
           </div>
@@ -26,7 +26,7 @@ import { PermissionLevel } from '../../models/allergy-track.model';
         </button>
 
         <button (click)="generateInvite('reader')" 
-                class="p-6 bg-white border-4 border-slate-100 rounded-3xl text-left hover:border-violet-400 transition-all group shadow-sm">
+                class="p-6 bg-white border-2 border-slate-100 rounded-3xl text-left hover:border-violet-400 transition-all group shadow-sm">
           <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <lucide-icon [img]="Eye" [size]="24"></lucide-icon>
           </div>

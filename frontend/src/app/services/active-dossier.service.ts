@@ -35,11 +35,12 @@ export const SHIELD_PRESETS: Record<string, MedicsShieldItem[]> = {
 
 export const PROTOCOL_PRESETS: Record<string, ProtocolItem[]> = {
   reintroduction: [
-    { id: 'p1', allergen: 'Lait de vache', dose: 1, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] },
-    { id: 'p2', allergen: 'Oeuf', dose: 1, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] }
+    { id: 'p1', allergen: 'Cracotte à la noix', dose: 1.5, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] },
+    { id: 'p2', allergen: 'Noix de cajou', dose: 1.5, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] },
+    { id: 'p3', allergen: 'Arachide', dose: 1.5, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] }
   ],
   desensibilisation: [
-    { id: 'p1', allergen: 'Pollens', dose: 1, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] }
+    { id: 'p1', allergen: 'Acariens', dose: 1, frequencyDays: 1, createdAt: new Date().toISOString().split('T')[0] }
   ]
 };
 
@@ -52,7 +53,7 @@ export class ActiveDossierService {
   private adapter = inject(PROTOCOL_ADAPTER);
 
   public readonly protocols = signal<ProtocolItem[]>([]);
-  public readonly protocolStartDate = signal<string | null>(null);
+  public readonly protocolStartDate = signal<string | null>(new Date().toISOString().split('T')[0]);
   public readonly symptoms = signal<SymptomItem[]>([]);
   public readonly medicsShields = signal<MedicsShieldItem[]>([]);
   
@@ -93,6 +94,12 @@ export class ActiveDossierService {
     });
   }
 
+  public applyProtocolTypePreset(type: 'reintroduction' | 'desensibilisation') {
+    this.applySymptomPreset(type);
+    this.applyShieldPreset(type);
+    this.protocols.set(PROTOCOL_PRESETS[type].map(p => ({ ...p, id: crypto.randomUUID() })));
+  }
+
   private loadProfileData(profileId: string) {
     this.dataLoaded.set(false);
     
@@ -105,7 +112,7 @@ export class ActiveDossierService {
       next: ({ protocols, startDate, symptoms, shields }) => {
         // Atomic update
         this.protocols.set(protocols?.length ? protocols : PROTOCOL_PRESETS['reintroduction']);
-        this.protocolStartDate.set(startDate);
+        this.protocolStartDate.set(startDate || new Date().toISOString().split('T')[0]);
         this.symptoms.set(symptoms?.length ? symptoms : SYMPTOM_PRESETS['reintroduction']);
         this.medicsShields.set(shields?.length ? shields : SHIELD_PRESETS['reintroduction']);
         

@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit, effect } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit, effect, computed } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
 import { AuthService } from './services/auth.service';
@@ -36,36 +36,32 @@ import { ErrorService } from './services/error.service';
     <app-splash-screen />
 
     @if (auth.isAuthenticated()) {
-      <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
-        
-        <!-- Header / Auth Switcher -->
-        <app-layout-header />
-
-        <!-- Navigation (Hidden if in onboarding) -->
-        @if (!isOnboarding()) {
-          <app-top-nav></app-top-nav>
-        }
-
-        <!-- Main Content -->
-        <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
-          
+      
+      @if (isOnboarding()) {
+        <!-- Isolated Onboarding Layout -->
+        <main>
           <router-outlet />
-          
-          <!-- Footer -->
-          <app-layout-footer class="hidden md:block mt-8" />
-          
         </main>
+      } @else {
+        <!-- Main Application Layout -->
+        <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
+          
+          <app-layout-header />
 
-        <!-- Bottom Nav (Hidden if in onboarding) -->
-        @if (!isOnboarding()) {
-          <app-bottom-nav></app-bottom-nav>
-        }
+          <app-top-nav />
 
-        <!-- Modals -->
-        @if (errorService.serverError(); as serverErrorMsg) {
-          <app-global-error-modal [message]="serverErrorMsg" />
-        }
-      </div> 
+          <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
+            <router-outlet />
+            <app-layout-footer class="hidden md:block mt-8" />
+          </main>
+
+          <app-bottom-nav />
+
+          @if (errorService.serverError(); as serverErrorMsg) {
+            <app-global-error-modal [message]="serverErrorMsg" />
+          }
+        </div> 
+      }
     }
   `
 })
