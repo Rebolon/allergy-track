@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { User, Role, Profile } from '../models/allergy-track.model';
-import { AUTH_ADAPTER } from './adapters/auth.adapter';
+import { AUTH_ADAPTER } from './auth.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -26,13 +26,6 @@ export class AuthService {
       this.currentUser.set(user);
       if (user && user.profiles.length > 0) {
         this.activeProfile.set(user.profiles[0]);
-      }
-    } else {
-      const defaultUser = this.adapter.getUsers().find(u => u.id === 'u2') || null;
-      this.currentUser.set(defaultUser);
-      this.isAuthenticated.set(!!defaultUser);
-      if (defaultUser && defaultUser.profiles.length > 0) {
-        this.activeProfile.set(defaultUser.profiles[0]);
       }
     }
     this.isReady.set(true);
@@ -61,17 +54,27 @@ export class AuthService {
     this.isAuthenticated.set(false);
   }
 
+  updateProfile(profile: Profile) {
+    const user = this.currentUser();
+    if (user) {
+      const pIdx = user.profiles.findIndex(p => p.id === profile.id);
+      if (pIdx !== -1) {
+        user.profiles[pIdx] = { ...profile };
+        this.adapter.updateUser(user);
+        this.currentUser.set({ ...user });
+        
+        if (this.activeProfile()?.id === profile.id) {
+          this.activeProfile.set({ ...profile });
+        }
+      }
+    }
+  }
+
   updateProfileTheme(newTheme: 'flashy' | 'classic') {
     const profile = this.activeProfile();
-    const user = this.currentUser();
-    if (profile && user) {
+    if (profile) {
       profile.themePreference = newTheme;
-      const pIdx = user.profiles.findIndex(p => p.id === profile.id);
-      if (pIdx !== -1) user.profiles[pIdx] = { ...profile };
-      
-      this.adapter.updateUser(user);
-      this.activeProfile.set({ ...profile });
-      this.currentUser.set({ ...user });
+      this.updateProfile(profile);
     }
   }
 

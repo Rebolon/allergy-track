@@ -2,13 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { DailyLog } from '../../models/allergy-track.model';
-import { PersistenceAdapter } from './persistence.interface';
+import { DailyLog } from '../../../../models/allergy-track.model';
+import { DailyLogsAdapter } from '../../../daily-logs.interface';
 
 @Injectable({
   providedIn: 'root'
 })
-export class PocketbaseAdapterService implements PersistenceAdapter {
+export class PocketbaseDailyLogsAdapter implements DailyLogsAdapter {
   // Since the frontend runs from PocketBase's static server, relative paths hit its own API.
   private apiUrl = '/api/collections';
   private http = inject(HttpClient);

@@ -41,6 +41,7 @@ import { ProfileSwitcherComponent } from './components/layout/profile-switcher.c
     ProfileSwitcherComponent,
     GlobalErrorModalComponent,
     SplashScreenComponent,
+    SettingsComponent,
     MatIconModule
   ],
   template: `

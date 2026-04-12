@@ -25,7 +25,7 @@ import { LucideAngularModule, User as UserIcon, Plus } from 'lucide-angular';
             <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px]"
                  [class.bg-white/20]="activeProfile()?.id === profile.id"
                  [class.bg-slate-100]="activeProfile()?.id !== profile.id">
-              {{ profile.role === 'Supervision' ? '🏠' : '👶' }}
+              {{ getDisplayAvatar(profile) }}
             </div>
             {{ profile.name }}
           </button>
@@ -55,6 +55,18 @@ export class ProfileSwitcherComponent {
   
   profiles = computed(() => this.auth.currentUser()?.profiles || []);
   activeProfile = this.auth.activeProfile;
+
+  getDisplayAvatar(profile: any): string {
+    const skinToneModifiers: Record<string, string> = {
+      'light': '\u{1F3FB}',
+      'dark': '\u{1F3FF}'
+    };
+    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : '👶');
+    const modifier = profile.avatarSkinTone && skinToneModifiers[profile.avatarSkinTone] ? skinToneModifiers[profile.avatarSkinTone] : '';
+    
+    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
+    return base + (!noSkinTone.includes(base) ? modifier : '');
+  }
 
   readonly UserIcon = UserIcon;
   readonly Plus = Plus;

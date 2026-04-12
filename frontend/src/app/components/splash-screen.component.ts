@@ -25,10 +25,7 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
         <!-- Logo Animation -->
         <div class="relative mt-8">
           <div class="w-24 h-24 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-[2rem] shadow-2xl flex items-center justify-center animate-bounce-slow">
-            <span class="text-5xl">🍎</span>
-          </div>
-          <div class="absolute -bottom-1 -right-1 w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-emerald-600 border border-slate-100">
-            <lucide-icon [img]="ShieldCheck" [size]="20" [strokeWidth]="2.5"></lucide-icon>
+            <lucide-icon [img]="ShieldCheck" [size]="48" [strokeWidth]="2.5" class="text-white"></lucide-icon>
           </div>
         </div>
 
@@ -36,7 +33,7 @@ import { LucideAngularModule, ShieldCheck, ArrowRight, Mail, Lock } from 'lucide
           <h1 class="text-3xl font-black tracking-tight text-slate-800">
              Allergy <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500 font-black">Track</span>
           </h1>
-          <p class="text-slate-500 font-bold">Sécurisation de tes données...</p>
+          <p class="text-slate-500 font-bold">{{ auth.isAuthenticated() ? 'Sécurisation de tes données...' : 'Bienvenue' }}</p>
         </div>
 
         <!-- Conditional Content -->

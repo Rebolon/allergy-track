@@ -175,7 +175,7 @@ import { ProfileService } from '../services/profile.service';
       </div>
 
       <!-- Family Settings (Managed Profiles) -->
-      @if (auth.currentUser().profiles.length > 0) {
+      @if (auth.currentUser()?.profiles; as profiles) {
         <div [ngClass]="theme.cardClass()">
           <h2 class="text-2xl font-black mb-6 flex items-center gap-3 text-[var(--color-primary)]">
             <span class="text-3xl">👨‍👩‍👧‍👦</span> Ma Famille & Dossiers
@@ -183,30 +183,72 @@ import { ProfileService } from '../services/profile.service';
           <p class="text-[var(--color-text-muted)] text-sm mb-6 font-medium">Gérez ici les personnes que vous supervisez ou les dossiers partagés.</p>
 
           <div class="space-y-4 mb-8">
-            @for (profile of auth.currentUser().profiles; track profile.id) {
-              <div class="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <div class="flex items-center gap-4">
-                  <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl"
-                       [class.bg-violet-100]="profile.role === 'Supervision'"
-                       [class.bg-emerald-100]="profile.role === 'Allergique'">
-                    {{ profile.role === 'Supervision' ? '🏠' : '👶' }}
+            @for (profile of profiles; track profile.id) {
+              <div class="flex flex-col p-4 rounded-2xl bg-slate-50 border border-slate-100 gap-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-4">
+                    <button (click)="toggleEditAvatar(profile.id)" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl transition-transform hover:scale-110 active:scale-95 shadow-sm"
+                         [class.bg-violet-100]="profile.role === 'Supervision'"
+                         [class.bg-emerald-100]="profile.role === 'Allergique'">
+                      {{ getDisplayAvatar(profile) }}
+                    </button>
+                    <div class="flex flex-col">
+                      <span class="font-bold text-slate-800">{{ profile.name }}</span>
+                      <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">
+                        {{ profile.role === 'Supervision' ? 'Superviseur' : 'Allergique' }}
+                        {{ profile.isLocal ? '• Dossier Local' : '• Compte Invité' }}
+                      </span>
+                    </div>
                   </div>
-                  <div class="flex flex-col">
-                    <span class="font-bold text-slate-800">{{ profile.name }}</span>
-                    <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">
-                      {{ profile.role === 'Supervision' ? 'Superviseur' : 'Allergique' }}
-                      {{ profile.isLocal ? '• Dossier Local' : '• Compte Invité' }}
-                    </span>
+                  
+                  <div class="flex items-center gap-2">
+                    <button (click)="toggleEditAvatar(profile.id)" 
+                            class="p-2 text-slate-400 hover:text-[var(--color-primary)] transition-colors">
+                      <span class="text-xl">✏️</span>
+                    </button>
+                    @if (profile.id !== auth.activeProfile()?.id) {
+                      <button (click)="auth.switchProfile(profile.id)" 
+                              class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                        Basculer
+                      </button>
+                    } @else {
+                      <span class="px-4 py-2 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-xl text-sm font-black">Actif</span>
+                    }
                   </div>
                 </div>
-                
-                @if (profile.id !== auth.activeProfile()?.id) {
-                  <button (click)="auth.switchProfile(profile.id)" 
-                          class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                    Basculer
-                  </button>
-                } @else {
-                  <span class="px-4 py-2 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-xl text-sm font-black">Actif</span>
+
+                <!-- Avatar Selection Area -->
+                @if (editingProfileId() === profile.id) {
+                  <div class="p-4 bg-white rounded-xl border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                    <div class="mb-4">
+                      <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Choisir un emoji</span>
+                      <div class="flex flex-wrap gap-2">
+                        @for (av of avatarOptions; track av.emoji) {
+                          <button (click)="updateAvatar(profile, av.emoji)" 
+                                  [class.ring-2]="profile.avatar === av.emoji || (!profile.avatar && av.emoji === '👶')"
+                                  class="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-slate-100 rounded-lg text-xl transition-all ring-[var(--color-primary)]">
+                            {{ av.emoji }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+
+                    @if (showSkinTones(profile)) {
+                      <div>
+                        <span class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Couleur de peau</span>
+                        <div class="flex gap-3">
+                          @for (tone of skinTones; track tone.value) {
+                            <button (click)="updateSkinTone(profile, tone.value)"
+                                    class="w-8 h-8 rounded-full border-2 transition-transform hover:scale-110"
+                                    [style.backgroundColor]="tone.color"
+                                    [class.border-[var(--color-primary)]]="(profile.avatarSkinTone || 'default') === tone.value"
+                                    [class.border-transparent]="(profile.avatarSkinTone || 'default') !== tone.value">
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
                 }
               </div>
             }
@@ -272,6 +314,24 @@ export class SettingsComponent implements OnInit {
   saveSuccess = signal<boolean>(false);
   saveSymptomSuccess = signal<boolean>(false);
   inviteCode = signal<string | null>(null);
+  editingProfileId = signal<string | null>(null);
+
+  avatarOptions = [
+    { emoji: '👶' }, { emoji: '👨' }, { emoji: '👩' }, 
+    { emoji: '🧑‍🦱' }, { emoji: '👩‍🦱' }, { emoji: '👦' }, { emoji: '👧' },
+    { emoji: '🐱' }, { emoji: '🐶' }, { emoji: '🐷' }, { emoji: '🐮' }, { emoji: '👽' }
+  ];
+
+  skinTones = [
+    { value: 'default', color: '#FFCC22' },
+    { value: 'light', color: '#F7D7C4' },
+    { value: 'dark', color: '#8D5524' }
+  ] as const;
+
+  skinToneModifiers: Record<string, string> = {
+    'light': '\u{1F3FB}',
+    'dark': '\u{1F3FF}'
+  };
 
   protocolForm: FormGroup = this.fb.group({
     startDate: [new Date().toISOString().split('T')[0], Validators.required],
@@ -290,6 +350,37 @@ export class SettingsComponent implements OnInit {
     // Re-init forms when active profile changes to show correct configuration
     // (In case user switches profile directly in settings)
     this.auth.activeProfile(); // Track signal
+  }
+
+  toggleEditAvatar(id: string) {
+    if (this.editingProfileId() === id) this.editingProfileId.set(null);
+    else this.editingProfileId.set(id);
+  }
+
+  getDisplayAvatar(profile: any): string {
+    const base = profile.avatar || (profile.role === 'Supervision' ? '🏠' : '👶');
+    const modifier = profile.avatarSkinTone && this.skinToneModifiers[profile.avatarSkinTone] ? this.skinToneModifiers[profile.avatarSkinTone] : '';
+    return base + (this.showSkinTones(profile) ? modifier : '');
+  }
+
+  showSkinTones(profile: any): boolean {
+    const base = profile.avatar || '👶';
+    const noSkinTone = ['🏠', '🐱', '🐶', '🐷', '🐮', '👽'];
+    return !noSkinTone.includes(base);
+  }
+
+  async updateAvatar(profile: any, emoji: string) {
+    profile.avatar = emoji;
+    this.saveProfileUpdate(profile);
+  }
+
+  async updateSkinTone(profile: any, tone: any) {
+    profile.avatarSkinTone = tone;
+    this.saveProfileUpdate(profile);
+  }
+
+  private saveProfileUpdate(profile: any) {
+    this.auth.updateProfile(profile);
   }
 
   async createChild(name: string) {

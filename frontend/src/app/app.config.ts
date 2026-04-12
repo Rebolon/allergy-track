@@ -12,12 +12,15 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { LOCALE_ID } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localeFr from '@angular/common/locales/fr';
-import { PERSISTENCE_ADAPTER } from './services/persistence/persistence.interface';
-import { PocketbaseAdapterService } from './services/persistence/pocketbase-adapter.service';
-import { AUTH_ADAPTER } from './services/adapters/auth.adapter';
-import { MockAuthAdapter } from './services/adapters/mock-auth.adapter';
-import { PocketbaseAuthAdapter } from './services/adapters/pocketbase-auth.adapter';
-import { LocalStorageAdapterService } from './services/persistence/local-storage-adapter.service';
+import { DAILY_LOGS_ADAPTER } from './services/daily-logs.interface';
+import { PocketbaseDailyLogsAdapter } from './services/adapters/daily-logs/pocketbase/daily-logs.adapter';
+import { PROTOCOL_ADAPTER } from './services/protocol.interface';
+import { PocketbaseProtocolAdapter } from './services/adapters/protocol/pocketbase/protocol.adapter';
+import { LocalStorageProtocolAdapter } from './services/adapters/protocol/local-storage/protocol.adapter';
+import { AUTH_ADAPTER } from './services/auth.interface';
+import { MockAuthAdapter } from './services/adapters/auth/local-storage/mock-auth.adapter';
+import { PocketbaseAuthAdapter } from './services/adapters/auth/pocketbase/auth.adapter';
+import { LocalStorageDailyLogsAdapter } from './services/adapters/daily-logs/local-storage/daily-logs.adapter';
 import { environment } from '../environments/environment';
 
 registerLocaleData(localeFr);
@@ -37,8 +40,12 @@ export const appConfig: ApplicationConfig = {
       useClass: environment.useMockAuth ? MockAuthAdapter : PocketbaseAuthAdapter 
     },
     { 
-      provide: PERSISTENCE_ADAPTER, 
-      useClass: environment.useMockAuth ? LocalStorageAdapterService : PocketbaseAdapterService 
+      provide: DAILY_LOGS_ADAPTER, 
+      useClass: environment.useMockAuth ? LocalStorageDailyLogsAdapter : PocketbaseDailyLogsAdapter 
+    },
+    {
+      provide: PROTOCOL_ADAPTER,
+      useClass: environment.useMockAuth ? LocalStorageProtocolAdapter : PocketbaseProtocolAdapter
     }
   ],
 };

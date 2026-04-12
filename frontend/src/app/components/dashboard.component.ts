@@ -9,7 +9,8 @@ import { ThemeService } from '../services/theme.service';
 import { CopywritingService } from '../services/copywriting.service';
 import { HealthStatus } from '../models/allergy-track.model';
 import { LucideAngularModule } from 'lucide-angular';
-import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
+import { DailyLogsService } from '../services/daily-logs.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -83,7 +84,8 @@ import { PocketbaseAdapterService } from '../services/persistence/pocketbase-ada
 })
 export class DashboardComponent {
   private reportService = inject(ReportService);
-  private persistence = inject(PocketbaseAdapterService);
+  private dailyLogsService = inject(DailyLogsService);
+  private auth = inject(AuthService);
   private protocolService = inject(ProtocolService);
   gamification = inject(GamificationService);
   theme = inject(ThemeService);
@@ -102,15 +104,20 @@ export class DashboardComponent {
         this.startDate = configuredStart;
         this.loadStatus();
       } else {
-        this.persistence.getFirstEntryDate().subscribe({
-          next: (date) => {
-            if (date) {
-              this.startDate = date;
-            }
-            this.loadStatus();
-          },
-          error: () => this.loadStatus()
-        });
+        const activeId = this.auth.activeProfile()?.id;
+        if (activeId) {
+          this.dailyLogsService.getFirstEntryDate(activeId).subscribe({
+            next: (date) => {
+              if (date) {
+                this.startDate = date;
+              }
+              this.loadStatus();
+            },
+            error: () => this.loadStatus()
+          });
+        } else {
+          this.loadStatus();
+        }
       }
     }
   }

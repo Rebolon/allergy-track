@@ -1,19 +1,8 @@
-import { Injectable, signal, Inject, PLATFORM_ID, effect, inject } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
+import { Injectable, signal, effect, inject } from '@angular/core';
+import { ProtocolItem, SymptomItem, PROTOCOL_ADAPTER } from './protocol.interface';
+import { AuthService } from './auth.service';
 
-export interface ProtocolItem {
-  id: string;
-  allergen: string;
-  dose: number;
-  frequencyDays: number;
-  createdAt: string; // ISO date string without time 'YYYY-MM-DD'
-}
-
-export interface SymptomItem {
-  id: string;
-  label: string;
-  emoji: string; // optional but always stored, empty string if not set
-}
+export type { ProtocolItem, SymptomItem };
 
 export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
   reintroduction: [
@@ -29,94 +18,73 @@ export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
   ]
 };
 
-import { AuthService } from './auth.service';
-
 @Injectable({
   providedIn: 'root'
 })
 export class ProtocolService {
   private auth = inject(AuthService);
-  
-  private get PROTOCOL_KEY() {
-    const profile = this.auth.activeProfile();
-    return `allergy_track_protocols_${profile?.id || 'default'}`;
-  }
-  private get PROTOCOL_START_KEY() {
-    const profile = this.auth.activeProfile();
-    return `allergy_track_start_date_${profile?.id || 'default'}`;
-  }
-  private get SYMPTOMS_KEY() {
-    const profile = this.auth.activeProfile();
-    return `allergy_track_symptoms_${profile?.id || 'default'}`;
-  }
-  
+  private adapter = inject(PROTOCOL_ADAPTER);
+
   public readonly protocols = signal<ProtocolItem[]>(this.getDefaultProtocols());
   public readonly protocolStartDate = signal<string | null>(null);
   public readonly symptoms = signal<SymptomItem[]>(SYMPTOM_PRESETS['reintroduction']);
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+  constructor() {
     // Watch for profile changes to reload data
     effect(() => {
       const profile = this.auth.activeProfile();
-      if (profile && isPlatformBrowser(this.platformId)) {
-        this.loadProfileData();
+      if (profile) {
+        this.loadProfileData(profile.id);
       }
     }, { allowSignalWrites: true });
 
     // Auto-save effects
     effect(() => {
       const current = this.protocols();
-      if (isPlatformBrowser(this.platformId) && this.auth.isAuthenticated()) {
-        localStorage.setItem(this.PROTOCOL_KEY, JSON.stringify(current));
+      const profile = this.auth.activeProfile();
+      if (profile && this.auth.isAuthenticated()) {
+        this.adapter.saveProtocols(profile.id, current).subscribe();
       }
     });
 
     effect(() => {
       const start = this.protocolStartDate();
-      if (isPlatformBrowser(this.platformId) && this.auth.isAuthenticated()) {
-        if (start) {
-          localStorage.setItem(this.PROTOCOL_START_KEY, start);
-        } else {
-          localStorage.removeItem(this.PROTOCOL_START_KEY);
-        }
+      const profile = this.auth.activeProfile();
+      if (profile && this.auth.isAuthenticated()) {
+        this.adapter.saveProtocolStartDate(profile.id, start).subscribe();
       }
     });
 
     effect(() => {
       const syms = this.symptoms();
-      if (isPlatformBrowser(this.platformId) && this.auth.isAuthenticated()) {
-        localStorage.setItem(this.SYMPTOMS_KEY, JSON.stringify(syms));
+      const profile = this.auth.activeProfile();
+      if (profile && this.auth.isAuthenticated()) {
+        this.adapter.saveSymptoms(profile.id, syms).subscribe();
       }
     });
   }
 
-  private loadProfileData() {
-    const saved = localStorage.getItem(this.PROTOCOL_KEY);
-    if (saved) {
-      try {
-        this.protocols.set(JSON.parse(saved));
-      } catch(e) {
+  private loadProfileData(profileId: string) {
+    this.adapter.getProtocols(profileId).subscribe(protocols => {
+      if (protocols && protocols.length > 0) {
+        this.protocols.set(protocols);
+      } else {
         this.protocols.set(this.getDefaultProtocols());
       }
-    } else {
-      this.protocols.set(this.getDefaultProtocols());
-    }
-    
-    const savedStart = localStorage.getItem(this.PROTOCOL_START_KEY);
-    this.protocolStartDate.set(savedStart || null);
+      this.migrateProtocols();
+    });
 
-    const savedSymptoms = localStorage.getItem(this.SYMPTOMS_KEY);
-    if (savedSymptoms) {
-      try {
-        this.symptoms.set(JSON.parse(savedSymptoms));
-      } catch(e) {
+    this.adapter.getProtocolStartDate(profileId).subscribe(start => {
+      this.protocolStartDate.set(start);
+    });
+
+    this.adapter.getSymptoms(profileId).subscribe(symptoms => {
+      if (symptoms && symptoms.length > 0) {
+        this.symptoms.set(symptoms);
+      } else {
         this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
       }
-    } else {
-      this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
-    }
-
-    this.migrateProtocols();
+    });
   }
 
   public updateStartDate(dateStr: string) {
@@ -167,21 +135,21 @@ export class ProtocolService {
 
   public isProtocolDue(item: ProtocolItem, targetDate: string): boolean {
     if (item.frequencyDays === 1) return true;
-    
+
     // Check if target date is >= createdAt
     if (targetDate < item.createdAt) return false;
 
     // Calculate diff in days
     const createdDate = new Date(item.createdAt);
     const target = new Date(targetDate);
-    
+
     // Reset times to compare strictly dates
     createdDate.setHours(0, 0, 0, 0);
     target.setHours(0, 0, 0, 0);
-    
+
     const diffTime = Math.abs(target.getTime() - createdDate.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-    
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
     return diffDays % item.frequencyDays === 0;
   }
 }

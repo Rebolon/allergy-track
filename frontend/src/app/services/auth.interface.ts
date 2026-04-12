@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { User, Profile } from '../../models/allergy-track.model';
+import { User, Profile } from '../models/allergy-track.model';
 
 export interface AuthAdapter {
   getUsers(): User[];

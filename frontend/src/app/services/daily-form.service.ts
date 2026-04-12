@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, FormControl, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Observable, throwError } from 'rxjs';
 import { DailyLog } from '../models/allergy-track.model';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { AuthService } from './auth.service';
 import { ProtocolService, ProtocolItem } from './protocol.service';
 
@@ -31,7 +31,7 @@ export function atLeastOneSymptomValidator(): ValidatorFn {
 })
 export class DailyFormService {
   private fb = inject(FormBuilder);
-  private persistence = inject(PERSISTENCE_ADAPTER);
+  private dailyLogsService = inject(DailyLogsService);
   private auth = inject(AuthService);
   private protocolService = inject(ProtocolService);
 
@@ -75,7 +75,7 @@ export class DailyFormService {
     const profile = this.auth.activeProfile();
     if (!profile) return;
 
-    this.persistence.getDailyLog(profile.id, date).subscribe(log => {
+    this.dailyLogsService.getDailyLog(profile.id, date).subscribe(log => {
       const intakesArray = form.get('intakes') as FormArray;
       const treatmentsArray = form.get('treatments') as FormArray;
       const symptomsArray = form.get('symptoms') as FormArray;
@@ -153,7 +153,7 @@ export class DailyFormService {
         profileId: profile.id
       };
 
-      return this.persistence.saveDailyLog(log);
+      return this.dailyLogsService.saveDailyLog(log);
     }
     return throwError(() => new Error('Form is invalid'));
   }

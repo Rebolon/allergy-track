@@ -2,7 +2,8 @@ import { Component, signal, computed, output, inject, OnInit, DestroyRef } from 
 import { NgClass } from '@angular/common';
 import { LucideAngularModule, ChevronLeft, ChevronRight } from 'lucide-angular';
 import { ThemeService } from '../services/theme.service';
-import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
+import { AuthService } from '../services/auth.service';
+import { DailyLogsService } from '../services/daily-logs.service';
 import { GamificationService } from '../services/gamification.service';
 import { ProtocolService } from '../services/protocol.service';
 import { DailyLog } from '../models/allergy-track.model';
@@ -102,7 +103,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 })
 export class AgendaComponent implements OnInit {
   theme = inject(ThemeService);
-  persistence = inject(PocketbaseAdapterService);
+  dailyLogsService = inject(DailyLogsService);
+  auth = inject(AuthService);
   gamification = inject(GamificationService);
   protocolService = inject(ProtocolService);
   private destroyRef = inject(DestroyRef);
@@ -139,8 +141,10 @@ export class AgendaComponent implements OnInit {
     const startStr = `${startY}-${startM}-${startD}`;
 
     const end = days[6].date;
+    const activeProfileId = this.auth.activeProfile()?.id;
+    if (!activeProfileId) return;
 
-    this.persistence.getDailyLogs(startStr, end).subscribe(logs => {
+    this.dailyLogsService.getDailyLogs(activeProfileId, startStr, end).subscribe(logs => {
       const logsMap = new Map<string, DailyLog>();
       logs.forEach(l => {
         if (!logsMap.has(l.date)) {
@@ -152,7 +156,10 @@ export class AgendaComponent implements OnInit {
   }
 
   refreshFirstEntryDate() {
-    this.persistence.getFirstEntryDate().pipe(take(1)).subscribe(date => {
+    const activeProfileId = this.auth.activeProfile()?.id;
+    if (!activeProfileId) return;
+
+    this.dailyLogsService.getFirstEntryDate(activeProfileId).pipe(take(1)).subscribe(date => {
       const configuredStart = this.protocolService.protocolStartDate();
       this.firstEntryDate.set(configuredStart || date);
     });

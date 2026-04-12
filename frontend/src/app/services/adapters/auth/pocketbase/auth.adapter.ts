@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { AuthAdapter } from './auth.adapter';
-import { User, Role, Profile } from '../../models/allergy-track.model';
+import { AuthAdapter } from '../../../auth.interface';
+import { User, Role, Profile } from '../../../../models/allergy-track.model';
 import PocketBase from 'pocketbase';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -27,7 +27,9 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
       this.pb.collection('users').update(updatedUser.id, {
         name: updatedUser.name,
         role: primary.role,
-        themePreference: primary.themePreference
+        themePreference: primary.themePreference,
+        avatar: primary.avatar,
+        avatarSkinTone: primary.avatarSkinTone
       });
     }
   }
@@ -73,15 +75,17 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     // Dans une version future, on pourrait avoir une collection séparée pour les profils
     const mainProfile: Profile = {
       id: model.id,
-      name: model.name || model.username || 'Moi',
-      role: (model.role as Role) || 'Allergique',
-      themePreference: (model.themePreference as 'flashy' | 'classic') || 'classic'
+      name: model['name'] || model['username'] || 'Moi',
+      role: (model['role'] as Role) || 'Allergique',
+      themePreference: (model['themePreference'] as 'flashy' | 'classic') || 'classic',
+      avatar: model['avatar'],
+      avatarSkinTone: model['avatarSkinTone']
     };
 
     return {
       id: model.id,
-      email: model.email,
-      name: model.name || model.username || 'Utilisateur',
+      email: model['email'],
+      name: model['name'] || model['username'] || 'Utilisateur',
       profiles: [mainProfile]
     };
   }

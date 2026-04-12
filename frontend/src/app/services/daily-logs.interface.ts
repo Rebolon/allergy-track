@@ -1,8 +1,8 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
-import { DailyLog } from '../../models/allergy-track.model';
+import { DailyLog } from '../models/allergy-track.model';
 
-export interface PersistenceAdapter {
+export interface DailyLogsAdapter {
   getDailyLogs(profileId: string, startDate?: string, endDate?: string): Observable<DailyLog[]>;
   getDailyLog(profileId: string, date: string): Observable<DailyLog | null>;
   saveDailyLog(log: DailyLog): Observable<DailyLog>;
@@ -10,4 +10,4 @@ export interface PersistenceAdapter {
   getFirstEntryDate(profileId: string): Observable<string | null>;
 }
 
-export const PERSISTENCE_ADAPTER = new InjectionToken<PersistenceAdapter>('PERSISTENCE_ADAPTER');
+export const DAILY_LOGS_ADAPTER = new InjectionToken<DailyLogsAdapter>('DAILY_LOGS_ADAPTER');

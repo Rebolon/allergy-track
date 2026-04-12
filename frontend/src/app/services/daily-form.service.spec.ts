@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { DailyFormService, atLeastOneTakenValidator, atLeastOneSymptomValidator } from './daily-form.service';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { AuthService } from './auth.service';
 import { FormBuilder, FormArray, FormControl } from '@angular/forms';
 import { of } from 'rxjs';
@@ -24,7 +24,7 @@ describe('DailyFormService', () => {
       providers: [
         DailyFormService,
         FormBuilder,
-        { provide: PERSISTENCE_ADAPTER, useValue: pbMock },
+        { provide: DAILY_LOGS_ADAPTER, useValue: pbMock },
         { provide: AuthService, useValue: authMock }
       ]
     });

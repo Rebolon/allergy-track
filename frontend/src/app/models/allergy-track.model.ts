@@ -2,12 +2,16 @@ export type Symptom = 'Rien' | 'Démangeaisons bouche' | 'Respiratoire' | 'Abdom
 export type TreatmentName = 'Antihistaminique' | 'Aerius/Aeromire' | 'Adrénaline';
 export type Role = 'Supervision' | 'Allergique';
 
+export type AvatarSkinTone = 'default' | 'light' | 'dark';
+
 export interface Profile {
   id: string;
   name: string;
   role: Role;
   themePreference: 'flashy' | 'classic';
   isLocal?: boolean;
+  avatar?: string;
+  avatarSkinTone?: AvatarSkinTone;
 }
 
 export interface AllergenIntake {

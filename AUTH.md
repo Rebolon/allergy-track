@@ -32,7 +32,9 @@ Pour utiliser le bouton "Se connecter avec Synology" sur l'écran d'accueil :
 
 ## 3. Comportement du Frontend
 L'application Angular détecte automatiquement le mode de fonctionnement :
-- **Mode Développement (`ng serve`)** : Utilise le `MockAuthAdapter`. Aucun compte réel n'est requis (comptes `parent@example.com` ou `patient@example.com` pré-configurés).
+- **Mode Développement (`ng serve`)** : Utilise le `MockAuthAdapter`. 
+    - **Non connecté par défaut** pour permettre de tester le formulaire.
+    - **Comptes Mocks** : Utilisez `parent@example.com` ou `patient@example.com` avec le mot de passe **`demo`**.
 - **Mode Production (Docker)** : Utilise le `PocketbaseAuthAdapter`. Communique avec l'instance PocketBase locale.
 
 ## 4. Sécurité & HTTPS

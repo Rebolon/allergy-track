@@ -103,3 +103,4 @@ Pour travailler sur le frontend avec rechargement à chaud :
 - Check push notifications (Service Worker)
 - Optimization for multi-device real-time sync
 - Advanced charts for long-term health trends
+

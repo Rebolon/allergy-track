@@ -1,13 +1,13 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, of } from 'rxjs';
-import { PersistenceAdapter } from './persistence.interface';
-import { DailyLog } from '../../models/allergy-track.model';
+import { DailyLogsAdapter } from '../../../daily-logs.interface';
+import { DailyLog } from '../../../../models/allergy-track.model';
 
 @Injectable({
   providedIn: 'root'
 })
-export class LocalStorageAdapterService implements PersistenceAdapter {
+export class LocalStorageDailyLogsAdapter implements DailyLogsAdapter {
   private readonly DAILY_LOGS_KEY = 'allergy_track_daily_logs';
   private platformId = inject(PLATFORM_ID);
 

@@ -266,7 +266,7 @@ export class DailyEntryComponent {
 
   constructor() {
     effect(() => {
-      if (this.date() || this.formService.auth.activeProfile()) {
+      if (this.date() || this.auth.activeProfile()) {
         this.formService.loadLogForDate(this.form, this.date());
         this.saveSuccess.set(false);
         this.saveError.set(null);
