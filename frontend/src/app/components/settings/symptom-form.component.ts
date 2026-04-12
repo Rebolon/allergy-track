@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, effect, signal } from '@angular/core';
+import { Component, inject, OnInit, effect, signal, input, output } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormArray } from '@angular/forms';
 import { LucideAngularModule, Trash2, Plus } from 'lucide-angular';
 import { SymptomFormService } from '../../services/symptom-form.service';
@@ -9,8 +9,10 @@ import { AuthService } from '../../services/auth.service';
   standalone: true,
   imports: [ReactiveFormsModule, LucideAngularModule],
   template: `
-    <section class="space-y-6">
-      <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Symptômes Configurables</span>
+    <section class="space-y-6 text-left">
+      @if (!onboardingMode()) {
+        <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Symptômes Configurables</span>
+      }
       
       <div class="flex flex-wrap gap-2 mb-6">
         <button type="button" (click)="applyPreset('reintroduction')" class="px-4 py-2 rounded-xl border-2 border-violet-100 bg-white text-violet-600 font-bold text-xs hover:border-violet-200 transition-all">
@@ -44,12 +46,12 @@ import { AuthService } from '../../services/auth.service';
           <lucide-icon [img]="Plus" [size]="18"></lucide-icon> Ajouter un symptôme
         </button>
 
-        <button type="submit" [disabled]="form.invalid || !form.dirty" 
+        <button type="submit" [disabled]="form.invalid || (!form.dirty && !onboardingMode())" 
                 class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
-          Enregistrer les symptômes
+          {{ onboardingMode() ? 'Continuer' : 'Enregistrer les symptômes' }}
         </button>
 
-        @if (saveSuccess()) {
+        @if (saveSuccess() && !onboardingMode()) {
           <p class="mt-3 text-center text-emerald-600 font-black animate-bounce text-sm">✅ Symptômes mis à jour !</p>
         }
       </form>
@@ -59,6 +61,9 @@ import { AuthService } from '../../services/auth.service';
 export class SymptomFormComponent implements OnInit {
   private symptomFormService = inject(SymptomFormService);
   private auth = inject(AuthService);
+
+  onboardingMode = input<boolean>(false);
+  saved = output<void>();
 
   form: FormGroup = this.symptomFormService.createForm();
   saveSuccess = signal(false);
@@ -94,6 +99,7 @@ export class SymptomFormComponent implements OnInit {
   save() {
     if (this.symptomFormService.save(this.form)) {
       this.saveSuccess.set(true);
+      this.saved.emit();
       setTimeout(() => this.saveSuccess.set(false), 3000);
     }
   }

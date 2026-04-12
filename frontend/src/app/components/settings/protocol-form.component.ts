@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, effect, signal } from '@angular/core';
+import { Component, inject, OnInit, effect, signal, input, output } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormArray } from '@angular/forms';
 import { LucideAngularModule, Trash2, Plus } from 'lucide-angular';
 import { ProtocolFormService } from '../../services/protocol-form.service';
@@ -10,7 +10,9 @@ import { AuthService } from '../../services/auth.service';
   imports: [ReactiveFormsModule, LucideAngularModule],
   template: `
     <section class="space-y-6">
-      <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Configuration Protocole</span>
+      @if (!onboardingMode()) {
+        <span class="block text-sm font-black mb-4 uppercase text-slate-400 tracking-widest">Configuration Protocole</span>
+      }
       <form [formGroup]="form" (ngSubmit)="save()">
         <div class="mb-6 p-4 rounded-2xl bg-slate-50 border-2 border-slate-100 flex flex-col gap-2">
           <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Date de début</label>
@@ -42,12 +44,12 @@ import { AuthService } from '../../services/auth.service';
           <lucide-icon [img]="Plus" [size]="18"></lucide-icon> Ajouter une ligne
         </button>
 
-        <button type="submit" [disabled]="form.invalid || !form.dirty" 
+        <button type="submit" [disabled]="form.invalid || (!form.dirty && !onboardingMode())" 
                 class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg shadow-lg hover:bg-emerald-600 transition-all disabled:opacity-50">
-          Enregistrer le protocole
+          {{ onboardingMode() ? 'Continuer' : 'Enregistrer le protocole' }}
         </button>
         
-        @if (saveSuccess()) {
+        @if (saveSuccess() && !onboardingMode()) {
           <p class="mt-3 text-center text-emerald-600 font-black animate-bounce text-sm">✅ Protocole mis à jour !</p>
         }
       </form>
@@ -58,6 +60,9 @@ export class ProtocolFormComponent implements OnInit {
   private protocolFormService = inject(ProtocolFormService);
   private auth = inject(AuthService);
   
+  onboardingMode = input<boolean>(false);
+  saved = output<void>();
+
   form: FormGroup = this.protocolFormService.createForm();
   saveSuccess = signal(false);
 
@@ -88,6 +93,7 @@ export class ProtocolFormComponent implements OnInit {
   save() {
     if (this.protocolFormService.save(this.form)) {
       this.saveSuccess.set(true);
+      this.saved.emit();
       setTimeout(() => this.saveSuccess.set(false), 3000);
     }
   }

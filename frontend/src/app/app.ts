@@ -39,7 +39,7 @@ import { ErrorService } from './services/error.service';
         <app-layout-header />
 
         <!-- Desktop Nav -->
-        <app-top-nav [activeTab]="activeTab()"></app-top-nav>
+        <app-top-nav></app-top-nav>
 
         <!-- Main Content -->
         <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
@@ -52,7 +52,7 @@ import { ErrorService } from './services/error.service';
         </main>
 
         <!-- Bottom Nav (Bottom Only) -->
-        <app-bottom-nav [activeTab]="activeTab()"></app-bottom-nav>
+        <app-bottom-nav></app-bottom-nav>
 
         <!-- Modals -->
         @if (errorService.serverError(); as serverErrorMsg) {
@@ -74,6 +74,8 @@ export class App implements OnInit {
   activeTab = signal<MobileTab>('home');
 
   constructor() {
+    /** @todo is it really needed? I comment for instance*/
+    /* */
     // Sync activeTab with URL for components that might still use it
     this.router.events.pipe(
       filter(event => event instanceof NavigationEnd)
@@ -89,6 +91,7 @@ export class App implements OnInit {
       const route = tab === 'preferences' ? 'settings' : tab;
       this.router.navigate([`/${route}`]);
     };
+    /* */
   }
 
   ngOnInit() {

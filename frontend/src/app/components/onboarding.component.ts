@@ -5,12 +5,24 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 import { SharingService } from '../services/sharing.service';
-import { LucideAngularModule, Heart, Users, ArrowRight, Sparkles, UserPlus, FolderHeart, CheckCircle2, AlertCircle } from 'lucide-angular';
+import { LucideAngularModule, Heart, Users, ArrowRight, Sparkles, UserPlus, FolderHeart, CheckCircle2, AlertCircle, Calendar, Zap, ShieldCheck } from 'lucide-angular';
+import { ProtocolFormComponent } from './settings/protocol-form.component';
+import { SymptomFormComponent } from './settings/symptom-form.component';
+import { MedicsShieldFormComponent } from './settings/medics-shield-form.component';
+
+type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create' | 'proche_join' | 'config_protocol' | 'config_symptoms' | 'config_shields' | 'success_me';
 
 @Component({
   selector: 'app-onboarding',
   standalone: true,
-  imports: [CommonModule, FormsModule, LucideAngularModule],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    LucideAngularModule, 
+    ProtocolFormComponent, 
+    SymptomFormComponent, 
+    MedicsShieldFormComponent
+  ],
   template: `
     <div class="fixed inset-0 z-[110] bg-white flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
       
@@ -154,14 +166,65 @@ import { LucideAngularModule, Heart, Users, ArrowRight, Sparkles, UserPlus, Fold
           </div>
         }
 
-        <!-- Final Success Step (Mainly for Me) -->
+        <!-- STEP: Config Protocol -->
+        @if (step() === 'config_protocol') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-4 text-left">
+              <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
+                <lucide-icon [img]="Calendar" [size]="24"></lucide-icon>
+              </div>
+              <div>
+                <h1 class="text-2xl font-black text-slate-800 leading-tight">Tes Défis Gourmands</h1>
+                <p class="text-slate-500 font-bold text-sm">Quand commences-tu et quels sont les allergènes ?</p>
+              </div>
+            </div>
+            
+            <app-protocol-form [onboardingMode]="true" (saved)="step.set('config_symptoms')" />
+          </div>
+        }
+
+        <!-- STEP: Config Symptoms -->
+        @if (step() === 'config_symptoms') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-4 text-left">
+              <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center shrink-0">
+                <lucide-icon [img]="Zap" [size]="24"></lucide-icon>
+              </div>
+              <div>
+                <h1 class="text-2xl font-black text-slate-800 leading-tight">Signaux d'alerte</h1>
+                <p class="text-slate-500 font-bold text-sm">Quels symptômes souhaites-tu surveiller ?</p>
+              </div>
+            </div>
+            
+            <app-symptom-form [onboardingMode]="true" (saved)="step.set('config_shields')" />
+          </div>
+        }
+
+        <!-- STEP: Config Shields -->
+        @if (step() === 'config_shields') {
+          <div class="space-y-6">
+            <div class="flex items-center gap-4 text-left">
+              <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+                <lucide-icon [img]="ShieldCheck" [size]="24"></lucide-icon>
+              </div>
+              <div>
+                <h1 class="text-2xl font-black text-slate-800 leading-tight">Boucliers Magiques</h1>
+                <p class="text-slate-500 font-bold text-sm">Quels médicaments as-tu à disposition ?</p>
+              </div>
+            </div>
+            
+            <app-medics-shield-form [onboardingMode]="true" (saved)="step.set('success_me')" />
+          </div>
+        }
+
+        <!-- Final Success Step -->
         @if (step() === 'success_me') {
           <div class="space-y-6">
             <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce shadow-sm">
               <lucide-icon [img]="CheckCircle2" [size]="48"></lucide-icon>
             </div>
-            <h1 class="text-3xl font-black text-slate-800">C'est prêt !</h1>
-            <p class="text-slate-500 font-bold text-lg">Ton profil est créé. Il ne reste plus qu'à configurer ton premier protocole quotidien.</p>
+            <h1 class="text-3xl font-black text-slate-800">Prêt pour l'aventure !</h1>
+            <p class="text-slate-500 font-bold text-lg">Ta configuration est terminée. Tu peux maintenant commencer à remplir ton journal quotidien.</p>
             
             <button (click)="finishOnboarding()"
                     class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3">
@@ -194,7 +257,7 @@ export class OnboardingComponent {
   private sharingService = inject(SharingService);
   private router = inject(Router);
 
-  step = signal<'birthdate' | 'choice' | 'proche_choice' | 'proche_create' | 'proche_join' | 'success_me'>('birthdate');
+  step = signal<OnboardingStep>('birthdate');
   loading = signal(false);
   error = signal<string | null>(null);
   
@@ -224,7 +287,9 @@ export class OnboardingComponent {
         themePreference: 'colorful',
         isLocal: false
       });
-      this.step.set('success_me');
+      // After profile creation, start config steps
+      this.auth.checkSession();
+      this.step.set('config_protocol');
     } catch (e) {
       console.error('Me creation failed', e);
       this.error.set("Impossible de créer ton profil. Réessaye !");
@@ -243,8 +308,9 @@ export class OnboardingComponent {
         themePreference: 'colorful',
         isLocal: true
       });
+      // After profile creation, start config steps
       this.auth.checkSession();
-      this.router.navigate(['/settings']);
+      this.step.set('config_protocol');
     } catch (e) {
       console.error('Proche creation failed', e);
       this.error.set("Erreur lors de la création du dossier.");
@@ -259,7 +325,7 @@ export class OnboardingComponent {
     try {
       await this.sharingService.joinDossier(this.inviteCode);
       this.auth.checkSession();
-      this.router.navigate(['/settings']);
+      this.router.navigate(['/home']);
     } catch (e) {
       console.error('Join failed', e);
       this.error.set("Code invalide ou dossier introuvable.");
@@ -270,7 +336,7 @@ export class OnboardingComponent {
 
   finishOnboarding() {
     this.auth.checkSession();
-    this.router.navigate(['/settings']);
+    this.router.navigate(['/home']);
   }
 
   readonly Sparkles = Sparkles;
@@ -281,4 +347,7 @@ export class OnboardingComponent {
   readonly FolderHeart = FolderHeart;
   readonly CheckCircle2 = CheckCircle2;
   readonly AlertCircle = AlertCircle;
+  readonly Calendar = Calendar;
+  readonly Zap = Zap;
+  readonly ShieldCheck = ShieldCheck;
 }
