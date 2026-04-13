@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
-import { LucideAngularModule, ChevronDown, Check, User } from 'lucide-angular';
+import { LucideAngularModule, ChevronDown, Check, User, AlertCircle } from 'lucide-angular';
 
 @Component({
   selector: 'app-layout-header',
@@ -47,7 +47,15 @@ import { LucideAngularModule, ChevronDown, Check, User } from 'lucide-angular';
                       </div>
                       <div class="flex-1 text-left">
                         <p class="font-black text-slate-800 text-sm leading-tight">{{ profile.name }}</p>
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">{{ getProfilePermissionLabel(profile.id) }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">{{ getProfilePermissionLabel(profile.id) }}</p>
+                            @if (profile.onboardingStep && profile.onboardingStep !== 'completed') {
+                                <span class="text-[9px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100 uppercase flex items-center gap-1">
+                                    <lucide-icon [img]="AlertCircle" [size]="10"></lucide-icon>
+                                    Incomplet
+                                </span>
+                            }
+                        </div>
                       </div>
                       @if (auth.activeProfile()?.id === profile.id) {
                         <lucide-icon [img]="Check" [size]="18" [strokeWidth]="3" class="text-emerald-500"></lucide-icon>
@@ -76,6 +84,7 @@ export class LayoutHeaderComponent {
   readonly ChevronDown = ChevronDown;
   readonly Check = Check;
   readonly User = User;
+  readonly AlertCircle = AlertCircle;
 
   switch(id: string) {
     this.auth.switchProfile(id);

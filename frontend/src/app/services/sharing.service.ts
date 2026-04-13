@@ -1,4 +1,6 @@
 import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { PermissionLevel } from '../models/allergy-track.model';
 import { SHARING_ADAPTER } from './sharing.interface';
@@ -13,15 +15,17 @@ export class SharingService {
   /**
    * Generates a random code for sharing a dossier.
    */
-  public async generateInviteCode(profileId: string, role: PermissionLevel): Promise<string> {
+  public generateInviteCode(profileId: string, role: PermissionLevel): Observable<string> {
     return this.adapter.createInvite(profileId, role);
   }
 
   /**
    * Joins a dossier using an invite code.
    */
-  public async joinDossier(code: string): Promise<void> {
-    await this.adapter.consumeInvite(code);
-    this.auth.checkSession();
+  public joinDossier(code: string): Observable<void> {
+    return this.adapter.consumeInvite(code).pipe(
+      switchMap(() => this.auth.checkSession()),
+      map(() => undefined)
+    );
   }
 }

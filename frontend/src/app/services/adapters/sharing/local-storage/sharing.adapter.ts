@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { SharingAdapter, Invitation } from '../../../sharing.interface';
 import { PermissionLevel } from '../../../../models/allergy-track.model';
-import { of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +18,7 @@ export class LocalStorageSharingAdapter implements SharingAdapter {
     localStorage.setItem(this.INVITES_KEY, JSON.stringify(invites));
   }
 
-  async createInvite(profileId: string, permission: PermissionLevel): Promise<string> {
+  createInvite(profileId: string, permission: PermissionLevel): Observable<string> {
     const code = Math.random().toString(36).substring(2, 8).toUpperCase();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 1);
@@ -32,29 +32,37 @@ export class LocalStorageSharingAdapter implements SharingAdapter {
     });
     this.saveInvites(invites);
 
-    return code;
+    return of(code);
   }
 
-  async getInvite(code: string): Promise<Invitation | null> {
+  getInvite(code: string): Observable<Invitation | null> {
     const invite = this.getInvites().find(i => i.code === code);
-    if (!invite) return null;
+    if (!invite) return of(null);
 
     if (new Date(invite.expiresAt) < new Date()) {
-      return null;
+      return of(null);
     }
 
-    return invite;
+    return of(invite);
   }
 
-  async consumeInvite(code: string): Promise<void> {
-    const invite = await this.getInvite(code);
-    if (!invite) throw new Error('Invitation invalide');
+  consumeInvite(code: string): Observable<void> {
+    const invites = this.getInvites();
+    const inviteIdx = invites.findIndex(i => i.code === code);
+    
+    if (inviteIdx === -1) return throwError(() => new Error('Invitation invalide'));
+    const invite = invites[inviteIdx];
+
+    if (new Date(invite.expiresAt) < new Date()) {
+      return throwError(() => new Error('Invitation expirée'));
+    }
 
     // For Mock, we assume the user is stored in LocalStorage too
     const session = localStorage.getItem('at_mock_session');
-    if (!session) throw new Error('Non authentifié');
+    if (!session) return throwError(() => new Error('Non authentifié'));
 
     // We simulate adding access to the mock user
     console.log(`[LocalStorageSharingAdapter] Consumed invite ${code} for user ${session}`);
+    return of(undefined);
   }
 }

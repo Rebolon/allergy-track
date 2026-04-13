@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Observable, of, throwError } from 'rxjs';
 import { AuthAdapter } from '../../../auth.interface';
 import { User, Profile, ProfileAccess, PermissionLevel } from '../../../../models/allergy-track.model';
 
@@ -58,50 +59,54 @@ export class MockAuthAdapter implements AuthAdapter {
     return this.users;
   }
 
-  async updateUser(updatedUser: User): Promise<void> {
+  updateUser(updatedUser: User): Observable<void> {
     const index = this.users.findIndex(u => u.id === updatedUser.id);
     if (index !== -1) {
       this.users[index] = { ...updatedUser };
     }
+    return of(undefined);
   }
 
-  async login(): Promise<void> {
+  login(): Observable<void> {
     this.sessionUserId = this.users[0].id;
     localStorage.setItem(this.SESSION_KEY, this.sessionUserId);
+    return of(undefined);
   }
 
-  async loginWithPassword(email: string, password: string): Promise<void> {
+  loginWithPassword(email: string, password: string): Observable<void> {
     const user = this.users.find(u => u.email === email);
     if (user && password === 'demo') {
       this.sessionUserId = user.id;
       localStorage.setItem(this.SESSION_KEY, user.id);
+      return of(undefined);
     } else {
-      throw new Error('Identifiants invalides (utilisez "demo")');
+      return throwError(() => new Error('Identifiants invalides (utilisez "demo")'));
     }
   }
 
-  async logout(): Promise<void> {
+  logout(): Observable<void> {
     this.sessionUserId = null;
     localStorage.removeItem(this.SESSION_KEY);
+    return of(undefined);
   }
 
   isAuthenticated(): boolean {
     return !!this.sessionUserId;
   }
 
-  async getAuthUser(): Promise<User | null> {
-    return this.users.find(u => u.id === this.sessionUserId) || null;
+  getAuthUser(): Observable<User | null> {
+    return of(this.users.find(u => u.id === this.sessionUserId) || null);
   }
 
-  async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {
-    const user = (await this.getAuthUser()) || this.users[0];
+  addProfile(profile: Omit<Profile, 'id'>): Observable<Profile> {
+    const sessionUser = this.users.find(u => u.id === this.sessionUserId) || this.users[0];
     const newProfile: Profile = {
       ...profile,
       id: 'p' + (Math.random().toString(36).substr(2, 9))
     };
-    user.profiles.push(newProfile);
-    user.profileAccesses.push({ profileId: newProfile.id, permission: 'owner', colorCode: '#10b981' });
-    await this.updateUser(user);
-    return newProfile;
+    sessionUser.profiles.push(newProfile);
+    sessionUser.profileAccesses.push({ profileId: newProfile.id, permission: 'owner', colorCode: '#10b981' });
+    this.updateUser(sessionUser);
+    return of(newProfile);
   }
 }

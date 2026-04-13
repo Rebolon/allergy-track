@@ -3,9 +3,11 @@ import {
   provideBrowserGlobalErrorListeners,
   isDevMode,
 } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withViewTransitions } from '@angular/router';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { errorInterceptor } from './error.interceptor';
+import { authInterceptor } from './auth.interceptor';
 
 import { routes } from './app.routes';
 import { provideServiceWorker } from '@angular/service-worker';
@@ -31,8 +33,9 @@ registerLocaleData(localeFr);
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideRouter(routes),
-    provideHttpClient(withInterceptors([errorInterceptor])),
+    provideAnimationsAsync(),
+    provideRouter(routes, withViewTransitions()),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     { provide: LOCALE_ID, useValue: 'fr-FR' },
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),

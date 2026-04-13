@@ -1,50 +1,45 @@
-/// <reference path="../pb_data/types.d.ts" />
-migrate((db) => {
-    const dao = new Dao(db);
+migrate((app) => {
+    const collection = app.findCollectionByNameOrId("users");
 
-    const settings = dao.findSettings();
+    // Configuration des providers OAuth2 dans les options de la collection
+    const clientId = $os.getenv("SYNOLOGY_CLIENT_ID");
+    const clientSecret = $os.getenv("SYNOLOGY_CLIENT_SECRET");
 
-    // Configuration des providers OAuth2
-    // On utilise les variables d'environnement injectées dans Docker
-    settings.authProviders.update([
-        {
-            name: "synology",
-            displayName: "Synology OIDC",
-            enabled: true,
-            clientId: process.env.SYNOLOGY_CLIENT_ID || "",
-            clientSecret: process.env.SYNOLOGY_CLIENT_SECRET || "",
-            authUrl: process.env.SYNOLOGY_AUTH_URL || "",
-            tokenUrl: process.env.SYNOLOGY_TOKEN_URL || "",
-            userApiUrl: process.env.SYNOLOGY_USER_INFO_URL || "",
-        }
-    ]);
+    if (clientId && clientSecret) {
+        collection.oauth2.enabled = true;
+        collection.oauth2.providers = [
+            {
+                name: "oidc",
+                displayName: "Synology OIDC",
+                clientId: clientId,
+                clientSecret: clientSecret,
+                authUrl: $os.getenv("SYNOLOGY_AUTH_URL") || "",
+                tokenUrl: $os.getenv("SYNOLOGY_TOKEN_URL") || "",
+                userApiUrl: $os.getenv("SYNOLOGY_USER_INFO_URL") || "",
+            }
+        ];
+    }
 
-    dao.saveSettings(settings);
-
-    // S'assurer que la collection users a les bons champs
-    const collection = dao.findCollectionByNameOrId("users");
-
+    // S'assurer que la collection users a les bons champs (API v0.23+)
     const roleField = collection.fields.find(f => f.name === "role");
     if (!roleField) {
-        collection.fields.add(new SchemaField({
+        collection.fields.push(new SelectField({
             name: "role",
-            type: "select",
             required: true,
-            options: { values: ["Supervision", "Allergique"] }
+            values: ["Supervision", "Allergique"]
         }));
     }
 
     const themeField = collection.fields.find(f => f.name === "themePreference");
     if (!themeField) {
-        collection.fields.add(new SchemaField({
+        collection.fields.push(new SelectField({
             name: "themePreference",
-            type: "select",
             required: true,
-            options: { values: ["flashy", "classic"] }
+            values: ["flashy", "classic"]
         }));
     }
 
-    dao.saveCollection(collection);
-}, (db) => {
+    app.save(collection);
+}, (app) => {
     // Revert logic if needed
 })

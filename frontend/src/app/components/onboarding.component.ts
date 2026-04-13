@@ -1,17 +1,11 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { AuthService } from '../services/auth.service';
-import { ProfileService } from '../services/profile.service';
-import { SharingService } from '../services/sharing.service';
-import { ActiveDossierService } from '../services/active-dossier.service';
 import { LucideAngularModule, Heart, Users, ArrowRight, Sparkles, UserPlus, FolderHeart, CheckCircle2, AlertCircle, Calendar, Zap, ShieldCheck } from 'lucide-angular';
 import { ProtocolFormComponent } from './settings/protocol-form.component';
 import { SymptomFormComponent } from './settings/symptom-form.component';
 import { MedicsShieldFormComponent } from './settings/medics-shield-form.component';
-
-type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create' | 'proche_join' | 'protocol_type' | 'config_protocol' | 'config_symptoms' | 'config_shields' | 'success_me';
+import { OnboardingService } from '../services/onboarding.service';
 
 @Component({
   selector: 'app-onboarding',
@@ -30,7 +24,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
       <div class="max-w-md w-full space-y-8 animate-in fade-in zoom-in duration-500 py-12">
         
         <!-- Step 1: User BirthDate -->
-        @if (step() === 'birthdate') {
+        @if (svc.step() === 'birthdate') {
           <div class="space-y-6">
             <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-3xl flex items-center justify-center mx-auto shadow-sm">
               <lucide-icon [img]="Sparkles" [size]="40"></lucide-icon>
@@ -39,11 +33,11 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
             <p class="text-slate-500 font-bold text-lg">Pour commencer l'aventure, quelle est ta date de naissance ?</p>
             
             <div class="pt-4">
-              <input type="date" [(ngModel)]="userBirthDate" 
+              <input type="date" [ngModel]="svc.userBirthDate()" (ngModelChange)="svc.userBirthDate.set($event)"
                      class="w-full p-4 text-center text-xl font-black bg-slate-50 border-2 border-transparent focus:border-amber-400 rounded-2xl outline-none transition-all">
             </div>
 
-            <button (click)="goToChoice()" [disabled]="!userBirthDate"
+            <button (click)="svc.goToChoice()" [disabled]="!svc.userBirthDate()"
                     class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-black transition-all flex items-center justify-center gap-3 disabled:opacity-50">
               Continuer
               <lucide-icon [img]="ArrowRight" [size]="24"></lucide-icon>
@@ -52,12 +46,12 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
         }
 
         <!-- Step 2: Main Choice -->
-        @if (step() === 'choice') {
+        @if (svc.step() === 'choice') {
           <div class="space-y-6">
             <h1 class="text-3xl font-black text-slate-800">Comment vas-tu utiliser l'app ?</h1>
             
             <div class="grid grid-cols-1 gap-4">
-              <button (click)="chooseMe()" 
+              <button (click)="svc.chooseMe()" 
                       class="p-6 border-2 border-emerald-100 bg-emerald-50/30 rounded-3xl hover:border-emerald-400 hover:bg-emerald-50 transition-all text-left group">
                 <div class="flex items-center gap-4 mb-3">
                   <div class="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -68,7 +62,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
                 <p class="text-emerald-600/70 font-bold leading-tight">Je vais suivre mon propre protocole de réintroduction.</p>
               </button>
 
-              <button (click)="goToProcheChoice()" 
+              <button (click)="svc.goToProcheChoice()" 
                       class="p-6 border-2 border-violet-100 bg-violet-50/30 rounded-3xl hover:border-violet-400 hover:bg-violet-50 transition-all text-left group">
                 <div class="flex items-center gap-4 mb-3">
                   <div class="w-12 h-12 bg-violet-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -83,15 +77,15 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
         }
 
         <!-- Branch Proche: Sub-Choice -->
-        @if (step() === 'proche_choice') {
+        @if (svc.step() === 'proche_choice') {
           <div class="space-y-6">
-            <button (click)="step.set('choice')" class="text-slate-400 font-bold hover:text-slate-600 flex items-center gap-2 mb-4">
+            <button (click)="svc.step.set('choice')" class="text-slate-400 font-bold hover:text-slate-600 flex items-center gap-2 mb-4">
                ← Retour
             </button>
             <h1 class="text-3xl font-black text-slate-800 text-left leading-tight">D'accord. Comment souhaites-tu commencer ?</h1>
             
             <div class="grid grid-cols-1 gap-4">
-              <button (click)="step.set('proche_create')" 
+              <button (click)="svc.step.set('proche_create')" 
                       class="p-6 border-2 border-rose-100 bg-rose-50/30 rounded-3xl hover:border-rose-400 hover:bg-rose-50 transition-all text-left group">
                 <div class="flex items-center gap-4 mb-3">
                   <div class="w-12 h-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -102,7 +96,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
                 <p class="text-rose-600/70 font-bold leading-tight">Ajouter un enfant ou un proche dont je vais gérer le suivi.</p>
               </button>
 
-              <button (click)="step.set('proche_join')" 
+              <button (click)="svc.step.set('proche_join')" 
                       class="p-6 border-2 border-blue-100 bg-blue-50/30 rounded-3xl hover:border-blue-400 hover:bg-blue-50 transition-all text-left group">
                 <div class="flex items-center gap-4 mb-3">
                   <div class="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -117,9 +111,9 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
         }
 
         <!-- Branch Proche: Create Child -->
-        @if (step() === 'proche_create') {
+        @if (svc.step() === 'proche_create') {
           <div class="space-y-6 text-left">
-            <button (click)="step.set('proche_choice')" class="text-slate-400 font-bold hover:text-slate-600 flex items-center gap-2 mb-4">
+            <button (click)="svc.step.set('proche_choice')" class="text-slate-400 font-bold hover:text-slate-600 flex items-center gap-2 mb-4">
                ← Retour
             </button>
             <h1 class="text-3xl font-black text-slate-800">Nouveau dossier</h1>
@@ -127,54 +121,54 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
             <div class="space-y-4">
               <div>
                 <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Prénom du proche</label>
-                <input type="text" [(ngModel)]="procheName" placeholder="Ex: Léo"
+                <input type="text" [ngModel]="svc.procheName()" (ngModelChange)="svc.procheName.set($event)" placeholder="Ex: Léo"
                        class="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-rose-400 rounded-2xl outline-none transition-all font-bold text-lg text-slate-700">
               </div>
               <div>
                 <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Date de naissance</label>
-                <input type="date" [(ngModel)]="procheBirthDate" 
+                <input type="date" [ngModel]="svc.procheBirthDate()" (ngModelChange)="svc.procheBirthDate.set($event)"
                        class="w-full p-4 bg-slate-50 border-2 border-transparent focus:border-rose-400 rounded-2xl outline-none transition-all font-bold text-lg text-slate-700">
               </div>
             </div>
 
-            <button (click)="createProche()" [disabled]="!procheName || !procheBirthDate || loading()"
+            <button (click)="svc.createProche()" [disabled]="!svc.procheName() || !svc.procheBirthDate() || svc.loading()"
                     class="w-full py-4 bg-rose-500 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-rose-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-              {{ loading() ? 'Création...' : 'Créer le dossier' }}
+              {{ svc.loading() ? 'Création...' : 'Créer le dossier' }}
               <lucide-icon [img]="CheckCircle2" [size]="24"></lucide-icon>
             </button>
           </div>
         }
 
         <!-- Branch Proche: Join Dossier -->
-        @if (step() === 'proche_join') {
+        @if (svc.step() === 'proche_join') {
           <div class="space-y-6 text-left">
-            <button (click)="step.set('proche_choice')" class="text-slate-400 font-bold hover:text-slate-600 flex items-center gap-2 mb-4">
+            <button (click)="svc.step.set('proche_choice')" class="text-slate-400 font-bold hover:text-slate-600 flex items-center gap-2 mb-4">
                ← Retour
             </button>
             <h1 class="text-3xl font-black text-slate-800">Rejoindre un dossier</h1>
             <p class="text-slate-500 font-bold">Saisis le code d'invitation qui t'a été communiqué.</p>
             
             <div class="pt-4">
-              <input type="text" [(ngModel)]="inviteCode" placeholder="ABCDEF"
+              <input type="text" [ngModel]="svc.inviteCode()" (ngModelChange)="svc.inviteCode.set($event)" placeholder="ABCDEF"
                      class="w-full p-6 text-center text-4xl font-black bg-slate-50 border-2 border-transparent focus:border-blue-400 rounded-2xl outline-none transition-all text-blue-600 tracking-[0.3em] uppercase">
             </div>
 
-            <button (click)="joinDossier()" [disabled]="!inviteCode || loading()"
+            <button (click)="svc.joinDossier()" [disabled]="!svc.inviteCode() || svc.loading()"
                     class="w-full py-4 bg-blue-600 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50">
-              {{ loading() ? 'Vérification...' : 'Rejoindre' }}
+              {{ svc.loading() ? 'Vérification...' : 'Rejoindre' }}
               <lucide-icon [img]="ArrowRight" [size]="24"></lucide-icon>
             </button>
           </div>
         }
 
         <!-- STEP: Protocol Type Selection -->
-        @if (step() === 'protocol_type') {
+        @if (svc.step() === 'protocol_type') {
           <div class="space-y-6 text-left">
             <h1 class="text-3xl font-black text-slate-800">Quel protocole suis-tu ?</h1>
             <p class="text-slate-500 font-bold">Nous allons pré-configurer tes défis et tes symptômes.</p>
             
             <div class="grid grid-cols-1 gap-3">
-              <button (click)="setProtocolType('reintroduction')" 
+              <button (click)="svc.setProtocolType('reintroduction')" 
                       class="p-5 border-2 border-slate-100 rounded-3xl hover:border-emerald-400 hover:bg-emerald-50 transition-all text-left flex items-center gap-4">
                 <span class="text-3xl">🍽️</span>
                 <div>
@@ -183,7 +177,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
                 </div>
               </button>
 
-              <button (click)="setProtocolType('desensibilisation')" 
+              <button (click)="svc.setProtocolType('desensibilisation')" 
                       class="p-5 border-2 border-slate-100 rounded-3xl hover:border-blue-400 hover:bg-blue-50 transition-all text-left flex items-center gap-4">
                 <span class="text-3xl">💉</span>
                 <div>
@@ -196,7 +190,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
         }
 
         <!-- STEP: Config Protocol -->
-        @if (step() === 'config_protocol') {
+        @if (svc.step() === 'config_protocol') {
           <div class="space-y-6">
             <div class="flex items-center gap-4 text-left">
               <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -207,12 +201,12 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
               </div>
             </div>
             
-            <app-protocol-form [onboardingMode]="true" (saved)="step.set('config_symptoms')" />
+            <app-protocol-form [onboardingMode]="true" (saved)="svc.onProtocolSaved()" />
           </div>
         }
 
         <!-- STEP: Config Symptoms -->
-        @if (step() === 'config_symptoms') {
+        @if (svc.step() === 'config_symptoms') {
           <div class="space-y-6">
             <div class="flex items-center gap-4 text-left">
               <div class="w-12 h-12 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -223,12 +217,12 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
               </div>
             </div>
             
-            <app-symptom-form [onboardingMode]="true" (saved)="step.set('config_shields')" />
+            <app-symptom-form [onboardingMode]="true" (saved)="svc.onSymptomsSaved()" />
           </div>
         }
 
         <!-- STEP: Config Shields -->
-        @if (step() === 'config_shields') {
+        @if (svc.step() === 'config_shields') {
           <div class="space-y-6">
             <div class="flex items-center gap-4 text-left">
               <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
@@ -239,12 +233,12 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
               </div>
             </div>
             
-            <app-medics-shield-form [onboardingMode]="true" (saved)="step.set('success_me')" />
+            <app-medics-shield-form [onboardingMode]="true" (saved)="svc.onShieldsSaved()" />
           </div>
         }
 
         <!-- Final Success Step -->
-        @if (step() === 'success_me') {
+        @if (svc.step() === 'success_me') {
           <div class="space-y-6">
             <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto animate-bounce shadow-sm">
               <lucide-icon [img]="CheckCircle2" [size]="48"></lucide-icon>
@@ -252,7 +246,7 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
             <h1 class="text-3xl font-black text-slate-800">Prêt pour l'aventure !</h1>
             <p class="text-slate-500 font-bold text-lg">Ta configuration est terminée. Tu peux maintenant commencer à remplir ton journal quotidien.</p>
             
-            <button (click)="finishOnboarding()"
+            <button (click)="svc.finishOnboarding()"
                     class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-xl shadow-xl hover:bg-emerald-600 transition-all flex items-center justify-center gap-3">
               C'est parti !
               <lucide-icon [img]="ArrowRight" [size]="24"></lucide-icon>
@@ -260,15 +254,15 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
           </div>
         }
 
-        @if (error()) {
+        @if (svc.error()) {
           <div class="p-4 bg-rose-50 border-2 border-rose-100 text-rose-600 rounded-2xl flex items-center gap-3 font-bold animate-shake">
             <lucide-icon [img]="AlertCircle" [size]="20"></lucide-icon>
-            <p class="text-sm">{{ error() }}</p>
+            <p class="text-sm">{{ svc.error() }}</p>
           </div>
         }
 
-        @if (loading()) {
-          <div class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[120]">
+        @if (svc.loading()) {
+          <div class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-120">
             <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         }
@@ -278,98 +272,10 @@ type OnboardingStep = 'birthdate' | 'choice' | 'proche_choice' | 'proche_create'
   `
 })
 export class OnboardingComponent {
-  private auth = inject(AuthService);
-  private profileService = inject(ProfileService);
-  private sharingService = inject(SharingService);
-  private activeDossier = inject(ActiveDossierService);
-  private router = inject(Router);
+  svc = inject(OnboardingService);
 
-  step = signal<OnboardingStep>('birthdate');
-  loading = signal(false);
-  error = signal<string | null>(null);
-  
-  userBirthDate = '1990-01-01';
-  procheName = '';
-  procheBirthDate = '2015-01-01';
-  inviteCode = '';
-
-  goToChoice() {
-    this.error.set(null);
-    this.step.set('choice');
-  }
-
-  goToProcheChoice() {
-    this.error.set(null);
-    this.step.set('proche_choice');
-  }
-
-  async chooseMe() {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      const userName = this.auth.currentUser()?.name || 'Moi';
-      await this.profileService.addProfile({
-        name: userName,
-        birthDate: this.userBirthDate,
-        themePreference: 'colorful',
-        isLocal: false
-      });
-      // After profile creation, ask for protocol type
-      this.auth.checkSession();
-      this.step.set('protocol_type');
-    } catch (e) {
-      console.error('Me creation failed', e);
-      this.error.set("Impossible de créer ton profil. Réessaye !");
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  async createProche() {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      await this.profileService.addProfile({
-        name: this.procheName,
-        birthDate: this.procheBirthDate,
-        themePreference: 'colorful',
-        isLocal: true
-      });
-      // After profile creation, ask for protocol type
-      this.auth.checkSession();
-      this.step.set('protocol_type');
-    } catch (e) {
-      console.error('Proche creation failed', e);
-      this.error.set("Erreur lors de la création du dossier.");
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  setProtocolType(type: 'reintroduction' | 'desensibilisation') {
-    this.activeDossier.applyProtocolTypePreset(type);
-    this.activeDossier.updateStartDate(new Date().toISOString().split('T')[0]);
-    this.step.set('config_protocol');
-  }
-
-  async joinDossier() {
-    this.loading.set(true);
-    this.error.set(null);
-    try {
-      await this.sharingService.joinDossier(this.inviteCode);
-      this.auth.checkSession();
-      this.router.navigate(['/home']);
-    } catch (e) {
-      console.error('Join failed', e);
-      this.error.set("Code invalide ou dossier introuvable.");
-    } finally {
-      this.loading.set(false);
-    }
-  }
-
-  finishOnboarding() {
-    this.auth.checkSession();
-    this.router.navigate(['/home']);
+  ngOnInit() {
+    this.svc.init();
   }
 
   readonly Sparkles = Sparkles;

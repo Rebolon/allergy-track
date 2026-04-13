@@ -4,13 +4,16 @@ import { SupervisionViewComponent } from './components/supervision-view.componen
 import { GamingViewComponent } from './components/gaming-view.component';
 import { SettingsComponent } from './components/settings.component';
 import { OnboardingComponent } from './components/onboarding.component';
+import { SplashScreenComponent } from './components/splash-screen.component';
 import { onboardingGuard } from './onboarding.guard';
+import { authGuard } from './auth.guard';
 
 export const routes: Routes = [
-  { path: 'onboarding', component: OnboardingComponent },
+  { path: 'welcome', component: SplashScreenComponent },
+  { path: 'onboarding', component: OnboardingComponent, canActivate: [authGuard] },
   { 
     path: '', 
-    canActivate: [onboardingGuard],
+    canActivate: [authGuard, onboardingGuard],
     children: [
       { path: 'home', component: HomeViewComponent },
       { path: 'supervision', component: SupervisionViewComponent },

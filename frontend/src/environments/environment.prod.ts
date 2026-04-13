@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
   useMockAuth: false,
-  pocketbaseUrl: '' // Relatif en production car servi par PocketBase
+  pocketbaseUrl: '/' // Absolute root to avoid /home/api bug
 };

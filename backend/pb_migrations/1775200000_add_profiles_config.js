@@ -4,7 +4,7 @@ migrate((app) => {
         "name": "profiles_config",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "profileId",
                 "type": "text",
@@ -56,7 +56,7 @@ migrate((app) => {
         "deleteRule": ""
     });
 
-    return app.saveCollection(collection);
+    return app.save(collection);
 }, (app) => {
     const collection = app.findCollectionByNameOrId("profiles_config");
     if (collection) {

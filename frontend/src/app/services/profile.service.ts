@@ -1,4 +1,6 @@
 import { Injectable, inject } from '@angular/core';
+import { Observable, throwError, of } from 'rxjs';
+import { map, switchMap, tap } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { Profile } from '../models/allergy-track.model';
 import { AUTH_ADAPTER } from './auth.interface';
@@ -13,9 +15,9 @@ export class ProfileService {
   /**
    * Creates a local profile (e.g. for a child without its own account).
    */
-  public async createLocalChild(name: string): Promise<Profile> {
+  public createLocalChild(name: string): Observable<Profile> {
     const user = this.auth.currentUser();
-    if (!user) throw new Error('Not authenticated');
+    if (!user) return throwError(() => new Error('Not authenticated'));
 
     const newProfile: Omit<Profile, 'id'> = {
       name,
@@ -24,23 +26,31 @@ export class ProfileService {
     };
 
     if (this.adapter.addProfile) {
-      const created = await this.adapter.addProfile(newProfile);
-      // Refresh session to get updated profileAccesses and profiles
-      this.auth.checkSession();
-      return created;
+      return this.adapter.addProfile(newProfile).pipe(
+        switchMap(created => this.auth.checkSession().pipe(map(() => created)))
+      );
     }
-    throw new Error('Adapter does not support adding profiles');
+    return throwError(() => new Error('Adapter does not support adding profiles'));
   }
 
   /**
    * Directly adds a profile via the adapter.
    */
-  async addProfile(profile: Omit<Profile, 'id'>): Promise<Profile> {
+  addProfile(profile: Omit<Profile, 'id'>): Observable<Profile> {
     if (this.adapter.addProfile) {
-      const created = await this.adapter.addProfile(profile);
-      this.auth.checkSession();
-      return created;
+      return this.adapter.addProfile(profile).pipe(
+        switchMap(created => this.auth.checkSession().pipe(map(() => created)))
+      );
     }
-    throw new Error('Add profile not supported by current adapter');
+    return throwError(() => new Error('Add profile not supported by current adapter'));
+  }
+
+  deleteProfile(profileId: string): Observable<void> {
+    if (this.adapter.deleteProfile) {
+      return this.adapter.deleteProfile(profileId).pipe(
+        switchMap(() => this.auth.checkSession().pipe(map(() => undefined)))
+      );
+    }
+    return throwError(() => new Error('Delete profile not supported by current adapter'));
   }
 }

@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { Observable } from 'rxjs';
 import { PermissionLevel } from '../models/allergy-track.model';
 
 export interface Invitation {
@@ -9,9 +10,9 @@ export interface Invitation {
 }
 
 export interface SharingAdapter {
-  createInvite(profileId: string, permission: PermissionLevel): Promise<string>;
-  getInvite(code: string): Promise<Invitation | null>;
-  consumeInvite(code: string): Promise<void>;
+  createInvite(profileId: string, permission: PermissionLevel): Observable<string>;
+  getInvite(code: string): Observable<Invitation | null>;
+  consumeInvite(code: string): Observable<void>;
 }
 
 export const SHARING_ADAPTER = new InjectionToken<SharingAdapter>('SHARING_ADAPTER');

@@ -112,8 +112,8 @@ export class SettingsComponent {
     return perm === 'owner' || perm === 'editor';
   });
 
-  async logout() {
-    await this.auth.logout();
+  logout() {
+    this.auth.logout().subscribe();
   }
 
   setTheme(newTheme: any) {

@@ -1,15 +1,17 @@
 import { InjectionToken } from '@angular/core';
+import { Observable } from 'rxjs';
 import { User, Profile } from '../models/allergy-track.model';
 
 export interface AuthAdapter {
-  getUsers(): User[];
-  updateUser(updatedUser: User): Promise<void>;
-  login?(): Promise<void>;
-  loginWithPassword?(email: string, password: string): Promise<void>;
-  logout?(): Promise<void>;
+  getUsers(): User[]; // This one returns an array directly in the mock, might want to keep it or make it Observable if it involves a fetch.
+  updateUser(updatedUser: User): Observable<void>;
+  login?(): Observable<void>;
+  loginWithPassword?(email: string, password: string): Observable<void>;
+  logout?(): Observable<void>;
   isAuthenticated?(): boolean;
-  getAuthUser?(): Promise<User | null>;
-  addProfile?(profile: Omit<Profile, 'id'>): Promise<Profile>;
+  getAuthUser?(): Observable<User | null>;
+  addProfile?(profile: Omit<Profile, 'id'>): Observable<Profile>;
+  deleteProfile?(profileId: string): Observable<void>;
 }
 
 export const AUTH_ADAPTER = new InjectionToken<AuthAdapter>('AUTH_ADAPTER');

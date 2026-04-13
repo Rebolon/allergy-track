@@ -4,48 +4,39 @@ migrate((app) => {
         "name": "profiles",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "name",
                 "type": "text",
                 "required": true,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "birthDate",
                 "type": "text",
                 "required": false,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "avatar",
                 "type": "text",
                 "required": false,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "avatarSkinTone",
                 "type": "text",
                 "required": false,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "themePreference",
                 "type": "text",
                 "required": false,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "ownerId",
                 "type": "relation",
                 "required": true,
-                "options": {
-                    "collectionId": "_pb_users_auth_",
-                    "cascadeDelete": true,
-                    "minSelect": null,
-                    "maxSelect": 1,
-                    "displayFields": null
-                }
+                "collectionId": "_pb_users_auth_",
+                "cascadeDelete": true,
+                "maxSelect": 1,
             }
         ],
         "listRule": "@request.auth.id != ''",
@@ -55,56 +46,45 @@ migrate((app) => {
         "deleteRule": "@request.auth.id != ''"
     });
 
-    app.saveCollection(profilesCollection);
+    app.save(profilesCollection);
 
     // 2. Création de la collection 'invitations'
     const invitationsCollection = new Collection({
         "name": "invitations",
         "type": "base",
         "system": false,
-        "schema": [
+        "fields": [
             {
                 "name": "code",
                 "type": "text",
                 "required": true,
                 "unique": true,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "profileId",
                 "type": "relation",
                 "required": true,
-                "options": {
-                    "collectionId": profilesCollection.id,
-                    "cascadeDelete": true,
-                    "minSelect": null,
-                    "maxSelect": 1,
-                    "displayFields": null
-                }
+                "collectionId": profilesCollection.id,
+                "cascadeDelete": true,
+                "maxSelect": 1,
             },
             {
                 "name": "permission",
                 "type": "text",
                 "required": true,
-                "options": { "min": null, "max": null, "pattern": "" }
             },
             {
                 "name": "expiresAt",
                 "type": "date",
                 "required": true,
-                "options": { "min": "", "max": "" }
             },
             {
                 "name": "usedBy",
                 "type": "relation",
                 "required": false,
-                "options": {
-                    "collectionId": "_pb_users_auth_",
-                    "cascadeDelete": false,
-                    "minSelect": null,
-                    "maxSelect": 1,
-                    "displayFields": null
-                }
+                "collectionId": "_pb_users_auth_",
+                "cascadeDelete": false,
+                "maxSelect": 1,
             }
         ],
         "listRule": "",
@@ -114,44 +94,36 @@ migrate((app) => {
         "deleteRule": "@request.auth.id != ''"
     });
 
-    app.saveCollection(invitationsCollection);
+    app.save(invitationsCollection);
 
     // 3. Mise à jour de la collection 'users'
     const usersCollection = app.findCollectionByNameOrId("users");
     
-    // Ajout de profile_accesses
-    usersCollection.schema.addField(new SchemaField({
+    // Ajout de profile_accesses (API v0.23+)
+    usersCollection.fields.push(new JSONField({
         "name": "profile_accesses",
-        "type": "json",
         "required": false
     }));
 
-    app.saveCollection(usersCollection);
+    app.save(usersCollection);
 
     // 4. Mise à jour de 'profiles_config'
     const profilesConfigCollection = app.findCollectionByNameOrId("profiles_config");
     if (profilesConfigCollection) {
-        // Suppression de l'ancien champ text profileId
-        const oldField = profilesConfigCollection.schema.fields.find(f => f.name === "profileId");
-        if (oldField) {
-            profilesConfigCollection.schema.removeField(oldField.id);
-        }
+        // Suppression de l'ancien champ text profileId (API v0.23+)
+        profilesConfigCollection.fields = profilesConfigCollection.fields.filter(f => f.name !== "profileId");
         
         // Ajout du nouveau champ relation profileId
-        profilesConfigCollection.schema.addField(new SchemaField({
+        profilesConfigCollection.fields.push(new RelationField({
             "name": "profileId",
             "type": "relation",
             "required": true,
-            "options": {
-                "collectionId": profilesCollection.id,
-                "cascadeDelete": true,
-                "minSelect": null,
-                "maxSelect": 1,
-                "displayFields": null
-            }
+            "collectionId": profilesCollection.id,
+            "cascadeDelete": true,
+            "maxSelect": 1,
         }));
 
-        app.saveCollection(profilesConfigCollection);
+        app.save(profilesConfigCollection);
     }
 
 }, (app) => {

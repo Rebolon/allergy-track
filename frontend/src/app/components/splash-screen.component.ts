@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit, effect, untracked } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../services/auth.service';
 import { ThemeService } from '../services/theme.service';
@@ -10,9 +11,7 @@ import { LayoutFooterComponent } from './layout/footer.component';
   standalone: true,
   imports: [LucideAngularModule, FormsModule, LayoutFooterComponent],
   template: `
-    <div class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-white via-emerald-50/50 to-blue-50/50 transition-opacity duration-700"
-         [class.opacity-0]="isfadingOut()"
-         [class.pointer-events-none]="isfadingOut()">
+    <div class="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-emerald-50/50 to-blue-50/50 overflow-hidden relative">
       
       <!-- Background elements for child-friendly feel -->
       <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-60">
@@ -21,7 +20,7 @@ import { LayoutFooterComponent } from './layout/footer.component';
         <div class="absolute top-[40%] left-[20%] w-32 h-32 bg-amber-50 rounded-full blur-2xl animate-pulse"></div>
       </div>
 
-      <div class="relative flex flex-col items-center gap-6 max-w-md w-full px-8 text-center scrollbar-hide overflow-y-auto max-h-[95vh]">
+      <div class="relative flex flex-col items-center gap-6 max-w-md w-full px-8 text-center">
         
         <!-- App Icon -->
         <div class="relative mt-4">
@@ -38,7 +37,7 @@ import { LayoutFooterComponent } from './layout/footer.component';
         </div>
 
         <!-- Conditional Content -->
-        @if (auth.isReady()) {
+        @if (auth.isInitialized()) {
           @if (!auth.isAuthenticated()) {
             
             <div class="w-full flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700 mt-4 mb-8">
@@ -95,7 +94,7 @@ import { LayoutFooterComponent } from './layout/footer.component';
       </div>
 
       <!-- Footer -->
-      <div class="absolute bottom-6 left-0 right-0 text-center pointer-events-none">
+      <div class="mt-auto py-2">
         <app-layout-footer/>
       </div>
 
@@ -133,63 +132,50 @@ import { LayoutFooterComponent } from './layout/footer.component';
 export class SplashScreenComponent implements OnInit {
   auth = inject(AuthService);
   theme = inject(ThemeService);
+  router = inject(Router);
 
-  isfadingOut = signal(false);
   loading = signal(false);
   error = signal<string | null>(null);
 
   email = '';
   password = '';
 
-  constructor() {
-    // Reset splash screen when logging out
-    effect(() => {
-      const isAuth = this.auth.isAuthenticated();
-      const isReady = this.auth.isReady();
-
-      if (!isAuth) {
-        untracked(() => this.isfadingOut.set(false));
-      } else if (isReady) {
-        untracked(() => this.isfadingOut.set(true));
-      }
-    });
-  }
-
   ngOnInit() {
-    // Initial check with delay for nice animation
+    // Initial check with small delay
     setTimeout(() => {
       this.checkAndClose();
-    }, 2000);
+    }, 1000);
   }
 
   checkAndClose() {
     if (this.auth.isReady() && this.auth.isAuthenticated()) {
-      this.isfadingOut.set(true);
+      this.router.navigate(['/home']);
     }
   }
 
-  async loginSSO() {
-    try {
-      this.error.set(null);
-      await this.auth.login();
-    } catch (e) {
-      this.error.set('Échec de la connexion SSO Synology');
-    }
+  loginSSO() {
+    this.error.set(null);
+    this.auth.login().subscribe({
+      next: () => this.checkAndClose(),
+      error: () => this.error.set('Échec de la connexion SSO Synology')
+    });
   }
 
-  async loginPassword() {
+  loginPassword() {
     if (!this.email || !this.password) return;
 
-    try {
-      this.loading.set(true);
-      this.error.set(null);
-      await this.auth.loginWithPassword(this.email, this.password);
-      this.checkAndClose();
-    } catch (e) {
-      this.error.set('Email ou mot de passe incorrect');
-    } finally {
-      this.loading.set(false);
-    }
+    this.loading.set(true);
+    this.error.set(null);
+    this.auth.loginWithPassword(this.email, this.password).subscribe({
+      next: () => {
+        this.checkAndClose();
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Email ou mot de passe incorrect');
+        this.loading.set(false);
+      }
+    });
   }
 
   readonly ShieldCheck = ShieldCheck;

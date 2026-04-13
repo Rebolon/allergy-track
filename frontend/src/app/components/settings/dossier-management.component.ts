@@ -98,13 +98,13 @@ export class DossierManagementComponent {
     }
   }
 
-  async createChild(name: string) {
+  createChild(name: string) {
     if (!name) return;
-    await this.profileService.createLocalChild(name);
+    this.profileService.createLocalChild(name).subscribe();
   }
 
-  async acceptInvite(code: string) {
+  acceptInvite(code: string) {
     if (!code) return;
-    await this.sharingService.joinDossier(code);
+    this.sharingService.joinDossier(code).subscribe();
   }
 }

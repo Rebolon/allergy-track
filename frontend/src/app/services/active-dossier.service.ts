@@ -2,7 +2,7 @@ import { Injectable, signal, effect, inject, computed, untracked } from '@angula
 import { ProtocolItem, SymptomItem, MedicsShieldItem, PROTOCOL_ADAPTER } from './protocol.interface';
 import { AuthService } from './auth.service';
 import { ThemeService, AppTheme } from './theme.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, of } from 'rxjs';
 
 export type { ProtocolItem, SymptomItem, MedicsShieldItem };
 
@@ -23,7 +23,7 @@ export const SYMPTOM_PRESETS: Record<string, SymptomItem[]> = {
 export const SHIELD_PRESETS: Record<string, MedicsShieldItem[]> = {
   reintroduction: [
     { id: 'msr1', label: 'Antihistaminique', emoji: '💊' },
-    { id: 'msr2', label: 'Aerius/Aeromire', emoji: '💊' },
+    { id: 'msr2', label: 'Aerius/Aeromire', emoji: '💨' },
     { id: 'msr3', label: 'Adrénaline', emoji: '💉' },
   ],
   desensibilisation: [
@@ -92,6 +92,19 @@ export class ActiveDossierService {
         });
       }
     });
+  }
+
+  public saveCurrentConfig(): Observable<void> {
+    const profile = this.auth.activeProfile();
+    if (!profile || !this.auth.isAuthenticated()) return of(undefined);
+
+    const payload = {
+        protocols: this.protocols(),
+        startDate: this.protocolStartDate(),
+        symptoms: this.symptoms(),
+        medicsShields: this.medicsShields()
+    };
+    return this.adapter.saveFullConfig(profile.id, payload);
   }
 
   public applyProtocolTypePreset(type: 'reintroduction' | 'desensibilisation') {

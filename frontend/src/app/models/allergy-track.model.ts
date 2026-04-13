@@ -15,6 +15,7 @@ export interface Profile {
   birthDate?: string; // YYYY-MM-DD
   themePreference: 'colorful' | 'classic';
   isLocal?: boolean;
+  onboardingStep?: string;
 }
 
 export interface AllergenIntake {

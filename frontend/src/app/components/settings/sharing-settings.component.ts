@@ -57,12 +57,13 @@ export class SharingSettingsComponent {
     return this.inviteRole() === 'editor' ? 'Co-Superviseur' : 'Observateur';
   }
 
-  async generateInvite(role: 'editor' | 'reader') {
+  generateInvite(role: 'editor' | 'reader') {
     const active = this.auth.activeProfile();
     if (!active) return;
     this.inviteRole.set(role);
-    const code = await this.sharingService.generateInviteCode(active.id, role as PermissionLevel);
-    this.inviteCode.set(code);
+    this.sharingService.generateInviteCode(active.id, role as PermissionLevel).subscribe(code => {
+      this.inviteCode.set(code);
+    });
   }
 
   readonly ShieldCheck = ShieldCheck;

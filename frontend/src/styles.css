@@ -9,6 +9,11 @@
 }
 
 @layer base {
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
   :root {
     /* Default is Classic Health (Light) */
     --color-primary: #0ea5e9; /* Light Blue 500 */

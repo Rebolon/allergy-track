@@ -32,34 +32,44 @@ L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'a
 Le projet s'appuie sur le `Taskfile.yml` pour faciliter le démarrage.
 
 ### 1. Initialiser le projet
+
 ```bash
 task install
 ```
 
 ### 2. Construire et Lancer (Développement)
+
 ```bash
 task build
 task start
 ```
+
 L'application sera accessible sur `http://localhost:8090`.
 
 ### 3. Administration (Super-utilisateur)
+
 Pour configurer l'interface d'admin PocketBase (`/admin/`) :
+
 ```bash
 task upsert-admin
 ```
-*(Défaut : `admin@allergy-track.local` / `admin123456`)*
+
+_(Défaut : `admin@allergy-track.local` / `admin123456`)_
 
 ### 4. Réinitialisation de la BDD
+
 Pour vider entièrement la base de données (Volume Docker) :
+
 ```bash
 task reset-db
 ```
 
 ## 🏷️ Versioning & Suivi de Build
+
 Une étiquette de version est injectée dans le footer lors du build :
+
 - **v.YYYY-MM-DD_HH:MM (hash)**
-Cela permet de confirmer visuellement que le déploiement sur le Synology est bien à jour.
+  Cela permet de confirmer visuellement que le déploiement sur le Synology est bien à jour.
 
 ## 🛠️ Architecture du Projet
 
@@ -80,6 +90,7 @@ allergy-track/
 ## 💻 Développement Local (HMR)
 
 Pour travailler sur le frontend avec rechargement à chaud :
+
 1. Démarrer PocketBase : `task start`
 2. Lancer Angular : `cd frontend && npm start` (disponible sur `http://localhost:4200`)
 
@@ -90,33 +101,35 @@ Pour travailler sur le frontend avec rechargement à chaud :
     ```bash
     task update
     ```
-    *(Effectue un git pull, reconstruit l'image et redémarre le conteneur).*
+    _(Effectue un git pull, reconstruit l'image et redémarre le conteneur)._
 3.  **Reverse Proxy** :
     - `Panneau de configuration > Portail de connexion > Avancé > Proxy inversé`.
     - `https://votre-domaine.com` (443) -> `http://localhost:8090` (8090).
 
 ## 📜 Règles Métiers & Sécurité
+
 - Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification et les rôles.
 - Consultez [AUTH.md](./AUTH.md) pour configurer le SSO Synology ou l'accès Email.
 
 ## TODO
+
 - Check push notifications (Service Worker)
 - Optimization for multi-device real-time sync
 - Advanced charts for long-term health trends
 - Passer les parametres par des formulaires independant
 - Passer les paramétres sur les même styles que la page de saisie : Défis gourmands / Comment je me sens / Mes boucliers magiques => reprendre la bordure fine, une couleur de fond plus clair que la bordure, le côté gauche avec une bordure pour les boutons, champs ou boc unitaire, case à cocher avec un cercle animé...
 - Splashscreen : le système d'authentification doit etre une pile de moyen disponibles sur lequel le composant va boucler pour proposer les possibilités. En dev on a que login/pwd. En prod on peut avoir synology et login/pwd (et peut être d'autres plus tard)
-- Tester la 1ere connection : 
-    * il semble que rien ne soit persisté (ni la date de naissance, ni le choix d'usage de l'app) + si on clic sur le 2nd choix il ne se passe rien
-    * dans la console on a une erreur alors que c'est juste que l'on est en train de tout configurer : ERROR Error: No active profile
+- Tester la 1ere connection :
+  - il semble que rien ne soit persisté (ni la date de naissance, ni le choix d'usage de l'app) + si on clic sur le 2nd choix il ne se passe rien
+  - dans la console on a une erreur alors que c'est juste que l'on est en train de tout configurer : ERROR Error: No active profile
     at report.service.ts:16:43
     at Observable2.init [as _subscribe] (throwError.js:5:64)
-    at Observable2._trySubscribe (Observable.js:38:25)
+    at Observable2.\_trySubscribe (Observable.js:38:25)
     at Observable.js:32:31
     at errorContext (errorContext.js:19:9)
     at Observable2.subscribe (Observable.js:23:9)
-    at _DashboardComponent.loadStatus (dashboard.component.ts:127:72)
-    at new _DashboardComponent (dashboard.component.ts:119:16)
+    at \_DashboardComponent.loadStatus (dashboard.component.ts:127:72)
+    at new \_DashboardComponent (dashboard.component.ts:119:16)
     at NodeInjectorFactory.DashboardComponent_Factory [as factory] (dashboard.component.ts:137:3)
 
 - Dans les Symptomes pour la désensibilisation tu peux rajouter Démangeaisons oeil

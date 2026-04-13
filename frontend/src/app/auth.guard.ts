@@ -5,9 +5,9 @@ import { filter, map, first } from 'rxjs/operators';
 import { AuthService } from './services/auth.service';
 
 /**
- * Guard to redirect to onboarding if the user has no profiles.
+ * Guard to redirect to welcome page if the user is not authenticated.
  */
-export const onboardingGuard: CanActivateFn = (route, state) => {
+export const authGuard: CanActivateFn = (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
@@ -15,12 +15,9 @@ export const onboardingGuard: CanActivateFn = (route, state) => {
     filter(isReady => isReady),
     first(),
     map(() => {
-      if (auth.needsOnboarding()) {
-        if (!state.url.includes('/onboarding')) {
-          return router.parseUrl('/onboarding');
-        }
+      if (!auth.isAuthenticated()) {
+        return router.parseUrl('/welcome');
       }
-
       return true;
     })
   );

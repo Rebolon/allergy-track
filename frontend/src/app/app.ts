@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit, effect, computed } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, computed } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -12,7 +12,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { LayoutHeaderComponent } from './components/layout/header.component';
 import { LayoutFooterComponent } from './components/layout/footer.component';
 import { GlobalErrorModalComponent } from './components/layout/global-error-modal.component';
-import { SplashScreenComponent } from './components/splash-screen.component';
 import { TopNavComponent } from './components/layout/top-nav.component';
 import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.component';
 import { ErrorService } from './services/error.service';
@@ -28,17 +27,12 @@ import { ErrorService } from './services/error.service';
     BottomNavComponent,
     TopNavComponent,
     GlobalErrorModalComponent,
-    SplashScreenComponent,
     MatIconModule
   ],
   template: `
-    <!-- Splash Screen Gate (Login) -->
-    <app-splash-screen />
-
-    @if (auth.isAuthenticated()) {
-      
-      @if (isOnboarding()) {
-        <!-- Isolated Onboarding Layout -->
+    @if (auth.isInitialized()) {
+      @if (isOnboarding() || isWelcome() || !auth.isAuthenticated() || auth.needsOnboarding()) {
+        <!-- Isolated Layout for Welcome and Onboarding (or while redirecting) -->
         <main>
           <router-outlet />
         </main>
@@ -62,6 +56,9 @@ import { ErrorService } from './services/error.service';
           }
         </div> 
       }
+    } @else {
+      <!-- Neutral state during bootstrap -->
+      <div class="min-h-screen bg-white"></div>
     }
   `
 })
@@ -82,6 +79,7 @@ export class App implements OnInit {
   ), { initialValue: this.router.url });
 
   isOnboarding = computed(() => this.url().includes('/onboarding'));
+  isWelcome = computed(() => this.url().includes('/welcome'));
   
   activeTab = computed<MobileTab>(() => {
     const current = this.url();

@@ -1,4 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
+import { Observable, of, from } from 'rxjs';
+import { tap, map, catchError, switchMap, take } from 'rxjs/operators';
 import { User, Profile, PermissionLevel } from '../models/allergy-track.model';
 import { AUTH_ADAPTER } from './auth.interface';
 
@@ -12,7 +14,8 @@ export class AuthService {
   currentUser = signal<User | null>(null);
   activeProfile = signal<Profile | null>(null);
   isAuthenticated = signal<boolean>(false);
-  isReady = signal<boolean>(false);
+  isReady = signal<boolean>(false);        // Signal volatile pour les opérations en cours
+  isInitialized = signal<boolean>(false);  // Signal persistant après le premier boot
 
   // Derivate signals for UI context
   activePermission = computed<PermissionLevel | null>(() => {
@@ -29,78 +32,132 @@ export class AuthService {
     return user.profileAccesses.find(a => a.profileId === profile.id)?.colorCode || '#6366f1';
   });
 
+  needsOnboarding = computed(() => {
+    const user = this.currentUser();
+    const active = this.activeProfile();
+    
+    if (this.isAuthenticated() && this.isInitialized()) {
+      // Cas 1: Aucun profil créé
+      if (!user || !user.profileAccesses || user.profileAccesses.length === 0) {
+        return true;
+      }
+
+      // Cas 2: Profil actif incomplet
+      if (active) {
+        return active.onboardingStep !== 'completed';
+      }
+    }
+
+    return false;
+  });
+
   constructor() {
-    this.checkSession();
+    this.checkSession().subscribe();
   }
 
-  async checkSession() {
+  checkSession(): Observable<User | null> {
+    this.isReady.set(false);
     if (this.adapter.getAuthUser && this.adapter.isAuthenticated) {
       const isAuth = this.adapter.isAuthenticated();
       this.isAuthenticated.set(isAuth);
-      const user = await this.adapter.getAuthUser();
-      this.currentUser.set(user);
-      if (user && user.profiles && user.profiles.length > 0) {
-        // Recovery of first profile if none active
-        if (!this.activeProfile()) {
-          this.activeProfile.set(user.profiles[0]);
-        } else {
-          // Sync active profile with updated user data if needed
-          const updatedActive = user.profiles.find(p => p.id === this.activeProfile()?.id);
-          if (updatedActive) this.activeProfile.set(updatedActive);
-        }
-      }
+      
+      return this.adapter.getAuthUser().pipe(
+        tap(user => {
+          this.currentUser.set(user);
+          if (user && user.profiles && user.profiles.length > 0) {
+            // Recovery of first profile if none active
+            if (!this.activeProfile()) {
+              this.activeProfile.set(user.profiles[0]);
+            } else {
+              // Sync active profile with updated user data if needed
+              const updatedActive = user.profiles.find(p => p.id === this.activeProfile()?.id);
+              if (updatedActive) this.activeProfile.set(updatedActive);
+            }
+          }
+          this.isReady.set(true);
+          this.isInitialized.set(true);
+        }),
+        catchError(err => {
+            console.error('[AuthService] Session check failed', err);
+            this.isReady.set(true);
+            this.isInitialized.set(true);
+            return of(null);
+        })
+      );
     }
     this.isReady.set(true);
+    this.isInitialized.set(true);
+    return of(null);
   }
 
-  async login() {
+  login(): Observable<void> {
+    this.isReady.set(false);
     if (this.adapter.login) {
-      await this.adapter.login();
-      await this.checkSession();
+      return this.adapter.login().pipe(
+        switchMap(() => this.checkSession()),
+        map(() => undefined)
+      );
     }
+    return of(undefined);
   }
 
-  async loginWithPassword(email: string, pass: string) {
+  loginWithPassword(email: string, pass: string): Observable<void> {
+    this.isReady.set(false);
     if (this.adapter.loginWithPassword) {
-      await this.adapter.loginWithPassword(email, pass);
-      await this.checkSession();
+      return this.adapter.loginWithPassword(email, pass).pipe(
+        switchMap(() => this.checkSession()),
+        map(() => undefined)
+      );
     }
+    return of(undefined);
   }
 
-  async logout() {
+  logout(): Observable<void> {
     if (this.adapter.logout) {
-      await this.adapter.logout();
+      return this.adapter.logout().pipe(
+        tap(() => {
+            this.currentUser.set(null);
+            this.activeProfile.set(null);
+            this.isAuthenticated.set(false);
+        })
+      );
     }
     this.currentUser.set(null);
     this.activeProfile.set(null);
     this.isAuthenticated.set(false);
+    return of(undefined);
   }
 
-  async updateProfile(profile: Profile) {
+  updateProfile(profile: Profile): Observable<void> {
     const user = this.currentUser();
     if (user && user.profiles) {
       const pIdx = user.profiles.findIndex(p => p.id === profile.id);
       if (pIdx !== -1) {
         user.profiles[pIdx] = { ...profile };
-        await this.adapter.updateUser(user);
-        this.currentUser.set({ ...user });
         
-        if (this.activeProfile()?.id === profile.id) {
-          this.activeProfile.set({ ...profile });
-        }
+        return this.adapter.updateUser(user).pipe(
+            tap(() => {
+                this.currentUser.set({ ...user });
+                if (this.activeProfile()?.id === profile.id) {
+                    this.activeProfile.set({ ...profile });
+                }
+            })
+        );
       }
     }
+    return of(undefined);
   }
 
-  async updateProfileTheme(newTheme: 'colorful' | 'classic') {
+  updateProfileTheme(newTheme: 'colorful' | 'classic'): Observable<void> {
     const profile = this.activeProfile();
     if (profile) {
-      profile.themePreference = newTheme;
-      await this.updateProfile(profile);
+      const updatedProfile = { ...profile, themePreference: newTheme };
+      return this.updateProfile(updatedProfile);
     }
+    return of(undefined);
   }
 
-  switchProfile(profileId: string) {
+  switchProfile(profileId: string): void {
     const user = this.currentUser();
     if (user && user.profiles) {
       const profile = user.profiles.find(p => p.id === profileId);

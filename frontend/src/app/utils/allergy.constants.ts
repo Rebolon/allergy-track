@@ -3,13 +3,32 @@ export const SYMPTOM_EMOJIS: Record<string, string> = {
   'Démangeaisons bouche': '👄',
   'Respiratoire': '🫁',
   'Abdominal': '🤢',
+  'Rhinite': '🤧',
+  'Asthme': '🫁',
+  'Urticaire': '🐝',
+  'Conjonctivite': '👁️',
+  'Eczéma': '🧴',
+  'Œdème': '🫀',
+  'Choc anaphylactique': '🚨',
+  'Vomissements': '🤮',
+  'Diarrhée': '💩',
+  'Maux de tête': '🤕',
+  'Maux de ventre': '🤢',
+  'Gonflement': '🫀',
+  'Rougeurs': '🔴',
+  'Éruption cutanée': '🧴',
+  'Éternuements': '🤧',
+  'Toux': '😷',
   'Autres': '🤔'
 };
 
 export const TREATMENT_ICONS: Record<string, string> = {
   'Antihistaminique': '💊',
   'Aerius/Aeromire': '💨',
-  'Adrénaline': '💉'
+  'Adrénaline': '💉',
+  'Corticoide': '💊',
+  'Ventoline': '💨',
+  'Autre': '💊'
 };
 
 export const HEALTH_STATUS_ICONS: Record<string, string> = {

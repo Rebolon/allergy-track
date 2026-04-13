@@ -49,6 +49,25 @@ task update          # git pull + docker compose up --build (Synology deploy)
 - TypeScript strict mode (`strict: true`, `noImplicitOverride`, `strictTemplates`).
 - Tests: vitest globals via `tsconfig.spec.json`.
 
-## PocketBase Migrations
+## Angular Guidelines (v21+)
 
-Migrations are JS files in `pb_migrations/` (timestamped filename). Schema reference is in `schema.json`. To add a new collection: write a migration JS file + optionally update `schema.json` for documentation.
+- **Standalone** : All components, directives, and pipes must be `standalone: true`. Modules are forbidden.
+- **Signals** : Use Signals for state management and UI-bound data. Use `signal()`, `computed()`, and `effect()`. Prefer Signal inputs/outputs over traditional `@Input()`/`@Output()`. Use effect only if there is no other way to achieve the desired result.
+- **Dependency Injection** : Use the `inject()` function for and services instead of constructor injection.
+- **Components** : Use `changeDetection: ChangeDetectionStrategy.OnPush` by default.
+- **Styles** : Use TailwindCSS v4 features. Components should use `styleUrl` or `styles: [...]` (prefer CSS-only Tailwind).
+- **Control Flow** : Use the new `@if`, `@for`, `@switch` syntax.
+- **Guards & Interceptors** : Use functional forms exclusively.
+- **Asynchrony** : Do not use `async`/`await` except in `Adapter` type classes. Prefer RxJS (Observables) and Signals for state and data flow.
+- **API** : Prefer the Angular `HttpClient` for all external service communication.
+- **Logic Separation** : Les composants ne doivent agir que sur l'UI. Tout code métier ou formulaire doit être externalisé dans des fichiers de service ou de form.
+
+## PocketBase Migrations & API
+
+- **Version** : v0.23+ (JavaScript VM modern).
+- **Core API** : Use `$app` (global) or `app` (argument) instead of the deprecated `Dao` global.
+- **Collections** : Access fields via `collection.fields` (array) instead of `collection.schema`.
+- **Saving** : Use `app.save(collection)` or `app.save(record)` instead of `saveCollection` or `saveRecord`.
+- **Fields** : Use typed constructors like `new TextField()`, `new SelectField()`, `new RelationField()`, etc., and `push()` them into `collection.fields`.
+- **Environment** : Access variables via `$os.getenv("VAR")` instead of `process.env`.
+- Migrations are JS files in `pb_migrations/` (timestamped filename). Schema reference is in `schema.json`. To add a new collection: write a migration JS file + optionally update `schema.json` for documentation.

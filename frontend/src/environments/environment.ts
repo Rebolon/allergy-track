@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
-  useMockAuth: true,
-  pocketbaseUrl: 'http://localhost:8090'
+  useMockAuth: false,
+  pocketbaseUrl: 'http://localhost:8090/'
 };
