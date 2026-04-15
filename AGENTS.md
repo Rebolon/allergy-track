@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Maintenance du Modèle de Données
+- **IMPORTANT** : Toute modification apportée aux collections PocketBase (champs, relations, règles) DOIT être systématiquement répercutée dans le fichier [MCD.md](file:///home/brichard/apps-demo/allergy-track/MCD.md) via un diagramme Mermaid à jour.
+- **PARITÉ DES ADAPTATEURS** : Tout changement dans la structure de la base de données (PocketBase) DOIT être répercuté à la fois sur l'adaptateur `PocketBase` ET sur l'adaptateur `LocalStorage` (Mock) pour garantir une expérience identique dans les deux modes.
+
 ## Commands
 
 ```bash

@@ -53,6 +53,54 @@ tasks:
       EMAIL: 'admin@allergy-track.local'
       PASS: 'admin123456'
 
+  sync-mocks:
+    desc: Sync mock users from frontend to backend
+    cmds:
+      - |
+        node -e "
+        const fs = require('fs');
+        const tsFile = 'frontend/src/app/services/adapters/auth/local-storage/mock-users.data.ts';
+        const jsFile = 'backend/pb_hooks/mock-users.json';
+        let content = fs.readFileSync(tsFile, 'utf8');
+        
+        // Clean TS content for eval (remove imports and type annotations)
+        // This is a naive but effective way for our controlled mock file
+        content = content.replace(/^import .*/gm, '');
+        content = content.replace(/: [A-Z][a-zA-Z]*(\[\])?/g, ''); // Remove : User, : User[]
+        
+        const extractArray = (name) => {
+          const regex = new RegExp('export const ' + name + '\\\\s*=\\\\s*([\\\\s\\\\S]*?);', 'm');
+          const match = content.match(regex);
+          if (!match) throw new Error('Constant ' + name + ' not found');
+          return eval(match[1]);
+        };
+
+        const data = {
+          users: extractArray('MOCK_USERS'),
+          profiles: extractArray('MOCK_PROFILES'),
+          accesses: extractArray('MOCK_ACCESSES')
+        };
+        
+        fs.writeFileSync(jsFile, JSON.stringify(data, null, 2));
+        console.log('Synchronized ' + jsFile + ' (relational)');
+        "
+
+  upsert-mock-users:
+    desc: Upsert mock users in PocketBase
+    deps: [sync-mocks]
+    cmds:
+      - task: start
+      - docker cp backend/pb_hooks/mocks_manager.pb.js $(docker compose ps -q allergy-track):/srv/pb_hooks/
+      - docker cp backend/pb_hooks/mock-users.json $(docker compose ps -q allergy-track):/srv/pb_hooks/
+      - docker cp backend/pb_migrations/. $(docker compose ps -q allergy-track):/srv/pb_migrations/
+      - docker compose exec allergy-track /usr/local/bin/pocketbase migrate up --dir=/srv/pb_data
+      - docker compose exec allergy-track /usr/local/bin/pocketbase upsert-mock-data --dir=/srv/pb_data
+
+  delete-mock-users:
+    desc: Supprime les utilisateurs de test de la base de données
+    cmds:
+      - "{{.SUDO}} docker compose exec allergy-track /usr/local/bin/pocketbase delete-mock-data --dir=/srv/pb_data"
+
   reset-db:
     desc: Réinitialise la base de données (Volume nommé Docker)
     cmds:

@@ -91,8 +91,7 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
 
     // 1. Create Profile in 'profiles' collection
     return this.http.post<any>(`/api/collections/profiles/records`, {
-      ...profile,
-      ownerId: user.id
+      ...profile
     }).pipe(
       switchMap(profileRecord => {
         const newProfile: Profile = {
@@ -103,24 +102,12 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
           onboardingStep: profileRecord['onboardingStep']
         };
 
-        // 2. Add Access to current User
-        return this.http.patch<any>(`/api/collections/users/records/${user.id}`, {
-          'profile_accesses+': [{
-            profileId: newProfile.id,
-            permission: 'owner'
-          }]
+        // 2. Add Access entry in 'accesses' collection
+        return this.http.post<any>(`/api/collections/accesses/records`, {
+          userId: user.id,
+          profileId: newProfile.id,
+          role: 'owner'
         }).pipe(
-          tap(updatedUser => {
-            // Update stored user model (sync authStore)
-            const currentAuth = this.getStoredAuth();
-            if (currentAuth) {
-                // Update BOTH model and record for max compatibility
-                currentAuth.model = updatedUser;
-                currentAuth.record = updatedUser; 
-                localStorage.setItem(this.AUTH_KEY, JSON.stringify(currentAuth));
-                this.pb.authStore.save(currentAuth.token, updatedUser);
-            }
-          }),
           map(() => newProfile)
         );
       })
@@ -128,17 +115,8 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
   }
 
   deleteProfile(profileId: string): Observable<void> {
+    // PocketBase handles cascadeDelete if configured in relations
     return this.http.delete(`/api/collections/profiles/records/${profileId}`).pipe(
-      switchMap(() => this.getAuthUser()),
-      tap(user => {
-        const currentAuth = this.getStoredAuth();
-        if (currentAuth && user) {
-          currentAuth.model = user;
-          currentAuth.record = user;
-          localStorage.setItem(this.AUTH_KEY, JSON.stringify(currentAuth));
-          this.pb.authStore.save(currentAuth.token, user as any);
-        }
-      }),
       map(() => undefined)
     );
   }
@@ -157,31 +135,38 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     }
 
     const model = userModel;
-    const profileAccesses: ProfileAccess[] = model['profile_accesses'] || [];
     
-    if (profileAccesses.length === 0) {
-        return of(this.mapUser(model, []));
-    }
-
-    // Load actual profiles from 'profiles' collection
-    const profileIds = profileAccesses.map(a => a.profileId);
-    const filter = profileIds.map(id => `id="${id}"`).join(' || ');
-    const url = `/api/collections/profiles/records`;
+    // Load accesses and expand profiles
+    const filter = `userId="${model.id}"`;
+    const expand = 'profileId';
+    const url = `/api/collections/accesses/records`;
     
-    return this.http.get<{ items: any[] }>(url, { params: { filter } }).pipe(
+    return this.http.get<{ items: any[] }>(url, { params: { filter, expand } }).pipe(
         map(res => {
-            const profiles: Profile[] = res.items.map(r => ({
-                id: r.id,
-                name: r['name'],
-                birthDate: r['birthDate'],
-                themePreference: r['themePreference'],
-                onboardingStep: r['onboardingStep']
+            const profileAccesses: ProfileAccess[] = res.items.map(item => ({
+                profileId: item.profileId,
+                permission: item.role,
+                colorCode: item.colorCode // optionnel
             }));
-            return this.mapUser(model, profiles);
+            
+            const profiles: Profile[] = res.items
+                .filter(item => item.expand && item.expand.profileId)
+                .map(item => {
+                    const p = item.expand.profileId;
+                    return {
+                        id: p.id,
+                        name: p.name,
+                        birthDate: p.birthDate,
+                        themePreference: p.themePreference,
+                        onboardingStep: p.onboardingStep
+                    };
+                });
+
+            return this.mapUser(model, profiles, profileAccesses);
         }),
         catchError(err => {
-            console.error('[PocketbaseAuthAdapter] Failed to load profiles', err);
-            return of(this.mapUser(model, []));
+            console.error('[PocketbaseAuthAdapter] Failed to load accesses', err);
+            return of(this.mapUser(model, [], []));
         })
     );
   }
@@ -199,12 +184,12 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
     }
   }
 
-  private mapUser(model: any, profiles: Profile[]): User {
+  private mapUser(model: any, profiles: Profile[], profileAccesses: ProfileAccess[]): User {
     return {
       id: model.id,
       email: model['email'],
       name: model['name'] || model['username'] || 'Utilisateur',
-      profileAccesses: model['profile_accesses'] || [],
+      profileAccesses,
       profiles
     };
   }

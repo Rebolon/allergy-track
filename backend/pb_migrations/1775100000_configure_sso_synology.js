@@ -35,7 +35,7 @@ migrate((app) => {
         collection.fields.push(new SelectField({
             name: "themePreference",
             required: true,
-            values: ["flashy", "classic"]
+            values: ["colorful", "classic"]
         }));
     }
 

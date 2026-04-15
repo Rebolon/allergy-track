@@ -1,68 +1,31 @@
 import { Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { AuthAdapter } from '../../../auth.interface';
-import { User, Profile, ProfileAccess, PermissionLevel } from '../../../../models/allergy-track.model';
+import { User, Profile, ProfileAccess } from '../../../../models/allergy-track.model';
+import { MOCK_USERS, MOCK_PROFILES, MOCK_ACCESSES, MockUser, MockAccess } from './mock-users.data';
 
 @Injectable({ providedIn: 'root' })
 export class MockAuthAdapter implements AuthAdapter {
   private readonly SESSION_KEY = 'at_mock_session';
   private sessionUserId: string | null = localStorage.getItem(this.SESSION_KEY);
 
-  private users: User[] = [
-    {
-      id: 'u_firstconnection',
-      email: 'firstconnection@test.fr',
-      name: 'Jean-Marc (First Connection)',
-      profileAccesses: [
-      ],
-      profiles: [
-      ]
-    },
-    {
-      id: 'u_mixte',
-      email: 'mixte@test.fr',
-      name: 'Jean-Marc (Mixte)',
-      profileAccesses: [
-        { profileId: 'p1_1', permission: 'owner', colorCode: '#10b981' }
-      ],
-      profiles: [
-        { id: 'p1_1', name: 'Mon Compte', themePreference: 'classic', birthDate: '1985-06-15' }
-      ]
-    },
-    {
-      id: 'u_parent',
-      email: 'parent.allergique@test.fr',
-      name: 'Famille Dupont',
-      profileAccesses: [
-        { profileId: 'p2_1', permission: 'owner', colorCode: '#3b82f6' },
-        { profileId: 'p2_3', permission: 'owner', colorCode: '#f59e0b' }
-      ],
-      profiles: [
-        { id: 'p2_1', name: 'Maman', themePreference: 'classic', birthDate: '1988-03-20' },
-        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, birthDate: '2018-11-10' }
-      ]
-    },
-    {
-      id: 'u_medecin',
-      email: 'medecin@test.fr',
-      name: 'Dr. House',
-      profileAccesses: [
-        { profileId: 'p2_3', permission: 'reader', colorCode: '#8b5cf6' }
-      ],
-      profiles: [
-        { id: 'p2_3', name: 'Léo', themePreference: 'colorful', isLocal: true, birthDate: '2018-11-10' }
-      ]
-    }
-  ];
+  private users: MockUser[] = [...MOCK_USERS];
+  private profiles: Profile[] = [...MOCK_PROFILES];
+  private accesses: MockAccess[] = [...MOCK_ACCESSES];
 
   getUsers(): User[] {
-    return this.users;
+    // Note: On ne renvoie ici que les records de base pour le choix du user
+    return this.users.map(u => this.reconstructUser(u));
   }
 
   updateUser(updatedUser: User): Observable<void> {
     const index = this.users.findIndex(u => u.id === updatedUser.id);
     if (index !== -1) {
-      this.users[index] = { ...updatedUser };
+      this.users[index] = { 
+        id: updatedUser.id, 
+        email: updatedUser.email, 
+        name: updatedUser.name 
+      };
     }
     return of(undefined);
   }
@@ -95,18 +58,38 @@ export class MockAuthAdapter implements AuthAdapter {
   }
 
   getAuthUser(): Observable<User | null> {
-    return of(this.users.find(u => u.id === this.sessionUserId) || null);
+    const userRecord = this.users.find(u => u.id === this.sessionUserId);
+    if (!userRecord) return of(null);
+    return of(this.reconstructUser(userRecord));
   }
 
   addProfile(profile: Omit<Profile, 'id'>): Observable<Profile> {
-    const sessionUser = this.users.find(u => u.id === this.sessionUserId) || this.users[0];
+    const userId = this.sessionUserId || this.users[0].id;
     const newProfile: Profile = {
       ...profile,
       id: 'p' + (Math.random().toString(36).substr(2, 9))
     };
-    sessionUser.profiles.push(newProfile);
-    sessionUser.profileAccesses.push({ profileId: newProfile.id, permission: 'owner', colorCode: '#10b981' });
-    this.updateUser(sessionUser);
+    this.profiles.push(newProfile);
+    this.accesses.push({ userId, profileId: newProfile.id, role: 'owner', colorCode: '#10b981' });
+    
     return of(newProfile);
+  }
+
+  private reconstructUser(userRecord: MockUser): User {
+    const userAccesses = this.accesses.filter(a => a.userId === userRecord.id);
+    const profileAccesses: ProfileAccess[] = userAccesses.map(a => ({
+      profileId: a.profileId,
+      permission: a.role,
+      colorCode: a.colorCode
+    }));
+    
+    const profileIds = profileAccesses.map(a => a.profileId);
+    const profiles = this.profiles.filter(p => profileIds.includes(p.id));
+
+    return {
+      ...userRecord,
+      profileAccesses,
+      profiles
+    };
   }
 }
