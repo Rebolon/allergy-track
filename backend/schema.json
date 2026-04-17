@@ -1,167 +1,91 @@
 [
   {
+    "name": "users",
+    "type": "auth",
+    "fields": [
+      { "name": "name", "type": "text" },
+      { "name": "role", "type": "select", "options": { "values": ["Allergique", "Supervision"] } },
+      { "name": "themePreference", "type": "text" }
+    ]
+  },
+  {
+    "name": "profiles",
+    "type": "base",
+    "fields": [
+      { "name": "name", "type": "text", "required": true },
+      { "name": "birthDate", "type": "text" },
+      { "name": "avatar", "type": "text" },
+      { "name": "avatarSkinTone", "type": "text" },
+      { "name": "themePreference", "type": "text" },
+      { "name": "onboardingStep", "type": "text" }
+    ]
+  },
+  {
+    "name": "accesses",
+    "type": "base",
+    "fields": [
+      { "name": "userId", "type": "relation", "required": true, "options": { "collectionId": "_pb_users_auth_", "maxSelect": 1 } },
+      { "name": "profileId", "type": "relation", "required": true, "options": { "collectionId": "profiles", "maxSelect": 1 } },
+      { "name": "role", "type": "select", "required": true, "options": { "values": ["owner", "editor", "reader"] } }
+    ]
+  },
+  {
     "name": "daily_logs",
     "type": "base",
-    "system": false,
-    "schema": [
-      {
-        "system": false,
-        "name": "date",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": true,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-        }
-      },
-      {
-        "system": false,
-        "name": "intakes",
-        "type": "json",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {}
-      },
-      {
-        "system": false,
-        "name": "symptoms",
-        "type": "json",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {}
-      },
-      {
-        "system": false,
-        "name": "treatments",
-        "type": "json",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {}
-      },
-      {
-        "system": false,
-        "name": "note",
-        "type": "text",
-        "required": false,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "updatedBy",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      }
+    "fields": [
+      { "name": "date", "type": "text", "required": true },
+      { "name": "intakes", "type": "json", "required": true },
+      { "name": "symptoms", "type": "json", "required": true },
+      { "name": "treatments", "type": "json", "required": true },
+      { "name": "note", "type": "text" },
+      { "name": "updatedBy", "type": "text", "required": true },
+      { "name": "profileId", "type": "relation", "required": true, "options": { "collectionId": "profiles", "maxSelect": 1 } }
+    ]
+  },
+  {
+    "name": "profiles_config",
+    "type": "base",
+    "fields": [
+      { "name": "profileId", "type": "relation", "required": true, "options": { "collectionId": "profiles", "maxSelect": 1 } },
+      { "name": "protocols", "type": "json" },
+      { "name": "startDate", "type": "text" },
+      { "name": "symptoms", "type": "json" },
+      { "name": "medicsShields", "type": "json" }
+    ]
+  },
+  {
+    "name": "gamification",
+    "type": "base",
+    "fields": [
+      { "name": "profileId", "type": "relation", "required": true, "options": { "collectionId": "profiles", "maxSelect": 1 } },
+      { "name": "totalStreakPoints", "type": "number" },
+      { "name": "perfectPoints", "type": "number" },
+      { "name": "longestStreak", "type": "number" },
+      { "name": "lastCelebrationAt", "type": "date" },
+      { "name": "lastPointAt", "type": "text" }
+    ]
+  },
+  {
+    "name": "invitations",
+    "type": "base",
+    "fields": [
+      { "name": "code", "type": "text", "required": true },
+      { "name": "profileId", "type": "relation", "required": true, "options": { "collectionId": "profiles", "maxSelect": 1 } },
+      { "name": "permission", "type": "text", "required": true },
+      { "name": "expiresAt", "type": "date", "required": true },
+      { "name": "usedBy", "type": "relation", "options": { "collectionId": "_pb_users_auth_", "maxSelect": 1 } }
     ]
   },
   {
     "name": "audit_logs",
     "type": "base",
-    "system": false,
-    "schema": [
-      {
-        "system": false,
-        "name": "timestamp",
-        "type": "date",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": "",
-          "max": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "userId",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "userRole",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "action",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "entityId",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "details",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      }
+    "fields": [
+      { "name": "timestamp", "type": "date", "required": true },
+      { "name": "userId", "type": "text", "required": true },
+      { "name": "userRole", "type": "text", "required": true },
+      { "name": "action", "type": "text", "required": true },
+      { "name": "entityId", "type": "text", "required": true },
+      { "name": "details", "type": "text", "required": true }
     ]
-  },
-  {
-    "name": "latest_daily_logs",
-    "type": "view",
-    "system": false,
-    "options": {
-      "query": "SELECT id, date, intakes, symptoms, treatments, note, updatedBy, MAX(created) as created, updated FROM daily_logs GROUP BY date"
-    }
   }
 ]

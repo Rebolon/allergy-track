@@ -26,6 +26,9 @@ import { LocalStorageDailyLogsAdapter } from './services/adapters/daily-logs/loc
 import { SHARING_ADAPTER } from './services/sharing.interface';
 import { LocalStorageSharingAdapter } from './services/adapters/sharing/local-storage/sharing.adapter';
 import { PocketbaseSharingAdapter } from './services/adapters/sharing/pocketbase/sharing.adapter';
+import { GAMIFICATION_ADAPTER } from './services/gamification.interface';
+import { LocalStorageGamificationAdapter } from './services/adapters/gamification/local-storage/gamification.adapter';
+import { PocketbaseGamificationAdapter } from './services/adapters/gamification/pocketbase/gamification.adapter';
 import { environment } from '../environments/environment';
 
 registerLocaleData(localeFr);
@@ -56,6 +59,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: PROTOCOL_ADAPTER,
       useClass: environment.useMockAuth ? LocalStorageProtocolAdapter : PocketbaseProtocolAdapter
+    },
+    {
+      provide: GAMIFICATION_ADAPTER,
+      useClass: environment.useMockAuth ? LocalStorageGamificationAdapter : PocketbaseGamificationAdapter
     }
   ],
 };

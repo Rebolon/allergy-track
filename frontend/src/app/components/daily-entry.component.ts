@@ -1,17 +1,17 @@
-import { Component, inject, input, effect, signal, computed } from '@angular/core';
-import { NgClass, DatePipe } from '@angular/common';
-import { ReactiveFormsModule, FormGroup, FormArray, FormControl } from '@angular/forms';
-import { DailyFormService } from '../services/daily-form.service';
-import { ActiveDossierService } from '../services/active-dossier.service';
-import { ThemeService } from '../services/theme.service';
-import { CopywritingService } from '../services/copywriting.service';
-import { GamificationService } from '../services/gamification.service';
+import { DatePipe, NgClass } from '@angular/common';
+import { Component, computed, effect, inject, input, signal } from '@angular/core';
+import { FormArray, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { LucideAngularModule, Activity, Check, Pill, Settings, UserPlus, Lock } from 'lucide-angular';
-import { Symptom } from '../models/allergy-track.model';
+import { Activity, Check, Lock, LucideAngularModule, Pill, Settings, UserPlus } from 'lucide-angular';
+import { ActiveDossierService } from '../services/active-dossier.service';
+import { CopywritingService } from '../services/copywriting.service';
+import { DailyFormService } from '../services/daily-form.service';
+import { GamificationService } from '../services/gamification.service';
 import { SymptomItem } from '../services/protocol.interface';
+import { ThemeService } from '../services/theme.service';
 import { getSymptomEmoji } from '../utils/allergy.constants';
 
+import { skip, take } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -389,6 +389,15 @@ export class DailyEntryComponent {
         this.saveSuccess.set(true);
         this.saveError.set(null);
         this.gamification.refresh();
+        
+        // Fix for Bug 1: Wait for the refresh to complete before celebrating
+        this.gamification.getGamificationState().pipe(
+          skip(1),
+          take(1)
+        ).subscribe(state => {
+          this.gamification.checkAndCelebrate(state);
+        });
+
         setTimeout(() => this.saveSuccess.set(false), 3000);
       },
       error: (err) => {

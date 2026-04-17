@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, BehaviorSubject, map, switchMap, shareReplay } from 'rxjs';
+import { Observable, BehaviorSubject, map, switchMap, shareReplay, forkJoin, of, tap } from 'rxjs';
 import { DailyLogsService } from './daily-logs.service';
-import { DailyLog } from '../models/allergy-track.model';
+import { DailyLog, GamificationData } from '../models/allergy-track.model';
 import { ActiveDossierService } from './active-dossier.service';
+import { AuthService } from './auth.service';
+import { GAMIFICATION_ADAPTER } from './gamification.interface';
 import { formatDate, getTodayStr, offsetDate } from '../utils/date.utils';
 import confetti from 'canvas-confetti';
 
@@ -17,6 +19,12 @@ export interface ScoringEvent {
 export interface GamificationState {
   regularStreak: number;
   perfectStreak: number;
+  
+  // Persistent points
+  totalStreakPoints: number;
+  perfectPoints: number;
+  longestStreak: number;
+
   // Système de Tiers
   tier: 'flame' | 'star' | 'trophy';
   starsCount: number;
@@ -30,6 +38,11 @@ export interface GamificationState {
 
   // Explications pour la supervision
   history: ScoringEvent[];
+  
+  // Internal persistence info
+  persistedId?: string;
+  lastCelebrationAt?: string;
+  lastPointAt?: string;
 }
 
 @Injectable({
@@ -38,6 +51,9 @@ export interface GamificationState {
 export class GamificationService {
   private dailyLogsService = inject(DailyLogsService);
   private protocolService = inject(ActiveDossierService);
+  private auth = inject(AuthService);
+  private gamificationAdapter = inject(GAMIFICATION_ADAPTER);
+  
   private refresh$ = new BehaviorSubject<void>(undefined);
 
   private state$ = this.refresh$.pipe(
@@ -55,14 +71,31 @@ export class GamificationService {
 
   private calculateGamification(): Observable<GamificationState> {
     const today = new Date();
-    const pastDate = offsetDate(-90, today);
+    const activeProfile = this.auth.activeProfile();
+    
+    if (!activeProfile) {
+      return of(this.createInitialState(false));
+    }
 
+    const pastDate = offsetDate(-90, today);
     const startDate = formatDate(pastDate);
     const endDate = formatDate(today);
 
-    return this.dailyLogsService.getDailyLogs(startDate, endDate).pipe(
-      map(logs => {
+    return forkJoin({
+      logs: this.dailyLogsService.getDailyLogs(activeProfile.id, startDate, endDate),
+      persisted: this.gamificationAdapter.getGamificationData(activeProfile.id)
+    }).pipe(
+      map(({ logs, persisted }) => {
         const state = this.createInitialState(logs.length > 0);
+        if (persisted) {
+          state.persistedId = persisted.id;
+          state.totalStreakPoints = persisted.totalStreakPoints || 0;
+          state.perfectPoints = persisted.perfectPoints || 0;
+          state.longestStreak = persisted.longestStreak || 0;
+          state.lastCelebrationAt = persisted.lastCelebrationAt;
+          state.lastPointAt = persisted.lastPointAt;
+        }
+
         if (logs.length === 0) return state;
 
         const latestLogsMap = this.buildLatestLogsMap(logs);
@@ -82,6 +115,11 @@ export class GamificationService {
         state.regularStreak = this.calculateStreak(latestLogsMap, today, todayLog, configuredStart, (log) => log.intakes.some(i => i.taken));
         state.perfectStreak = this.calculateStreak(latestLogsMap, today, todayLog, configuredStart, (log) => !log.intakes.some(i => !i.taken));
 
+        // Actualisation des records persistés si nécessaire
+        if (state.regularStreak > state.longestStreak) {
+          state.longestStreak = state.regularStreak;
+        }
+
         this.applyTierLogic(state, state.perfectStreak);
         state.showCongratulation = state.regularStreak >= 14;
 
@@ -94,6 +132,9 @@ export class GamificationService {
     return {
       regularStreak: 0,
       perfectStreak: 0,
+      totalStreakPoints: 0,
+      perfectPoints: 0,
+      longestStreak: 0,
       tier: 'flame',
       starsCount: 0,
       daysToNextStar: 7,
@@ -192,9 +233,57 @@ export class GamificationService {
     }
   }
 
+  saveGamification(state: GamificationState): Observable<GamificationData> {
+    const profileId = this.auth.activeProfile()?.id;
+    if (!profileId) return of({} as GamificationData);
+
+    const data: GamificationData = {
+      id: state.persistedId,
+      profileId,
+      totalStreakPoints: state.totalStreakPoints,
+      perfectPoints: state.perfectPoints,
+      longestStreak: state.longestStreak,
+      lastCelebrationAt: state.lastCelebrationAt || '',
+      lastPointAt: state.lastPointAt || ''
+    };
+
+    return this.gamificationAdapter.saveGamificationData(data).pipe(
+      tap(saved => {
+        state.persistedId = saved.id;
+      })
+    );
+  }
+
   checkAndCelebrate(state: GamificationState) {
-    if (state.perfectStreak > 0 && state.perfectStreak % 7 === 0) {
-      this.triggerCelebration();
+    const today = getTodayStr();
+    let needsSave = false;
+
+    // 1. Points Quotidiens (Anti-doublon)
+    if (state.lastPointAt !== today) {
+       // Si on a pris des doses aujourd'hui (regularStreak > 0)
+       if (state.regularStreak > 0) {
+         state.totalStreakPoints += 1;
+         state.lastPointAt = today;
+         needsSave = true;
+         
+         // Point bonus pour semaine parfaite ?
+         if (state.perfectStreak > 0 && state.perfectStreak % 7 === 0) {
+            state.perfectPoints += 1;
+         }
+       }
+    }
+
+    // 2. Célébration (Anti-doublon)
+    if (state.lastCelebrationAt !== today) {
+      if (state.perfectStreak > 0 && state.perfectStreak % 7 === 0) {
+        state.lastCelebrationAt = today;
+        this.triggerCelebration();
+        needsSave = true;
+      }
+    }
+
+    if (needsSave) {
+      this.saveGamification(state).subscribe();
     }
   }
 

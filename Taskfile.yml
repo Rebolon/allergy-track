@@ -2,7 +2,9 @@ version: "3"
 
 vars:
   SUDO: '' # Modifiez en 'sudo' si nécessaire sur Synology
-
+  # Détection automatique de la commande compose (Synology vs PC)
+  DOCKER_COMPOSE:
+    sh: docker-compose version >/dev/null 2>&1 && echo "docker-compose" || echo "docker compose"
 
 tasks:
   install:
@@ -19,12 +21,12 @@ tasks:
   start:
     desc: Démarre l'application via Docker Compose
     cmds:
-      - "{{.SUDO}} docker compose up -d"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} up -d"
 
   stop:
     desc: Arrête l'application
     cmds:
-      - "{{.SUDO}} docker compose down"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} down"
 
   restart:
     desc: Redémarre l'application (utile après un build)
@@ -35,7 +37,7 @@ tasks:
   status:
     desc: Affiche l'état des services
     cmds:
-      - "{{.SUDO}} docker compose ps"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} ps"
 
   build-and-start:
     desc: Construit l'image Docker et redémarre l'application
@@ -43,12 +45,12 @@ tasks:
       - |
         BUILD_DATE=$(date +%Y-%m-%d_%H:%M) \
         GIT_HASH=$(git rev-parse --short HEAD || echo "no-git") \
-        {{.SUDO}} docker compose up -d --build
+        {{.SUDO}} {{.DOCKER_COMPOSE}} up -d --build
 
   upsert-admin:
     desc: Crée ou met à jour un utilisateur administrateur (Docker)
     cmds:
-      - "{{.SUDO}} docker compose exec allergy-track /usr/local/bin/pocketbase superuser upsert {{.EMAIL}} {{.PASS}} --dir=/srv/pb_data"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} exec allergy-track /usr/local/bin/pocketbase superuser upsert {{.EMAIL}} {{.PASS}} --dir=/srv/pb_data"
     vars:
       EMAIL: 'admin@allergy-track.local'
       PASS: 'admin123456'
@@ -63,10 +65,8 @@ tasks:
         const jsFile = 'backend/pb_hooks/mock-users.json';
         let content = fs.readFileSync(tsFile, 'utf8');
         
-        // Clean TS content for eval (remove imports and type annotations)
-        // This is a naive but effective way for our controlled mock file
         content = content.replace(/^import .*/gm, '');
-        content = content.replace(/: [A-Z][a-zA-Z]*(\[\])?/g, ''); // Remove : User, : User[]
+        content = content.replace(/: [A-Z][a-zA-Z]*(\[\])?/g, ''); 
         
         const extractArray = (name) => {
           const regex = new RegExp('export const ' + name + '\\\\s*=\\\\s*([\\\\s\\\\S]*?);', 'm');
@@ -90,16 +90,16 @@ tasks:
     deps: [sync-mocks]
     cmds:
       - task: start
-      - docker cp backend/pb_hooks/mocks_manager.pb.js $(docker compose ps -q allergy-track):/srv/pb_hooks/
-      - docker cp backend/pb_hooks/mock-users.json $(docker compose ps -q allergy-track):/srv/pb_hooks/
-      - docker cp backend/pb_migrations/. $(docker compose ps -q allergy-track):/srv/pb_migrations/
-      - docker compose exec allergy-track /usr/local/bin/pocketbase migrate up --dir=/srv/pb_data
-      - docker compose exec allergy-track /usr/local/bin/pocketbase upsert-mock-data --dir=/srv/pb_data
+      - docker cp backend/pb_hooks/mocks_manager.pb.js $({{.DOCKER_COMPOSE}} ps -q allergy-track):/srv/pb_hooks/
+      - docker cp backend/pb_hooks/mock-users.json $({{.DOCKER_COMPOSE}} ps -q allergy-track):/srv/pb_hooks/
+      - docker cp backend/pb_migrations/. $({{.DOCKER_COMPOSE}} ps -q allergy-track):/srv/pb_migrations/
+      - "{{.DOCKER_COMPOSE}} exec allergy-track /usr/local/bin/pocketbase migrate up --dir=/srv/pb_data"
+      - "{{.DOCKER_COMPOSE}} exec allergy-track /usr/local/bin/pocketbase upsert-mock-data --dir=/srv/pb_data"
 
   delete-mock-users:
     desc: Supprime les utilisateurs de test de la base de données
     cmds:
-      - "{{.SUDO}} docker compose exec allergy-track /usr/local/bin/pocketbase delete-mock-data --dir=/srv/pb_data"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} exec allergy-track /usr/local/bin/pocketbase delete-mock-data --dir=/srv/pb_data"
 
   reset-db:
     desc: Réinitialise la base de données (Volume nommé Docker)
@@ -111,13 +111,13 @@ tasks:
   test-docker:
     desc: Construit et teste l'image Docker localement
     cmds:
-      - "{{.SUDO}} docker compose build"
-      - "{{.SUDO}} docker compose up -d"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} build"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} up -d"
       - "echo 'Waiting for PocketBase to start...'"
       - sleep 5
-      - curl -f http://localhost:8090/ || ({{.SUDO}} docker compose logs && exit 1)
+      - curl -f http://localhost:8090/ || ({{.SUDO}} {{.DOCKER_COMPOSE}} logs && exit 1)
       - "echo '✅ Test Docker réussi !'"
-      - "{{.SUDO}} docker compose down"
+      - "{{.SUDO}} {{.DOCKER_COMPOSE}} down"
 
   update:
     desc: Met à jour l'application (git pull + rebuild Docker) sur le Synology
@@ -126,7 +126,7 @@ tasks:
       - |
         BUILD_DATE=$(date +%Y-%m-%d_%H:%M) \
         GIT_HASH=$(git rev-parse --short HEAD || echo "no-git") \
-        {{.SUDO}} docker compose up -d --build
+        {{.SUDO}} {{.DOCKER_COMPOSE}} up -d --build
 
   generate-version:
     internal: true

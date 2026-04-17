@@ -56,3 +56,13 @@ export interface HealthStatus {
   misses: number;
   symptomsCount: number;
 }
+
+export interface GamificationData {
+  id?: string;
+  profileId: string;
+  totalStreakPoints: number;
+  perfectPoints: number;
+  longestStreak: number;
+  lastCelebrationAt: string; // ISO Date
+  lastPointAt?: string; // YYYY-MM-DD
+}

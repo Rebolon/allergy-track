@@ -2,6 +2,7 @@
 
 ## Maintenance du Modèle de Données
 - **IMPORTANT** : Toute modification apportée aux collections PocketBase (champs, relations, règles) DOIT être systématiquement répercutée dans le fichier [MCD.md](file:///home/brichard/apps-demo/allergy-track/MCD.md) via un diagramme Mermaid à jour.
+- **VALIDATION OBLIGATOIRE** : Après toute modification du backend (migrations, hooks, schéma), tu DOIS impérativement tester que le conteneur démarre sans erreur. Utilise `task start` ou `task test-docker` et vérifie les logs pour t'assurer qu'aucune migration ne plante (ex: `ReferenceError`).
 - **PARITÉ DES ADAPTATEURS** : Tout changement dans la structure de la base de données (PocketBase) DOIT être répercuté à la fois sur l'adaptateur `PocketBase` ET sur l'adaptateur `LocalStorage` (Mock) pour garantir une expérience identique dans les deux modes.
 
 ## Commands
@@ -68,7 +69,7 @@ task update          # git pull + docker compose up --build (Synology deploy)
 
 ## PocketBase Migrations & API
 
-- **Version** : v0.23+ (JavaScript VM modern).
+- **Version** : v0.36+
 - **Core API** : Use `$app` (global) or `app` (argument) instead of the deprecated `Dao` global.
 - **Collections** : Access fields via `collection.fields` (array) instead of `collection.schema`.
 - **Saving** : Use `app.save(collection)` or `app.save(record)` instead of `saveCollection` or `saveRecord`.

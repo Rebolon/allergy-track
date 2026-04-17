@@ -12,15 +12,18 @@ import { CopywritingService } from '../../services/copywriting.service';
       <div class="mb-6 flex flex-col sm:flex-row gap-4 justify-center">
         <!-- Tier 1: Flame 🔥 (Regularity) -->
         @if (g.tier === 'flame' && g.regularStreak > 0) {
-          <div class="flex items-center justify-center gap-3 p-4 rounded-2xl font-black text-xl border-2 shadow-sm"
+          <div class="flex flex-col items-center gap-1 p-4 rounded-2xl border-2 shadow-sm"
                [class.bg-orange-100]="theme.persona() === 'child'"
                [class.text-orange-600]="theme.persona() === 'child'"
                [class.border-orange-200]="theme.persona() === 'child'"
                [class.bg-blue-50]="theme.persona() === 'teen'"
                [class.text-blue-600]="theme.persona() === 'teen'"
                [class.border-blue-200]="theme.persona() === 'teen'">
-            <span class="text-3xl animate-bounce">🔥</span>
-            {{ copy.streakTitle() }} {{ g.regularStreak }}
+            <div class="flex items-center gap-3 font-black text-xl">
+              <span class="text-3xl animate-bounce">🔥</span>
+              {{ copy.streakTitle() }} {{ g.regularStreak }}
+            </div>
+            <span class="text-[10px] uppercase font-bold opacity-60">{{ copy.streakPointsLabel() }} : {{ g.totalStreakPoints }}</span>
           </div>
         } @else if (g.hasPreviousRecords && g.hasMissedYesterday && g.tier === 'flame') {
           <div class="flex items-center justify-center gap-3 p-4 rounded-2xl font-bold text-lg border-2 shadow-sm"
@@ -37,7 +40,7 @@ import { CopywritingService } from '../../services/copywriting.service';
 
         <!-- Tier 2: Star ⭐ (Perfect Weeks) -->
         @if (g.tier === 'star') {
-          <div class="flex flex-col items-center gap-2 px-6 py-4 rounded-2xl border-2 shadow-sm bg-white"
+          <div class="flex flex-col items-center gap-1 px-6 py-4 rounded-2xl border-2 shadow-sm bg-white"
                [class.border-amber-200]="theme.persona() === 'child'"
                [class.border-blue-200]="theme.persona() === 'teen'">
             <div class="flex items-center gap-3 font-black text-2xl"
@@ -46,8 +49,9 @@ import { CopywritingService } from '../../services/copywriting.service';
               <span class="text-4xl animate-pulse">⭐</span>
               {{ g.starsCount }} {{ g.starsCount > 1 ? 'Semaines' : 'Semaine' }}
             </div>
+            <span class="text-[10px] uppercase font-bold text-slate-400">{{ copy.perfectPointsLabel() }} : {{ g.perfectPoints }}</span>
             @if (g.daysToNextStar > 0) {
-              <span class="text-xs uppercase tracking-widest font-black text-slate-400">Prochaine dans {{ g.daysToNextStar }} {{ g.daysToNextStar > 1 ? 'jours' : 'jour' }}</span>
+              <span class="text-[9px] uppercase tracking-widest font-black text-slate-300">Prochaine dans {{ g.daysToNextStar }} {{ g.daysToNextStar > 1 ? 'jours' : 'jour' }}</span>
             }
           </div>
         }
