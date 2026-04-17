@@ -129,23 +129,26 @@ export class AuthService {
   }
 
   updateProfile(profile: Profile): Observable<void> {
-    const user = this.currentUser();
-    if (user && user.profiles) {
-      const pIdx = user.profiles.findIndex(p => p.id === profile.id);
-      if (pIdx !== -1) {
-        user.profiles[pIdx] = { ...profile };
-        
-        return this.adapter.updateUser(user).pipe(
-            tap(() => {
-                this.currentUser.set({ ...user });
-                if (this.activeProfile()?.id === profile.id) {
-                    this.activeProfile.set({ ...profile });
-                }
-            })
-        );
-      }
-    }
-    return of(undefined);
+    const update$ = this.adapter.updateProfile 
+      ? this.adapter.updateProfile(profile)
+      : this.adapter.updateUser(this.currentUser()!);
+
+    return update$.pipe(
+        tap(() => {
+            // Mise à jour optimiste du cache local si possible
+            const user = this.currentUser();
+            if (user && user.profiles) {
+              const pIdx = user.profiles.findIndex(p => p.id === profile.id);
+              if (pIdx !== -1) user.profiles[pIdx] = { ...user.profiles[pIdx], ...profile };
+              this.currentUser.set({ ...user });
+            }
+            
+            // Mise à jour du profil actif
+            if (this.activeProfile()?.id === profile.id) {
+                this.activeProfile.set({ ...this.activeProfile()!, ...profile });
+            }
+        })
+    );
   }
 
   updateProfileTheme(newTheme: 'colorful' | 'classic'): Observable<void> {

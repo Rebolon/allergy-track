@@ -107,4 +107,41 @@ export class LocalStorageProtocolAdapter implements ProtocolAdapter {
     }
     return of(undefined);
   }
+
+  getFullConfig(profileId: string): Observable<{
+    protocols: ProtocolItem[];
+    startDate: string | null;
+    symptoms: SymptomItem[];
+    medicsShields: MedicsShieldItem[];
+  }> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return of({
+        protocols: [],
+        startDate: null,
+        symptoms: [],
+        medicsShields: []
+      });
+    }
+
+    const protocols = this.tryParse(localStorage.getItem(this.PROTOCOL_KEY(profileId)), []);
+    const startDate = localStorage.getItem(this.PROTOCOL_START_KEY(profileId));
+    const symptoms = this.tryParse(localStorage.getItem(this.SYMPTOMS_KEY(profileId)), []);
+    const medicsShields = this.tryParse(localStorage.getItem(this.SHIELDS_KEY(profileId)), []);
+
+    return of({
+      protocols,
+      startDate,
+      symptoms,
+      medicsShields
+    });
+  }
+
+  private tryParse(value: string | null, defaultValue: any): any {
+    if (!value) return defaultValue;
+    try {
+      return JSON.parse(value);
+    } catch (e) {
+      return defaultValue;
+    }
+  }
 }

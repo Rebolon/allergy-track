@@ -58,6 +58,7 @@ export class ActiveDossierService {
   public readonly medicsShields = signal<MedicsShieldItem[]>([]);
   
   private dataLoaded = signal(false);
+  private lastLoadedProfileId: string | null = null;
 
   // Computed for UI
   public readonly currentTheme = computed(() => this.auth.activeProfile()?.themePreference || 'classic');
@@ -72,24 +73,6 @@ export class ActiveDossierService {
         if (profile.themePreference) {
           untracked(() => this.theme.setTheme(profile.themePreference));
         }
-      }
-    });
-
-    // Auto-save effect
-    effect(() => {
-      if (!this.dataLoaded()) return;
-
-      const profile = this.auth.activeProfile();
-      if (profile && this.auth.isAuthenticated()) {
-        const payload = {
-            protocols: this.protocols(),
-            startDate: this.protocolStartDate(),
-            symptoms: this.symptoms(),
-            medicsShields: this.medicsShields()
-        };
-        untracked(() => {
-          this.adapter.saveFullConfig(profile.id, payload).subscribe();
-        });
       }
     });
   }
@@ -114,29 +97,29 @@ export class ActiveDossierService {
   }
 
   private loadProfileData(profileId: string) {
+    if (!profileId || this.lastLoadedProfileId === profileId) return;
+    this.lastLoadedProfileId = profileId;
     this.dataLoaded.set(false);
     
-    forkJoin({
-      protocols: this.adapter.getProtocols(profileId),
-      startDate: this.adapter.getProtocolStartDate(profileId),
-      symptoms: this.adapter.getSymptoms(profileId),
-      shields: this.adapter.getMedicsShields(profileId)
-    }).subscribe({
-      next: ({ protocols, startDate, symptoms, shields }) => {
-        // Atomic update
-        this.protocols.set(protocols?.length ? protocols : PROTOCOL_PRESETS['reintroduction']);
-        this.protocolStartDate.set(startDate || new Date().toISOString().split('T')[0]);
-        this.symptoms.set(symptoms?.length ? symptoms : SYMPTOM_PRESETS['reintroduction']);
-        this.medicsShields.set(shields?.length ? shields : SHIELD_PRESETS['reintroduction']);
-        
-        this.migrateProtocols();
-        this.dataLoaded.set(true);
+    console.log('[ActiveDossierService] Loading profile data for:', profileId);
+    
+    this.adapter.getFullConfig(profileId).subscribe({
+      next: (config) => {
+        untracked(() => {
+          this.protocols.set(config.protocols?.length ? config.protocols : PROTOCOL_PRESETS['reintroduction']);
+          this.protocolStartDate.set(config.startDate || new Date().toISOString().split('T')[0]);
+          this.symptoms.set(config.symptoms?.length ? config.symptoms : SYMPTOM_PRESETS['reintroduction']);
+          this.medicsShields.set(config.medicsShields?.length ? config.medicsShields : SHIELD_PRESETS['reintroduction']);
+          this.migrateProtocols();
+          this.dataLoaded.set(true);
+        });
       },
-      error: () => {
-        this.protocols.set(PROTOCOL_PRESETS['reintroduction']);
-        this.symptoms.set(SYMPTOM_PRESETS['reintroduction']);
-        this.medicsShields.set(SHIELD_PRESETS['reintroduction']);
-        this.dataLoaded.set(true);
+      error: (err) => {
+        console.error('[ActiveDossierService] Load failed', err);
+        untracked(() => {
+          this.protocols.set(PROTOCOL_PRESETS['reintroduction']);
+          this.dataLoaded.set(true);
+        });
       }
     });
   }

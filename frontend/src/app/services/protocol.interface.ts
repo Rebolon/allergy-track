@@ -40,6 +40,13 @@ export interface ProtocolAdapter {
     symptoms?: SymptomItem[];
     medicsShields?: MedicsShieldItem[];
   }): Observable<void>;
+
+  getFullConfig(profileId: string): Observable<{
+    protocols: ProtocolItem[];
+    startDate: string | null;
+    symptoms: SymptomItem[];
+    medicsShields: MedicsShieldItem[];
+  }>;
 }
 
 export const PROTOCOL_ADAPTER = new InjectionToken<ProtocolAdapter>('PROTOCOL_ADAPTER');

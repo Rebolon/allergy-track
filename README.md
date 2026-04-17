@@ -109,7 +109,19 @@ Pour travailler sur le frontend avec rechargement à chaud :
 ## 📜 Règles Métiers & Sécurité
 
 - Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification et les rôles.
+- Consultez [MCD.md](./MCD.md) pour la structure détaillée de la base de données.
 - Consultez [AUTH.md](./AUTH.md) pour configurer le SSO Synology ou l'accès Email.
+
+## ✅ Qualité & Tests (100% BDD)
+
+L'application suit un protocole de test rigoureux pour garantir l'intégrité des données, particulièrement lors des changements de modèle.
+
+1. **Mapping API** : Tous les appels HTTP sont listés dans [tests/HTTP_CALLS.md](./tests/HTTP_CALLS.md).
+2. **Suite E2E** : Un script de validation complet simule un parcours utilisateur réel (Auth, Profil, Saisie, Partage, Suppression).
+   ```bash
+   bash tests/validate_api.sh
+   ```
+   *Ce script doit impérativement passer avant toute proposition de solution technique impactant le backend.*
 
 ## TODO
 

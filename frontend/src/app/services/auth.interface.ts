@@ -11,6 +11,7 @@ export interface AuthAdapter {
   isAuthenticated?(): boolean;
   getAuthUser?(): Observable<User | null>;
   addProfile?(profile: Omit<Profile, 'id'>): Observable<Profile>;
+  updateProfile?(profile: Profile): Observable<void>;
   deleteProfile?(profileId: string): Observable<void>;
 }
 

@@ -3,6 +3,22 @@ const validateProfilesConfig = (e) => {
     const record = e.record;
 
     const parseJson = (val) => {
+        if (!val) return null;
+        
+        // Robust check for byte array (Uint8Array or similar from Go)
+        if (typeof val === 'object' && val !== null && (val.constructor && (val.constructor.name === 'Uint8Array' || val.constructor.name === 'Array' || val.constructor.name === 'Uint8ClampedArray'))) {
+            try {
+                // Try to convert to string if it looks like a byte array
+                let str = "";
+                for (let i = 0; i < val.length; i++) {
+                    str += String.fromCharCode(val[i]);
+                }
+                val = str;
+            } catch (e) {
+                // Not a byte array or conversion failed
+            }
+        }
+
         if (typeof val === 'string' && val.trim() !== '') {
             try { return JSON.parse(val); } catch (e) { return null; }
         }
@@ -15,12 +31,12 @@ const validateProfilesConfig = (e) => {
     let protocols = parseJson(record.get('protocols'));
     if (protocols !== undefined && protocols !== null) {
         if (!Array.isArray(protocols)) {
-            errors.push("Les protocoles doivent être un tableau.");
+            errors.push("Les protocoles doivent être un tableau. Reçu: " + (typeof protocols));
         } else if (protocols.length === 0) {
             errors.push("Veuillez définir au moins un protocole médical.");
         } else {
             protocols.forEach((p, index) => {
-                if (!p.id || !p.allergen || typeof p.dose !== 'number' || typeof p.frequencyDays !== 'number' || !p.createdAt) {
+                if (!p || typeof p !== 'object' || !p.id || !p.allergen || typeof p.dose !== 'number' || typeof p.frequencyDays !== 'number' || !p.createdAt) {
                     errors.push(`Protocole #${index + 1} incomplet (id, allergen, dose, frequencyDays, createdAt requis).`);
                 }
             });
@@ -34,29 +50,15 @@ const validateProfilesConfig = (e) => {
             errors.push("Les symptômes doivent être un tableau.");
         } else {
             symptoms.forEach((s, index) => {
-                if (!s.id || !s.label) {
+                if (!s || typeof s !== 'object' || !s.id || !s.label) {
                     errors.push(`Symptôme #${index + 1} incomplet (id, label requis).`);
                 }
             });
         }
     }
 
-    // 3. Validation des Boucliers Magiques (MedicsShields)
-    let shields = parseJson(record.get('medicsShields'));
-    if (shields !== undefined && shields !== null) {
-        if (!Array.isArray(shields)) {
-            errors.push("Les boucliers magiques doivent être un tableau.");
-        } else {
-            shields.forEach((s, index) => {
-                if (!s.id || !s.label) {
-                    errors.push(`Bouclier #${index + 1} incomplet (id, label requis).`);
-                }
-            });
-        }
-    }
-
     if (errors.length > 0) {
-        throw new BadRequestError("Validation failed for profiles_config: " + errors.join("; "));
+        throw new BadRequestError("Validation failed: " + errors.join("; "));
     }
 
     return e.next();

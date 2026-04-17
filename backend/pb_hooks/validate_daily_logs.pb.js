@@ -4,6 +4,22 @@ const validateDailyLog = (e) => {
     const record = e.record;
 
     const parseJson = (val) => {
+        if (!val) return null;
+        
+        // Robust check for byte array (Uint8Array or similar from Go)
+        if (typeof val === 'object' && val !== null && (val.constructor && (val.constructor.name === 'Uint8Array' || val.constructor.name === 'Array' || val.constructor.name === 'Uint8ClampedArray'))) {
+            try {
+                // Try to convert to string if it looks like a byte array
+                let str = "";
+                for (let i = 0; i < val.length; i++) {
+                    str += String.fromCharCode(val[i]);
+                }
+                val = str;
+            } catch (e) {
+                // Not a byte array or conversion failed
+            }
+        }
+
         if (typeof val === 'string' && val.trim() !== '') {
             try { return JSON.parse(val); } catch (e) { return null; }
         }
@@ -19,8 +35,6 @@ const validateDailyLog = (e) => {
     // --- Validate 'treatments' ---
     let treatments = parseJson(record.get("treatments"));
     if (!treatments || !Array.isArray(treatments) || treatments.length === 0) {
-       // Note: we allow empty treatments if the user wants to signify no treatment, 
-       // but here we follow the original logic of 'required' fields from schema.
        throw new BadRequestError("La propriété 'treatments' doit être un tableau non vide.");
     }
 

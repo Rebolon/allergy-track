@@ -27,25 +27,20 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
   updateUser(updatedUser: User): Observable<void> {
     const userId = updatedUser.id;
     
-    // 1. Sync user name
-    const userUpdate$ = this.http.patch(`/api/collections/users/records/${userId}`, {
+    // Sync user name
+    return this.http.patch(`/api/collections/users/records/${userId}`, {
         name: updatedUser.name
-    });
+    }).pipe(map(() => undefined));
+  }
 
-    // 2. Sync profiles in their own collection
-    const profileUpdates$ = updatedUser.profiles.map(profile => 
-        this.http.patch(`/api/collections/profiles/records/${profile.id}`, {
-            name: profile.name,
-            birthDate: profile.birthDate,
-            themePreference: profile.themePreference,
-            onboardingStep: profile.onboardingStep
-        })
-    );
-
-    return forkJoin([userUpdate$, ...profileUpdates$]).pipe(
+  updateProfile(profile: Profile): Observable<void> {
+    // On extrait uniquement les champs définis pour permettre un patch partiel
+    const { id, ...data } = profile;
+    
+    return this.http.patch<any>(`/api/collections/profiles/records/${id}`, data).pipe(
         map(() => undefined),
         catchError(err => {
-            console.error('[PocketbaseAuthAdapter] Update failed', err);
+            console.error('[PocketbaseAuthAdapter] Profile update failed', err);
             return throwError(() => err);
         })
     );
@@ -91,7 +86,8 @@ export class PocketbaseAuthAdapter implements AuthAdapter {
 
     // 1. Create Profile in 'profiles' collection
     return this.http.post<any>(`/api/collections/profiles/records`, {
-      ...profile
+      ...profile,
+      ownerId: user.id
     }).pipe(
       switchMap(profileRecord => {
         const newProfile: Profile = {

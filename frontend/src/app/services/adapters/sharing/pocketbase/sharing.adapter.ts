@@ -58,51 +58,36 @@ export class PocketbaseSharingAdapter implements SharingAdapter {
         if (!invite) return throwError(() => new Error('Invitation invalide ou expirée'));
 
         const authData = this.getStoredAuth();
-        if (!authData?.model) return throwError(() => new Error('Non authentifié'));
-        const user = authData.model;
+        if (!authData?.token) return throwError(() => new Error('Non authentifié'));
+        const user = authData.record || authData.model; // Handle PB v0.36 vs old
 
-        // Update user accesses
-        const currentAccesses = Array.isArray(user['profile_accesses']) ? user['profile_accesses'] : [];
-        const alreadyHasAccess = currentAccesses.some((a: any) => a.profileId === invite.profileId);
-        
-        if (alreadyHasAccess) return of(undefined);
-
-        const updatedAccesses = [
-          ...currentAccesses,
-          {
-            profileId: invite.profileId,
-            permission: invite.permission
-          }
-        ];
-
-        return this.http.patch<any>(`/api/collections/users/records/${user.id}`, {
-          'profile_accesses': updatedAccesses
+        // Create access record
+        return this.http.post<any>(`/api/collections/accesses/records`, {
+          userId: user.id,
+          profileId: invite.profileId,
+          role: invite.permission
         }).pipe(
-          tap(updatedUser => {
-            // Update local storage so other components see the change
-            authData.model = updatedUser;
-            localStorage.setItem(this.AUTH_KEY, JSON.stringify(authData));
+          switchMap(() => {
+            // Mark invitation as used
+            return this.http.get<{ items: any[] }>(`/api/collections/invitations/records`, {
+                params: { filter: `code="${code}"` }
+            }).pipe(
+                switchMap(res => {
+                    if (res.items.length > 0) {
+                        return this.http.patch(`/api/collections/invitations/records/${res.items[0].id}`, { usedBy: user.id });
+                    }
+                    return of(undefined);
+                })
+            );
           }),
-          map(() => undefined)
-        );
-      }),
-      switchMap(() => {
-        // Mark as used
-        const authData = this.getStoredAuth();
-        const user = authData?.model;
-        if (!user) return of(undefined);
-
-        return this.http.get<{ items: any[] }>(`/api/collections/invitations/records`, {
-            params: { filter: `code="${code}"` }
-        }).pipe(
-            switchMap(res => {
-                if (res.items.length > 0) {
-                    return this.http.patch(`/api/collections/invitations/records/${res.items[0].id}`, { usedBy: user.id });
-                }
-                return of(undefined);
-            }),
-            catchError(() => of(undefined)), // Silently fail marking as used
-            map(() => undefined)
+          map(() => undefined),
+          catchError(err => {
+              // If access already exists (unique constraint?), consider it success or handle specifically
+              if (err.status === 400 || err.status === 403) {
+                  return of(undefined);
+              }
+              return throwError(() => err);
+          })
         );
       })
     );

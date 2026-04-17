@@ -108,6 +108,17 @@ tasks:
       - "{{.SUDO}} docker volume rm allergy-track_pb_data"
       - task: start
 
+  test-api:
+    desc: Exécute la suite de tests E2E complète de l'API
+    cmds:
+      - |
+        HEALTH=$(curl -s http://localhost:8090/api/health | grep -o '"code":200')
+        if [ -z "$HEALTH" ]; then
+          echo "❌ L'API n'est pas démarrée. Lancez 'task start' d'abord."
+          exit 1
+        fi
+        bash tests/validate_api.sh
+
   test-docker:
     desc: Construit et teste l'image Docker localement
     cmds:

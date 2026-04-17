@@ -2,8 +2,11 @@
 
 ## Maintenance du Modèle de Données
 - **IMPORTANT** : Toute modification apportée aux collections PocketBase (champs, relations, règles) DOIT être systématiquement répercutée dans le fichier [MCD.md](file:///home/brichard/apps-demo/allergy-track/MCD.md) via un diagramme Mermaid à jour.
-- **VALIDATION OBLIGATOIRE** : Après toute modification du backend (migrations, hooks, schéma), tu DOIS impérativement tester que le conteneur démarre sans erreur. Utilise `task start` ou `task test-docker` et vérifie les logs pour t'assurer qu'aucune migration ne plante (ex: `ReferenceError`).
-- **PARITÉ DES ADAPTATEURS** : Tout changement dans la structure de la base de données (PocketBase) DOIT être répercuté à la fois sur l'adaptateur `PocketBase` ET sur l'adaptateur `LocalStorage` (Mock) pour garantir une expérience identique dans les deux modes.
+- **VALIDATION OBLIGATOIRE** : Après toute modification du backend (migrations, hooks, schéma), tu DOIS impérativement :
+    1. Tester que le conteneur démarre sans erreur via `task test-docker`.
+    2. Exécuter la suite de tests E2E complète via `bash tests/validate_api.sh` et s'assurer qu'ils passent tous.
+    3. Vérifier que tous les appels listés dans [tests/HTTP_CALLS.md](file:///root/allergy-track/tests/HTTP_CALLS.md) sont toujours fonctionnels.
+- **PARITÉ DES ADAPTATEURS** : Tout changement dans la structure de la base de données (PocketBase) DOIT être répercuté à la fois sur l'adaptateur `PocketBase` ET sur l'adaptateur `LocalStorage` (Mock).
 
 ## Commands
 

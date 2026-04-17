@@ -79,14 +79,15 @@ export class OnboardingService {
       isLocal: false,
       onboardingStep: 'choice'
     }).subscribe({
-      next: () => {
+      next: (profile) => {
+        // On force ce profil comme étant le profil actif
+        this.auth.activeProfile.set(profile);
         this.step.set('choice');
         this.loading.set(false);
       },
       error: (e) => {
         console.error('Draft creation failed', e);
-        // If it failed because of unique constraint or similar, maybe it already exists
-        this.step.set('choice');
+        this.error.set("Impossible de créer ton profil. Vérifie ta connexion.");
         this.loading.set(false);
       }
     });
@@ -104,13 +105,11 @@ export class OnboardingService {
     // Update the draft profile created in step 1
     const active = this.auth.activeProfile();
     if (active) {
-      const userName = this.auth.currentUser()?.name || active.name;
+      // On ne patche que l'étape d'onboarding
       this.auth.updateProfile({ 
-        ...active, 
-        name: userName, 
-        birthDate: this.userBirthDate(),
+        id: active.id,
         onboardingStep: 'protocol' 
-      }).subscribe({
+      } as any).subscribe({
         next: () => {
           this.step.set('protocol_type');
           this.loading.set(false);
