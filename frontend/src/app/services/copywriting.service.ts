@@ -76,4 +76,20 @@ export class CopywritingService {
             case 'adult': return 'Rupture de l\'observance détectée hier. Veuillez reprendre vos prises régulières.';
         }
     });
+
+    streakPointsLabel = computed(() => {
+        switch (this.theme.persona()) {
+            case 'child': return 'Points de Série';
+            case 'teen': return 'Points de Streak';
+            case 'adult': return 'Points de Régularité';
+        }
+    });
+
+    perfectPointsLabel = computed(() => {
+        switch (this.theme.persona()) {
+            case 'child': return 'Étoiles Parfaites';
+            case 'teen': return 'Semaines Parfaites';
+            case 'adult': return 'Points de Perfection';
+        }
+    });
 }

@@ -1,16 +1,21 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { Observable, map, throwError } from 'rxjs';
+import { DailyLogsService } from './daily-logs.service';
 import { HealthStatus, DailyLog } from '../models/allergy-track.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ReportService {
-  private persistence = inject(PERSISTENCE_ADAPTER);
+  private dailyLogsService = inject(DailyLogsService);
+  private auth = inject(AuthService);
 
   getHealthStatus(startDate: string, endDate: string): Observable<HealthStatus> {
-    return this.persistence.getDailyLogs(startDate, endDate).pipe(
+    const profile = this.auth.activeProfile();
+    if (!profile) return throwError(() => new Error('No active profile'));
+    
+    return this.dailyLogsService.getDailyLogs(profile.id, startDate, endDate).pipe(
       map(allLogs => {
         // Keep only the latest log for each date
         const latestLogsMap = new Map<string, DailyLog>();
@@ -94,7 +99,10 @@ export class ReportService {
   }
 
   generateCsvReport(startDate: string, endDate: string): Observable<string> {
-    return this.persistence.getDailyLogs(startDate, endDate).pipe(
+    const profile = this.auth.activeProfile();
+    if (!profile) return throwError(() => new Error('No active profile'));
+
+    return this.dailyLogsService.getDailyLogs(profile.id, startDate, endDate).pipe(
       map(allLogs => {
         const latestLogsMap = new Map<string, DailyLog>();
         allLogs.forEach(log => latestLogsMap.set(log.date, log));

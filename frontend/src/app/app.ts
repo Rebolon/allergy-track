@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
-import { AgendaComponent } from './components/agenda.component';
-import { DailyEntryComponent } from './components/daily-entry.component';
-import { DashboardComponent } from './components/dashboard.component';
-import { AuditLogComponent } from './components/audit-log.component';
+import { ChangeDetectionStrategy, Component, inject, OnInit, computed } from '@angular/core';
+import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
+import { filter, map } from 'rxjs/operators';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
 import { AuthService } from './services/auth.service';
 import { ThemeService } from './services/theme.service';
 import { NotificationService } from './services/notification.service';
@@ -11,92 +11,55 @@ import { CopywritingService } from './services/copywriting.service';
 import { MatIconModule } from '@angular/material/icon';
 import { LayoutHeaderComponent } from './components/layout/header.component';
 import { LayoutFooterComponent } from './components/layout/footer.component';
-import { GamificationSummaryComponent } from './components/layout/gamification-summary.component';
-import { GamificationHistoryComponent } from './components/layout/gamification-history.component';
-import { SettingsComponent } from './components/settings.component';
 import { GlobalErrorModalComponent } from './components/layout/global-error-modal.component';
 import { TopNavComponent } from './components/layout/top-nav.component';
 import { BottomNavComponent, MobileTab } from './components/layout/bottom-nav.component';
 import { ErrorService } from './services/error.service';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { startWith } from 'rxjs';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   standalone: true,
   imports: [
-    AgendaComponent,
-    DailyEntryComponent,
-    DashboardComponent,
-    AuditLogComponent,
+    RouterOutlet,
     LayoutHeaderComponent,
     LayoutFooterComponent,
     BottomNavComponent,
-    GamificationSummaryComponent,
-    GamificationHistoryComponent,
-    SettingsComponent,
     TopNavComponent,
     GlobalErrorModalComponent,
     MatIconModule
   ],
   template: `
-    <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
-      
-      <!-- Header / Auth Switcher -->
-      <app-layout-header />
-
-      <!-- Desktop Nav -->
-      <app-top-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-top-nav>
-
-      <!-- Main Content -->
-      <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
-
-        <!-- Gamification Summary (Home + Gaming) -->
-        <div class="mb-6" [class.hidden]="activeTab() !== 'gaming' && activeTab() !== 'home'">
-           <app-gamification-summary [state]="gState()" />
-        </div>
-        
-        <!-- Gamification History (Gaming only) -->
-        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'gaming'">
-           <app-gamification-history [state]="gState()" />
-        </div>
-
-        <!-- Preferences Tab -->
-        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'preferences'">
-           <app-settings />
-        </div>
-        
-        <!-- Supervision Tab (Full Width) -->
-        <div class="mb-6 flex flex-col gap-6" [class.hidden]="activeTab() !== 'supervision'">
-           <app-dashboard />
-           <app-audit-log />
-        </div>
-        
-        <!-- Home View (Agenda + Daily Entry) -->
-        <div class="flex flex-col gap-6" [class.hidden]="activeTab() !== 'home'">
+    @if (auth.isInitialized()) {
+      @if (isOnboarding() || isWelcome() || !auth.isAuthenticated() || auth.needsOnboarding()) {
+        <!-- Isolated Layout for Welcome and Onboarding (or while redirecting) -->
+        <main>
+          <router-outlet />
+        </main>
+      } @else {
+        <!-- Main Application Layout -->
+        <div class="min-h-screen pb-24 md:pb-12 transition-colors duration-500 bg-[var(--color-background)] text-[var(--color-text)] font-sans">
           
-          <!-- Agenda -->
-          <app-agenda (dateSelected)="onDateSelected($event)" />
-          
-          <!-- Daily Entry Form -->
-          <app-daily-entry [date]="selectedDate()" />
-          
-        </div>
-        
-        <!-- Footer -->
-        <app-layout-footer class="hidden md:block mt-8" />
-        
-      </main>
+          <app-layout-header />
 
-      <!-- Bottom Nav (Mobile Only) -->
-      <app-bottom-nav [activeTab]="activeTab()" (onTabChange)="setTab($event)"></app-bottom-nav>
+          <app-top-nav />
 
-      <!-- Modals -->
-      @if (errorService.serverError(); as serverErrorMsg) {
-        <app-global-error-modal [message]="serverErrorMsg" />
+          <main class="max-w-5xl mx-auto px-4 pt-5 md:pt-0 pb-8">
+            <router-outlet />
+            <app-layout-footer class="hidden md:block mt-8" />
+          </main>
+
+          <app-bottom-nav />
+
+          @if (errorService.serverError(); as serverErrorMsg) {
+            <app-global-error-modal [message]="serverErrorMsg" />
+          }
+        </div> 
       }
-    </div>
+    } @else {
+      <!-- Neutral state during bootstrap -->
+      <div class="min-h-screen bg-white"></div>
+    }
   `
 })
 export class App implements OnInit {
@@ -106,36 +69,36 @@ export class App implements OnInit {
   gamification = inject(GamificationService);
   copy = inject(CopywritingService);
   errorService = inject(ErrorService);
+  router = inject(Router);
 
-  currentYear = new Date().getFullYear();
+  // Navigation State reactively linked to Router
+  url = toSignal(this.router.events.pipe(
+    filter(event => event instanceof NavigationEnd),
+    map(e => (e as NavigationEnd).urlAfterRedirects),
+    startWith(this.router.url)
+  ), { initialValue: this.router.url });
 
-  selectedDate = signal(this.getTodayStr());
+  isOnboarding = computed(() => this.url().includes('/onboarding'));
+  isWelcome = computed(() => this.url().includes('/welcome'));
+  
+  activeTab = computed<MobileTab>(() => {
+    const current = this.url();
+    if (current.includes('/home')) return 'home';
+    if (current.includes('/supervision')) return 'supervision';
+    if (current.includes('/gaming')) return 'gaming';
+    if (current.includes('/settings')) return 'preferences';
+    return 'home';
+  });
 
-  // Mobile Navigation State
-  activeTab = signal<MobileTab>('home');
-
-  gState = toSignal(this.gamification.getGamificationState().pipe(startWith(null)), { initialValue: null });
+  constructor() {
+    // Handle global tab change requests
+    (window as any).dispatchTabChange = (tab: MobileTab) => {
+      const route = tab === 'preferences' ? 'settings' : tab;
+      this.router.navigate([`/${route}`]);
+    };
+  }
 
   ngOnInit() {
     this.notification.init();
   }
-
-  setTab(tab: MobileTab) {
-    this.activeTab.set(tab);
-  }
-
-  getTodayStr(): string {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  onDateSelected(date: string) {
-    this.selectedDate.set(date);
-    // Switch to entry form automatically on mobile when a date is selected from Agenda
-    this.activeTab.set('home');
-  }
 }
-

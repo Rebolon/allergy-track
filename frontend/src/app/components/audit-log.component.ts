@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { PocketbaseAdapterService } from '../services/persistence/pocketbase-adapter.service';
+import { DailyLogsService } from '../services/daily-logs.service';
+import { AuthService } from '../services/auth.service';
 import { DailyLog } from '../models/allergy-track.model';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -65,7 +66,8 @@ import { MatIconModule } from '@angular/material/icon';
   `
 })
 export class AuditLogComponent implements OnInit {
-  private persistence = inject(PocketbaseAdapterService);
+  private dailyLogsService = inject(DailyLogsService);
+  private auth = inject(AuthService);
 
   logs = signal<DailyLog[]>([]);
   totalItems = signal(0);
@@ -78,8 +80,11 @@ export class AuditLogComponent implements OnInit {
   }
 
   loadLogs() {
+    const profileId = this.auth.activeProfile()?.id;
+    if (!profileId) return;
+
     this.loading.set(true);
-    this.persistence.getPaginatedDailyLogs(this.currentPage(), this.perPage).subscribe({
+    this.dailyLogsService.getPaginatedDailyLogs(profileId, this.currentPage(), this.perPage).subscribe({
       next: (result) => {
         if (this.currentPage() === 1) {
           this.logs.set(result.items);

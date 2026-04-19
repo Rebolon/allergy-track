@@ -1,0 +1,102 @@
+{
+  "users": [
+    {
+      "id": "usermock0000001",
+      "email": "firstconnection@test.fr",
+      "name": "Jean-Marc (Nouveau)"
+    },
+    {
+      "id": "usermock0000002",
+      "email": "onboarding@test.fr",
+      "name": "Lucas (En cours)"
+    },
+    {
+      "id": "usermock0000003",
+      "email": "mixte@test.fr",
+      "name": "Jean-Marc (Standard)"
+    },
+    {
+      "id": "usermock0000004",
+      "email": "parent.allergique@test.fr",
+      "name": "Famille Dupont"
+    },
+    {
+      "id": "usermock0000005",
+      "email": "editeur@test.fr",
+      "name": "Sophie (Éditeur)"
+    },
+    {
+      "id": "usermock0000006",
+      "email": "medecin@test.fr",
+      "name": "Dr. House (Lecteur)"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "profmock0000002",
+      "name": "Mon Lucas",
+      "themePreference": "colorful",
+      "birthDate": "2020-05-12",
+      "onboardingStep": "protocol"
+    },
+    {
+      "id": "profmock0000003",
+      "name": "Mon Compte",
+      "themePreference": "classic",
+      "birthDate": "1985-06-15",
+      "onboardingStep": "completed"
+    },
+    {
+      "id": "profmock0000041",
+      "name": "Maman",
+      "themePreference": "classic",
+      "birthDate": "1988-03-20",
+      "onboardingStep": "completed"
+    },
+    {
+      "id": "profmock0000042",
+      "name": "Léo",
+      "themePreference": "colorful",
+      "birthDate": "2018-11-10",
+      "onboardingStep": "completed"
+    }
+  ],
+  "accesses": [
+    {
+      "userId": "usermock0000002",
+      "profileId": "profmock0000002",
+      "role": "owner",
+      "colorCode": "#6366f1"
+    },
+    {
+      "userId": "usermock0000003",
+      "profileId": "profmock0000003",
+      "role": "owner",
+      "colorCode": "#10b981"
+    },
+    {
+      "userId": "usermock0000004",
+      "profileId": "profmock0000041",
+      "role": "owner",
+      "colorCode": "#3b82f6"
+    },
+    {
+      "userId": "usermock0000004",
+      "profileId": "profmock0000042",
+      "role": "owner",
+      "colorCode": "#f59e0b"
+    },
+    {
+      "userId": "usermock0000005",
+      "profileId": "profmock0000042",
+      "role": "editor",
+      "colorCode": "#ec4899"
+    },
+    {
+      "userId": "usermock0000006",
+      "profileId": "profmock0000042",
+      "role": "reader",
+      "colorCode": "#8b5cf6"
+    }
+  ]
+}

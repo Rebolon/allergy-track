@@ -1,13 +1,15 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { DailyLog } from '../models/allergy-track.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NotificationService {
-  private persistence = inject(PERSISTENCE_ADAPTER);
+  private dailyLogsService = inject(DailyLogsService);
+  private auth = inject(AuthService);
   private platformId = inject(PLATFORM_ID);
   private hasNotifiedToday = false;
   private intervalId: any | null = null;
@@ -35,9 +37,12 @@ export class NotificationService {
 
     if (hours >= 20 && !this.hasNotifiedToday) {
       const today = now.toISOString().split('T')[0];
-      this.persistence.getDailyLog(today).subscribe(log => {
+      const activeProfileId = this.auth.activeProfile()?.id;
+      if (!activeProfileId) return;
+
+      this.dailyLogsService.getDailyLog(activeProfileId, today).subscribe(log => {
         // If no log today, or if log exists but some intakes are not taken
-        if (!log || log.intakes.some(i => !i.taken)) {
+        if (!log || log.intakes.some((i: any) => !i.taken)) {
           this.sendNotification("N'oublie pas tes allergènes aujourd'hui ! 🥜");
           this.hasNotifiedToday = true;
         }

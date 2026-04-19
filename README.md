@@ -1,18 +1,18 @@
 # Allergy Track 📝🍎
 
-Allergy Track est une application web PWA moderne conçue pour accompagner les patients dans leur protocole de désensibilisation aux allergies alimentaires.
+Allergy Track est une application web PWA moderne conçue pour accompagner les patients dans leur protocole de désensibilisation aux allergies alimentaires ou autres.
 
 L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'apparition de potentiels symptômes, ainsi que l'administration des traitements prescrits. Son architecture s'adapte aux préférences de l'utilisateur avec un système de **Personas** dynamiques et une riche dimension de **gamification**.
 
 ## 🚀 Fonctionnalités Clés
 
-- **Suivi Quotidien** : Saisie rapide des doses (Cacahuètes, Noix de Cajou, etc.), des traitements (Antihistaminique, Adrénaline) et des symptômes observés.
-- **Themes & Personas** : Un design adaptatif proposant un look « Flashy 🌈 » coloré pour une expérience ludique, ou un look « Classique 🕶️ » plus sobre pour un suivi épuré.
-- **Gamification & Récompenses** :
-  - 🔥 **Flamme de Régularité** : Récompense simplement le fait de maintenir le rythme et de remplir le journal, même partiellement.
-  - ⭐ **L'Étoile Parfaite** : Récompense les parcours sans-fautes (100% des doses prévues cochées). Des **Confettis** explosent à des intervalles précis (7, 14, 21 jours parfaits consécutifs) !
-- **Bilan Santé** : Dashboard de visualisation en mode feu tricolore (VERT, ORANGE, ROUGE) de l'état de santé sur la période de votre choix.
-- **Résilience & Gestion d'Erreurs** : Système de détection automatique des pertes de connexion avec le serveur distant. En cas de coupure (réseau ou serveur), une modale de blocage sécurise l'application et propose une reconnexion par rafraîchissement.
+- **Multi-Profils & Famille** : Gérez plusieurs dossiers (enfants, proches) depuis un compte unique. Basculez instantanément entre les profils via un système d'onglets intelligents.
+- **Dossiers Locaux & Invités** : Créez des dossiers locaux pour les enfants sans compte, ou invitez d'autres utilisateurs à superviser vos données via un système de codes sécurisés.
+- **Suivi Quotidien Isolé** : Chaque profil possède son propre protocole, son historique de doses (Cacahuètes, Noix de Cajou, etc.), ses traitements et ses symptômes.
+- **Authentification Hybride** : Connexion sécurisée via le SSO Synology ou par Email/Mot de passe pour une installation flexible.
+- **Themes & Personas** : Un design adaptatif proposant un look « Flashy 🌈 » ludique, ou un look « Classique 🕶️ » plus médical, configurable par profil.
+- **Gamification Individualisée** : Calcul des flammes, étoiles et trophées spécifique à chaque profil pour une motivation maximale.
+- **Bilan Santé (Supervision)** : Dashboard complet en mode feu tricolore (VERT, ORANGE, ROUGE) pour surveiller en un coup d'œil l'état de santé de tous vos proches.
 
 ## 🛠️ Stack Technique
 
@@ -32,34 +32,44 @@ L'application permet d'enregistrer quotidiennement les prises d'allergènes, l'a
 Le projet s'appuie sur le `Taskfile.yml` pour faciliter le démarrage.
 
 ### 1. Initialiser le projet
+
 ```bash
 task install
 ```
 
 ### 2. Construire et Lancer (Développement)
+
 ```bash
 task build
 task start
 ```
+
 L'application sera accessible sur `http://localhost:8090`.
 
 ### 3. Administration (Super-utilisateur)
+
 Pour configurer l'interface d'admin PocketBase (`/admin/`) :
+
 ```bash
 task upsert-admin
 ```
-*(Défaut : `admin@allergy-track.local` / `admin123456`)*
+
+_(Défaut : `admin@allergy-track.local` / `admin123456`)_
 
 ### 4. Réinitialisation de la BDD
+
 Pour vider entièrement la base de données (Volume Docker) :
+
 ```bash
 task reset-db
 ```
 
 ## 🏷️ Versioning & Suivi de Build
+
 Une étiquette de version est injectée dans le footer lors du build :
+
 - **v.YYYY-MM-DD_HH:MM (hash)**
-Cela permet de confirmer visuellement que le déploiement sur le Synology est bien à jour.
+  Cela permet de confirmer visuellement que le déploiement sur le Synology est bien à jour.
 
 ## 🛠️ Architecture du Projet
 
@@ -80,6 +90,7 @@ allergy-track/
 ## 💻 Développement Local (HMR)
 
 Pour travailler sur le frontend avec rechargement à chaud :
+
 1. Démarrer PocketBase : `task start`
 2. Lancer Angular : `cd frontend && npm start` (disponible sur `http://localhost:4200`)
 
@@ -90,14 +101,49 @@ Pour travailler sur le frontend avec rechargement à chaud :
     ```bash
     task update
     ```
-    *(Effectue un git pull, reconstruit l'image et redémarre le conteneur).*
+    _(Effectue un git pull, reconstruit l'image et redémarre le conteneur)._
 3.  **Reverse Proxy** :
     - `Panneau de configuration > Portail de connexion > Avancé > Proxy inversé`.
     - `https://votre-domaine.com` (443) -> `http://localhost:8090` (8090).
 
-## 📜 Règles Métiers (Domain)
-Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification.
+## 📜 Règles Métiers & Sécurité
+
+- Consultez [DOMAIN.md](./DOMAIN.md) pour les détails sur la gamification et les rôles.
+- Consultez [MCD.md](./MCD.md) pour la structure détaillée de la base de données.
+- Consultez [AUTH.md](./AUTH.md) pour configurer le SSO Synology ou l'accès Email.
+
+## ✅ Qualité & Tests (100% BDD)
+
+L'application suit un protocole de test rigoureux pour garantir l'intégrité des données, particulièrement lors des changements de modèle.
+
+1. **Mapping API** : Tous les appels HTTP sont listés dans [tests/HTTP_CALLS.md](./tests/HTTP_CALLS.md).
+2. **Suite E2E** : Un script de validation complet simule un parcours utilisateur réel (Auth, Profil, Saisie, Partage, Suppression).
+   ```bash
+   bash tests/validate_api.sh
+   ```
+   *Ce script doit impérativement passer avant toute proposition de solution technique impactant le backend.*
 
 ## TODO
+
 - Check push notifications (Service Worker)
-- Système d'invitation et partage de compte par email
+- Optimization for multi-device real-time sync
+- Advanced charts for long-term health trends
+- Passer les parametres par des formulaires independant
+- Passer les paramétres sur les même styles que la page de saisie : Défis gourmands / Comment je me sens / Mes boucliers magiques => reprendre la bordure fine, une couleur de fond plus clair que la bordure, le côté gauche avec une bordure pour les boutons, champs ou boc unitaire, case à cocher avec un cercle animé...
+- Splashscreen : le système d'authentification doit etre une pile de moyen disponibles sur lequel le composant va boucler pour proposer les possibilités. En dev on a que login/pwd. En prod on peut avoir synology et login/pwd (et peut être d'autres plus tard)
+- Tester la 1ere connection :
+  - il semble que rien ne soit persisté (ni la date de naissance, ni le choix d'usage de l'app) + si on clic sur le 2nd choix il ne se passe rien
+  - dans la console on a une erreur alors que c'est juste que l'on est en train de tout configurer : ERROR Error: No active profile
+    at report.service.ts:16:43
+    at Observable2.init [as _subscribe] (throwError.js:5:64)
+    at Observable2.\_trySubscribe (Observable.js:38:25)
+    at Observable.js:32:31
+    at errorContext (errorContext.js:19:9)
+    at Observable2.subscribe (Observable.js:23:9)
+    at \_DashboardComponent.loadStatus (dashboard.component.ts:127:72)
+    at new \_DashboardComponent (dashboard.component.ts:119:16)
+    at NodeInjectorFactory.DashboardComponent_Factory [as factory] (dashboard.component.ts:137:3)
+
+- Dans les Symptomes pour la désensibilisation tu peux rajouter Démangeaisons oeil
+
+- En dev avec le localStorage, c'est normal que si je rafraichis la page je perds mon contexte ? je semble encore connecté mais je repasse toujours par le tunnel de première connection

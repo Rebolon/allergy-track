@@ -1,6 +1,22 @@
 export type Symptom = 'Rien' | 'Démangeaisons bouche' | 'Respiratoire' | 'Abdominal' | 'Autres';
 export type TreatmentName = 'Antihistaminique' | 'Aerius/Aeromire' | 'Adrénaline';
-export type Role = 'Adulte' | 'Enfant';
+
+export type PermissionLevel = 'owner' | 'editor' | 'reader';
+
+export interface ProfileAccess {
+  profileId: string;
+  permission: PermissionLevel;
+  colorCode?: string; // Hex color for the context circle
+}
+
+export interface Profile {
+  id: string;
+  name: string;
+  birthDate?: string; // YYYY-MM-DD
+  themePreference: 'colorful' | 'classic';
+  isLocal?: boolean;
+  onboardingStep?: string;
+}
 
 export interface AllergenIntake {
   allergen: string;
@@ -22,19 +38,31 @@ export interface DailyLog {
   symptoms: Symptom[];
   treatments: Treatment[];
   note?: string;
-  updatedAt: string; // ISO string
-  updatedBy: string; // User ID
+  updatedAt: string;
+  updatedBy: string;
+  profileId: string;
 }
 
 export interface User {
   id: string;
+  email: string;
   name: string;
-  role: Role;
-  themePreference: 'flashy' | 'classic';
+  profileAccesses: ProfileAccess[];
+  profiles: Profile[]; // Loaded profiles
 }
 
 export interface HealthStatus {
   status: 'VERT' | 'ORANGE' | 'ROUGE';
   misses: number;
   symptomsCount: number;
+}
+
+export interface GamificationData {
+  id?: string;
+  profileId: string;
+  totalStreakPoints: number;
+  perfectPoints: number;
+  longestStreak: number;
+  lastCelebrationAt: string; // ISO Date
+  lastPointAt?: string; // YYYY-MM-DD
 }

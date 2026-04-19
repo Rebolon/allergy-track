@@ -24,3 +24,17 @@ export function offsetDate(days: number, baseDate: Date = new Date()): Date {
     d.setDate(d.getDate() + days);
     return d;
 }
+
+/**
+ * Calculates age from birth date string 'YYYY-MM-DD'.
+ */
+export function calculateAge(birthDate: string): number {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+    }
+    return age;
+}

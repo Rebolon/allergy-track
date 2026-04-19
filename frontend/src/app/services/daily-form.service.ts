@@ -2,9 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormArray, FormControl, ValidatorFn, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Observable, throwError } from 'rxjs';
 import { DailyLog } from '../models/allergy-track.model';
-import { PERSISTENCE_ADAPTER } from './persistence/persistence.interface';
+import { DailyLogsService } from './daily-logs.service';
 import { AuthService } from './auth.service';
-import { ProtocolService, ProtocolItem } from './protocol.service';
+import { ActiveDossierService, ProtocolItem } from './active-dossier.service';
 
 export function atLeastOneTakenValidator(): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -31,21 +31,26 @@ export function atLeastOneSymptomValidator(): ValidatorFn {
 })
 export class DailyFormService {
   private fb = inject(FormBuilder);
-  private persistence = inject(PERSISTENCE_ADAPTER);
+  private dailyLogsService = inject(DailyLogsService);
   private auth = inject(AuthService);
-  private protocolService = inject(ProtocolService);
+  private protocolService = inject(ActiveDossierService);
 
   createForm(): FormGroup {
+    const shields = this.protocolService.medicsShields();
+    const date = new Date().toISOString().split('T')[0];
+    const activeProtocols = this.protocolService.protocols().filter(p => this.protocolService.isProtocolDue(p, date));
+    
     return this.fb.group({
       id: [crypto.randomUUID()],
-      date: [new Date().toISOString().split('T')[0], Validators.required],
-      intakes: this.fb.array([], { validators: atLeastOneTakenValidator() }),
+      date: [date, Validators.required],
+      intakes: this.fb.array(
+        activeProtocols.map(p => this.createIntakeGroup(p.allergen, p.dose)),
+        { validators: atLeastOneTakenValidator() }
+      ),
       symptoms: this.fb.array([], { validators: atLeastOneSymptomValidator() }),
-      treatments: this.fb.array([
-        this.createTreatmentGroup('Antihistaminique'),
-        this.createTreatmentGroup('Aerius/Aeromire'),
-        this.createTreatmentGroup('Adrénaline')
-      ]),
+      treatments: this.fb.array(
+        shields.map(s => this.createTreatmentGroup(s.label))
+      ),
       note: ['']
     });
   }
@@ -72,10 +77,15 @@ export class DailyFormService {
     const protocolStart = this.protocolService.protocolStartDate();
     const isBeforeProtocol = protocolStart ? date < protocolStart : false;
 
-    this.persistence.getDailyLog(date).subscribe(log => {
+    const profile = this.auth.activeProfile();
+    if (!profile) return;
+
+    this.dailyLogsService.getDailyLog(profile.id, date).subscribe(log => {
       const intakesArray = form.get('intakes') as FormArray;
       const treatmentsArray = form.get('treatments') as FormArray;
       const symptomsArray = form.get('symptoms') as FormArray;
+
+      const currentShields = this.protocolService.medicsShields();
 
       if (log) {
         form.patchValue({
@@ -84,7 +94,7 @@ export class DailyFormService {
           note: log.note || ''
         });
 
-        // Re-create the form controls based on saved log
+        // Sync Intakes
         intakesArray.clear();
         log.intakes.forEach(intake => {
           const group = this.createIntakeGroup(intake.allergen, intake.dose);
@@ -92,14 +102,18 @@ export class DailyFormService {
           intakesArray.push(group);
         });
 
-        // Explicitly patch treatments
-        log.treatments.forEach((treatment, i) => {
-          if (treatmentsArray.at(i)) {
-            treatmentsArray.at(i).patchValue(treatment);
+        // Sync Treatments with current config
+        treatmentsArray.clear();
+        currentShields.forEach(shield => {
+          const savedTreatment = log.treatments.find(t => t.name === shield.label);
+          const group = this.createTreatmentGroup(shield.label);
+          if (savedTreatment) {
+            group.patchValue(savedTreatment);
           }
+          treatmentsArray.push(group);
         });
 
-        // Patch symptoms
+        // Sync Symptoms
         symptomsArray.clear();
         log.symptoms.forEach(symptom => {
           symptomsArray.push(new FormControl(symptom));
@@ -112,7 +126,7 @@ export class DailyFormService {
           note: '',
         });
 
-        // Reset intakes according to ProtocolService rules for this date
+        // Reset intakes
         intakesArray.clear();
         const activeProtocols = this.protocolService.protocols().filter(p => this.protocolService.isProtocolDue(p, date));
         activeProtocols.forEach(p => {
@@ -120,11 +134,12 @@ export class DailyFormService {
         });
 
         // Reset treatments
-        treatmentsArray.controls.forEach(ctrl => {
-          ctrl.patchValue({ before: false, after: false });
+        treatmentsArray.clear();
+        currentShields.forEach(s => {
+          treatmentsArray.push(this.createTreatmentGroup(s.label));
         });
 
-        const symptomsArray = form.get('symptoms') as FormArray;
+        // Reset symptoms
         symptomsArray.clear();
       }
 
@@ -138,13 +153,19 @@ export class DailyFormService {
 
   saveLog(form: FormGroup): Observable<DailyLog> {
     if (form.valid) {
+      const profile = this.auth.activeProfile();
+      const user = this.auth.currentUser();
+      
+      if (!profile || !user) return throwError(() => new Error('No active profile'));
+
       const log: DailyLog = {
         ...form.value,
         updatedAt: new Date().toISOString(),
-        updatedBy: this.auth.currentUser().id
+        updatedBy: user.id,
+        profileId: profile.id
       };
 
-      return this.persistence.saveDailyLog(log);
+      return this.dailyLogsService.saveDailyLog(log);
     }
     return throwError(() => new Error('Form is invalid'));
   }

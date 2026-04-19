@@ -1,167 +1,177 @@
 [
   {
+    "id": "_pb_users_auth_",
+    "name": "users",
+    "type": "auth",
+    "system": false,
+    "fields": [
+      { "id": "text3208210256", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "email3885137012", "name": "email", "type": "email", "system": true, "required": true, "unique": true },
+      { "id": "bool1547992806", "name": "emailVisibility", "type": "bool", "system": true },
+      { "id": "bool256245529", "name": "verified", "type": "bool", "system": true },
+      { "id": "password901924565", "name": "password", "type": "password", "system": true, "required": true, "min": 8 },
+      { "id": "text2504183744", "name": "tokenKey", "type": "text", "system": true, "required": true, "autogeneratePattern": "[a-zA-Z0-9]{50}" },
+      { "id": "name", "name": "name", "type": "text", "required": false, "presentable": true },
+      { "id": "role", "name": "role", "type": "select", "required": false, "values": ["Allergique", "Supervision"], "maxSelect": 1 },
+      { "id": "themePreference", "name": "themePreference", "type": "text", "required": false },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "id = @request.auth.id",
+    "viewRule": "id = @request.auth.id",
+    "createRule": "",
+    "updateRule": "id = @request.auth.id",
+    "deleteRule": "id = @request.auth.id",
+    "passwordAuth": { "enabled": true, "identityFields": ["email"] }
+  },
+  {
+    "id": "pbc_profiles000",
+    "name": "profiles",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "name", "name": "name", "type": "text", "required": true, "presentable": true },
+      { "id": "birthDate", "name": "birthDate", "type": "text", "required": false },
+      { "id": "avatar", "name": "avatar", "type": "text", "required": false },
+      { "id": "avatarSkinTone", "name": "avatarSkinTone", "type": "text", "required": false },
+      { "id": "themePreference", "name": "themePreference", "type": "text", "required": false },
+      { "id": "onboardingStep", "name": "onboardingStep", "type": "text", "required": false },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != '' && @collection.accesses.profileId ?= id && @collection.accesses.userId ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && @collection.accesses.profileId ?= id && @collection.accesses.userId ?= @request.auth.id",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id != '' && @collection.accesses.profileId ?= id && @collection.accesses.userId ?= @request.auth.id && @collection.accesses.role ?= 'owner'",
+    "deleteRule": "@request.auth.id != '' && @collection.accesses.profileId ?= id && @collection.accesses.userId ?= @request.auth.id && @collection.accesses.role ?= 'owner'"
+  },
+  {
+    "id": "pbc_accesses000",
+    "name": "accesses",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "userId", "name": "userId", "type": "relation", "required": true, "collectionId": "_pb_users_auth_", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "profileId", "name": "profileId", "type": "relation", "required": true, "collectionId": "pbc_profiles000", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "role", "name": "role", "type": "select", "required": true, "values": ["owner", "editor", "reader"], "maxSelect": 1 },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != '' && (userId = @request.auth.id || (@collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id))",
+    "viewRule": "@request.auth.id != '' && (userId = @request.auth.id || (@collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id))",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && @collection.accesses.role ?= 'owner'",
+    "deleteRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && @collection.accesses.role ?= 'owner'"
+  },
+  {
+    "id": "pbc_daily_log00",
     "name": "daily_logs",
     "type": "base",
     "system": false,
-    "schema": [
-      {
-        "system": false,
-        "name": "date",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": true,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
-        }
-      },
-      {
-        "system": false,
-        "name": "intakes",
-        "type": "json",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {}
-      },
-      {
-        "system": false,
-        "name": "symptoms",
-        "type": "json",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {}
-      },
-      {
-        "system": false,
-        "name": "treatments",
-        "type": "json",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {}
-      },
-      {
-        "system": false,
-        "name": "note",
-        "type": "text",
-        "required": false,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "updatedBy",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      }
-    ]
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "date", "name": "date", "type": "text", "required": true },
+      { "id": "intakes", "name": "intakes", "type": "json", "required": false },
+      { "id": "symptoms", "name": "symptoms", "type": "json", "required": false },
+      { "id": "treatments", "name": "treatments", "type": "json", "required": false },
+      { "id": "note", "name": "note", "type": "text", "required": false },
+      { "id": "updatedBy", "name": "updatedBy", "type": "text", "required": true },
+      { "id": "profileId", "name": "profileId", "type": "relation", "required": true, "collectionId": "pbc_profiles000", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id",
+    "createRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')",
+    "updateRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')",
+    "deleteRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')"
   },
   {
+    "id": "pbc_prof_conf00",
+    "name": "profiles_config",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "profileId", "name": "profileId", "type": "relation", "required": true, "collectionId": "pbc_profiles000", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "protocols", "name": "protocols", "type": "json", "required": false },
+      { "id": "startDate", "name": "startDate", "type": "text", "required": false },
+      { "id": "symptoms", "name": "symptoms", "type": "json", "required": false },
+      { "id": "medicsShields", "name": "medicsShields", "type": "json", "required": false },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id",
+    "createRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')",
+    "updateRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')",
+    "deleteRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')"
+  },
+  {
+    "id": "pbc_gamificat00",
+    "name": "gamification",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "profileId", "name": "profileId", "type": "relation", "required": true, "collectionId": "pbc_profiles000", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "totalStreakPoints", "name": "totalStreakPoints", "type": "number", "required": false },
+      { "id": "perfectPoints", "name": "perfectPoints", "type": "number", "required": false },
+      { "id": "longestStreak", "name": "longestStreak", "type": "number", "required": false },
+      { "id": "lastCelebrationAt", "name": "lastCelebrationAt", "type": "date", "required": false },
+      { "id": "lastPointAt", "name": "lastPointAt", "type": "text", "required": false },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id",
+    "viewRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id",
+    "createRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')",
+    "updateRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')",
+    "deleteRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && (@collection.accesses.role ?= 'owner' || @collection.accesses.role ?= 'editor')"
+  },
+  {
+    "id": "pbc_invitatio00",
+    "name": "invitations",
+    "type": "base",
+    "system": false,
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "code", "name": "code", "type": "text", "required": true },
+      { "id": "profileId", "name": "profileId", "type": "relation", "required": true, "collectionId": "pbc_profiles000", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "permission", "name": "permission", "type": "text", "required": true },
+      { "id": "expiresAt", "name": "expiresAt", "type": "date", "required": true },
+      { "id": "usedBy", "name": "usedBy", "type": "relation", "required": false, "collectionId": "_pb_users_auth_", "maxSelect": 1, "cascadeDelete": true },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
+    "createRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && @collection.accesses.role ?= 'owner'",
+    "updateRule": "@request.auth.id != ''",
+    "deleteRule": "@request.auth.id != '' && @collection.accesses.profileId ?= profileId && @collection.accesses.userId ?= @request.auth.id && @collection.accesses.role ?= 'owner'"
+  },
+  {
+    "id": "pbc_audit_log00",
     "name": "audit_logs",
     "type": "base",
     "system": false,
-    "schema": [
-      {
-        "system": false,
-        "name": "timestamp",
-        "type": "date",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": "",
-          "max": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "userId",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "userRole",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "action",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "entityId",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      },
-      {
-        "system": false,
-        "name": "details",
-        "type": "text",
-        "required": true,
-        "presentable": false,
-        "unique": false,
-        "options": {
-          "min": null,
-          "max": null,
-          "pattern": ""
-        }
-      }
-    ]
-  },
-  {
-    "name": "latest_daily_logs",
-    "type": "view",
-    "system": false,
-    "options": {
-      "query": "SELECT id, date, intakes, symptoms, treatments, note, updatedBy, MAX(created) as created, updated FROM daily_logs GROUP BY date"
-    }
+    "fields": [
+      { "id": "id", "name": "id", "type": "text", "system": true, "required": true, "primaryKey": true, "autogeneratePattern": "[a-z0-9]{15}", "pattern": "^[a-z0-9]+$" },
+      { "id": "timestamp", "name": "timestamp", "type": "date", "required": true },
+      { "id": "userId", "name": "userId", "type": "text", "required": true },
+      { "id": "userRole", "name": "userRole", "type": "text", "required": true },
+      { "id": "action", "name": "action", "type": "text", "required": true },
+      { "id": "entityId", "name": "entityId", "type": "text", "required": true },
+      { "id": "details", "name": "details", "type": "text", "required": true },
+      { "id": "created", "name": "created", "type": "autodate", "system": true, "onCreate": true, "onUpdate": false },
+      { "id": "updated", "name": "updated", "type": "autodate", "system": true, "onCreate": true, "onUpdate": true }
+    ],
+    "listRule": "@request.auth.id != '' && @request.auth.role = 'Supervision'",
+    "viewRule": "@request.auth.id != '' && @request.auth.role = 'Supervision'",
+    "createRule": "@request.auth.id != ''",
+    "updateRule": null,
+    "deleteRule": null
   }
 ]
