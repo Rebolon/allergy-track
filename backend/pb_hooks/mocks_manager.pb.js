@@ -63,7 +63,7 @@ $app.rootCmd.addCommand(new Command({
         });
 
         // 3. Upsert Accesses
-        mockData.accesses.forEach(accessData => {
+        mockData.accesses.forEach((accessData, index) => {
             let access;
             try {
                 access = $app.findFirstRecordByFilter("accesses", "userId = {:userId} && profileId = {:profileId}", {
@@ -72,6 +72,8 @@ $app.rootCmd.addCommand(new Command({
                 });
             } catch (e) {
                 access = new Record(accessesCol);
+                // On génère un ID déterministe basé sur l'index pour éviter les doublons au reset
+                access.set("id", "accmock" + String(index + 1).padStart(8, '0'));
                 access.set("userId", accessData.userId);
                 access.set("profileId", accessData.profileId);
             }

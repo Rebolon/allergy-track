@@ -106,7 +106,7 @@ tasks:
     cmds:
       - task: stop
       - "{{.SUDO}} docker volume rm allergy-track_pb_data"
-      - task: start
+      - task: build-and-start
 
   test-api:
     desc: Exécute la suite de tests E2E complète de l'API
