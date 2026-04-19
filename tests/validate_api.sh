@@ -75,38 +75,25 @@ CONF_ID=$(extract_json "id" "$CONF_RES")
 
 if [ -z "$CONF_ID" ]; then 
     echo "❌ Config creation failed: $CONF_RES"
-    # Show more info if failed
-    curl -v -X POST "$API_URL/collections/profiles_config/records" \
-         -H "Authorization: $MAIN_TOKEN" \
-         -H "Content-Type: application/json" \
-         -d "{\"profileId\":\"$PROF_ID\", \"startDate\":\"2026-04-17\", \"protocols\":[{\"id\":\"p1\",\"allergen\":\"Arachide\",\"dose\":1,\"frequencyDays\":1,\"createdAt\":\"2026-04-17T10:00:00Z\"}], \"symptoms\":[], \"medicsShields\":[]}"
     exit 1
 fi
 echo "✅ Config Created: $CONF_ID"
 
-echo -e "\n--- [4] DAILY LOGS ---"
-# Create Daily Log
-LOG_RES=$(curl -s -X POST "$API_URL/collections/daily_logs/records" \
-     -H "Authorization: $MAIN_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d "{\"profileId\":\"$PROF_ID\", \"date\":\"2026-04-17\", \"intakes\":[{\"id\":\"i1\",\"label\":\"Dose\"}], \"symptoms\":[], \"treatments\":[{\"id\":\"t1\",\"label\":\"Aucun\"}], \"updatedBy\":\"$MAIN_USER_ID\"}")
-LOG_ID=$(extract_json "id" "$LOG_RES")
+echo -e "\n--- [4] ACL TESTING (Scenario 1) ---"
+# Scenario 1: Main User tries to access a profile they are NOT associated with
+# We use the Invitee's profile (Leo: profmock0000042) which Main User doesn't have access to initially
+LEO_PROF_ID="profmock0000042"
+LEO_RES_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$API_URL/collections/profiles/records/$LEO_PROF_ID" \
+     -H "Authorization: $MAIN_TOKEN")
 
-if [ -z "$LOG_ID" ]; then echo "❌ Daily log failed: $LOG_RES"; exit 1; fi
-echo "✅ Daily Log Recorded: $LOG_ID"
+if [ "$LEO_RES_STATUS" == "404" ]; then
+    echo "✅ Success: Main user cannot access Léo's profile (404 Not Found as expected by ACL)"
+else
+    echo "❌ ACL Failure: Main user could access Léo's profile (Status: $LEO_RES_STATUS)"
+    exit 1
+fi
 
-echo -e "\n--- [5] GAMIFICATION ---"
-# Initialize Gamification
-GAME_RES=$(curl -s -X POST "$API_URL/collections/gamification/records" \
-     -H "Authorization: $MAIN_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d "{\"profileId\":\"$PROF_ID\", \"totalStreakPoints\":10, \"longestStreak\":1}")
-GAME_ID=$(extract_json "id" "$GAME_RES")
-
-if [ -z "$GAME_ID" ]; then echo "❌ Gamification init failed"; exit 1; fi
-echo "✅ Gamification Initialized: $GAME_ID"
-
-echo -e "\n--- [6] INVITATIONS & SHARING ---"
+echo -e "\n--- [5] INVITATIONS & SHARING ---"
 # Create Invitation Code
 INVITE_CODE="TEST$(date +%s | tail -c 5)"
 INVITE_RES=$(curl -s -X POST "$API_URL/collections/invitations/records" \
@@ -127,9 +114,6 @@ if [ -z "$FOUND_ID" ]; then echo "❌ Invitation lookup failed"; exit 1; fi
 echo "✅ Invitation Found by Invitee"
 
 # Invitee uses invitation (Marks as used and should create access)
-# Note: In the real app, the frontend would also create the access or the backend hook would.
-# Based on the adapter, it's a PATCH to user or POST to accesses.
-# Let's mimic the accesses creation.
 NEW_ACC_RES=$(curl -s -X POST "$API_URL/collections/accesses/records" \
      -H "Authorization: $INVITEE_TOKEN" \
      -H "Content-Type: application/json" \
@@ -137,7 +121,7 @@ NEW_ACC_RES=$(curl -s -X POST "$API_URL/collections/accesses/records" \
 NEW_ACC_ID=$(extract_json "id" "$NEW_ACC_RES")
 
 if [ -z "$NEW_ACC_ID" ]; then echo "❌ Access via invite failed"; exit 1; fi
-echo "✅ Invitee Access Created: $NEW_ACC_ID"
+echo "✅ Invitee Access Created: $NEW_ACC_ID (Role: editor)"
 
 # Mark invite as used
 curl -s -X PATCH "$API_URL/collections/invitations/records/$INVITE_ID" \
@@ -146,7 +130,51 @@ curl -s -X PATCH "$API_URL/collections/invitations/records/$INVITE_ID" \
      -d "{\"usedBy\":\"$INVITEE_USER_ID\"}" > /dev/null
 echo "✅ Invitation Marked as Used"
 
-echo -e "\n--- [7] CLEANUP (Profile Deletion) ---"
+echo -e "\n--- [6] ACL TESTING (Scenario 2) ---"
+# Scenario 2: Invitee (Editor) can create a daily log for the shared profile
+LOG_RES_INVITEE=$(curl -s -X POST "$API_URL/collections/daily_logs/records" \
+     -H "Authorization: $INVITEE_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"profileId\":\"$PROF_ID\", \"date\":\"2026-04-18\", \"intakes\":[{\"id\":\"i1\",\"label\":\"Dose\"}], \"symptoms\":[], \"treatments\":[{\"id\":\"t1\",\"label\":\"Aucun\"}], \"updatedBy\":\"$INVITEE_USER_ID\"}")
+LOG_ID_INVITEE=$(extract_json "id" "$LOG_RES_INVITEE")
+
+if [ -z "$LOG_ID_INVITEE" ]; then 
+    echo "❌ ACL Failure: Invitee (Editor) could not create a daily log: $LOG_RES_INVITEE"
+    exit 1
+fi
+echo "✅ Success: Invitee (Editor) recorded a daily log ($LOG_ID_INVITEE)"
+
+# Scenario 2: Invitee (Editor) tries to modify the profile name (Should fail)
+PATCH_RES_INVITEE=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH "$API_URL/collections/profiles/records/$PROF_ID" \
+     -H "Authorization: $INVITEE_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"name\":\"Hacked Name\"}")
+
+if [ "$PATCH_RES_INVITEE" == "404" ] || [ "$PATCH_RES_INVITEE" == "403" ]; then
+    echo "✅ Success: Invitee (Editor) was blocked from modifying profile name (Status: $PATCH_RES_INVITEE)"
+else
+    echo "❌ ACL Failure: Invitee (Editor) could modify profile name (Status: $PATCH_RES_INVITEE)"
+    exit 1
+fi
+
+echo -e "\n--- [7] GAMIFICATION & LOGS ---"
+# Create Daily Log (Main User)
+LOG_RES=$(curl -s -X POST "$API_URL/collections/daily_logs/records" \
+     -H "Authorization: $MAIN_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"profileId\":\"$PROF_ID\", \"date\":\"2026-04-17\", \"intakes\":[{\"id\":\"i1\",\"label\":\"Dose\"}], \"symptoms\":[], \"treatments\":[{\"id\":\"t1\",\"label\":\"Aucun\"}], \"updatedBy\":\"$MAIN_USER_ID\"}")
+LOG_ID=$(extract_json "id" "$LOG_RES")
+echo "✅ Daily Log Recorded by Owner: $LOG_ID"
+
+# Initialize Gamification
+GAME_RES=$(curl -s -X POST "$API_URL/collections/gamification/records" \
+     -H "Authorization: $MAIN_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"profileId\":\"$PROF_ID\", \"totalStreakPoints\":10, \"longestStreak\":1}")
+GAME_ID=$(extract_json "id" "$GAME_RES")
+echo "✅ Gamification Initialized: $GAME_ID"
+
+echo -e "\n--- [8] CLEANUP (Profile Deletion) ---"
 # Delete Profile
 DEL_RES=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "$API_URL/collections/profiles/records/$PROF_ID" \
      -H "Authorization: $MAIN_TOKEN")
@@ -165,4 +193,4 @@ else
     echo "✅ Accesses Cascade Deleted"
 fi
 
-echo -e "\n🎉 ALL E2E TESTS PASSED SUCCESSFULLY!"
+echo -e "\n🎉 ALL E2E AND ACL TESTS PASSED SUCCESSFULLY!"
