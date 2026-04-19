@@ -80,13 +80,13 @@ import { DossierManagementComponent } from './settings/dossier-management.compon
             </section>
 
             <!-- Protocol Form -->
-            <app-protocol-form />
+            <app-protocol-form (saved)="saveConfig()" />
 
             <!-- Symptom Form -->
-            <app-symptom-form />
+            <app-symptom-form (saved)="saveConfig()" />
 
             <!-- Medics Shield Form -->
-            <app-medics-shield-form />
+            <app-medics-shield-form (saved)="saveConfig()" />
           </div>
         </div>
 
@@ -116,7 +116,11 @@ export class SettingsComponent {
     this.auth.logout().subscribe();
   }
 
+  saveConfig() {
+    this.activeDossier.saveCurrentConfig().subscribe();
+  }
+
   setTheme(newTheme: any) {
-    this.activeDossier.updateTheme(newTheme);
+    this.activeDossier.updateTheme(newTheme).subscribe();
   }
 }

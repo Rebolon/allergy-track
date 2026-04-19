@@ -129,7 +129,7 @@ export class ActiveDossierService {
   }
 
   public updateTheme(newTheme: AppTheme) {
-    this.auth.updateProfileTheme(newTheme);
+    return this.auth.updateProfileTheme(newTheme);
   }
 
   private migrateProtocols() {
